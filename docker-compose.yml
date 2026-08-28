@@ -1,0 +1,91 @@
+name: ecdat-x
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: [ecdat]
+
+  neo4j:
+    image: neo4j:5.26-community
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:?Set NEO4J_USER in .env}/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD in .env}
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1G
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    networks: [ecdat]
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      ECDAT_ENVIRONMENT: production
+      ECDAT_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      ECDAT_NEO4J_ENABLED: "true"
+      ECDAT_NEO4J_URI: bolt://neo4j:7687
+      ECDAT_NEO4J_USER: ${NEO4J_USER}
+      ECDAT_NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      ECDAT_SECRET_KEY: ${ECDAT_SECRET_KEY:?Set ECDAT_SECRET_KEY in .env}
+      ECDAT_CORS_ORIGINS: ${ECDAT_CORS_ORIGINS:-http://localhost:8080}
+      ECDAT_TLS_ALLOW_PRIVATE_TARGETS: ${ECDAT_TLS_ALLOW_PRIVATE_TARGETS:-false}
+      ECDAT_SEED_DEMO: ${ECDAT_SEED_DEMO:-true}
+      ECDAT_SCAN_STORAGE_PATH: /app/scan-data
+    volumes:
+      - scan_data:/app/scan-data
+      - /var/run/docker.sock:/var/run/docker.sock
+    group_add:
+      - ${DOCKER_GID:-999}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks: [ecdat]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api/v1
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    networks: [ecdat]
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  scan_data:
+
+networks:
+  ecdat:
+    driver: bridge
+
