@@ -5,6 +5,8 @@
 **/.pytest_cache
 frontend/node_modules
 frontend/dist
+**/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
 graphify-out
 scan-data
-

@@ -10,7 +10,9 @@ htmlcov/
 node_modules/
 dist/
 .vite/
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
 scan-data/
 graphify-out/
 .DS_Store
-
