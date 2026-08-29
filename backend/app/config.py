@@ -2,12 +2,12 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Runtime configuration loaded from ECDAT_* environment variables."""
+    """Runtime configuration loaded from local names and ECDAT_* aliases."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -20,7 +20,10 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = False
     api_prefix: str = "/api/v1"
-    database_url: str = "sqlite+pysqlite:///./ecdat.db"
+    database_url: str = Field(
+        default="sqlite+pysqlite:///./ecdat.db",
+        validation_alias=AliasChoices("ECDAT_DATABASE_URL", "DATABASE_URL"),
+    )
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )
@@ -33,9 +36,18 @@ class Settings(BaseSettings):
     tls_allow_private_targets: bool = False
     docker_enabled: bool = True
     neo4j_enabled: bool = True
-    neo4j_uri: str = "bolt://localhost:7687"
-    neo4j_user: str = "neo4j"
-    neo4j_password: str = ""
+    neo4j_uri: str = Field(
+        default="bolt://localhost:7687",
+        validation_alias=AliasChoices("ECDAT_NEO4J_URI", "NEO4J_URI"),
+    )
+    neo4j_user: str = Field(
+        default="neo4j",
+        validation_alias=AliasChoices("ECDAT_NEO4J_USER", "NEO4J_USERNAME", "NEO4J_USER"),
+    )
+    neo4j_password: str = Field(
+        default="",
+        validation_alias=AliasChoices("ECDAT_NEO4J_PASSWORD", "NEO4J_PASSWORD"),
+    )
     seed_demo: bool = False
     secret_key: str = "development-only-not-used-for-authentication"
     log_level: str = "INFO"

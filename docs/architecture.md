@@ -4,6 +4,20 @@
 
 Phase 1 establishes a reliable intelligence layer between raw scanner evidence and future PQC migration decisions. The architecture prioritizes evidence retention, deterministic analysis, scanner extensibility, and graceful degradation.
 
+## Local deployment topology
+
+The primary Phase 1 runtime is a four-service Docker Compose development stack:
+
+```mermaid
+flowchart TD
+    USER[Developer browser] -->|localhost:5173| UI[React + Vite]
+    UI -->|localhost:8000| API[FastAPI]
+    API -->|postgres:5432| PG[(PostgreSQL)]
+    API -->|neo4j:7687| NEO[(Neo4j)]
+```
+
+Compose uses development targets with source mounts and reload support. The same Dockerfiles retain production targets so a future hosted deployment can override environment variables without changing application boundaries.
+
 ## Component boundaries
 
 | Component | Responsibility | Does not own |
@@ -107,4 +121,3 @@ ECDAT-CBOM uses CycloneDX-inspired concepts: a serial number, metadata component
 ## Scaling path
 
 The current background execution is appropriate for Phase 1 and a single API worker. Production scale should move scan jobs behind a durable queue, object storage, and dedicated restricted scanner workers. The `Scan` state machine and normalized engine boundaries are already compatible with that transition.
-

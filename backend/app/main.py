@@ -6,7 +6,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.api import api_router
+from backend.app.api import api_router, health
 from backend.app.config import get_settings
 from backend.app.database import SessionLocal, init_db
 from backend.app.logging_config import configure_logging
@@ -55,6 +55,7 @@ def create_app() -> FastAPI:
         response.headers["Referrer-Policy"] = "no-referrer"
         return response
 
+    application.include_router(health.public_router)
     application.include_router(api_router, prefix=settings.api_prefix)
     return application
 

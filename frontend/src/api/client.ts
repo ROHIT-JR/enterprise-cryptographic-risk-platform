@@ -8,8 +8,11 @@ import type {
   Scan,
 } from "../types/api";
 
+const apiOrigin = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
+const apiBaseUrl = apiOrigin.endsWith("/api/v1") ? apiOrigin : `${apiOrigin}/api/v1`;
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "/api/v1",
+  baseURL: apiBaseUrl,
   timeout: 60_000,
   headers: { Accept: "application/json" },
 });
@@ -78,4 +81,3 @@ export function apiErrorMessage(error: unknown): string {
   }
   return error instanceof Error ? error.message : "An unexpected error occurred";
 }
-

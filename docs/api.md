@@ -5,11 +5,12 @@ Base path: `/api/v1`. Interactive OpenAPI documentation is served at `/docs`.
 ## Health
 
 ```http
+GET /health
 GET /api/v1/health/live
 GET /api/v1/health/ready
 ```
 
-Readiness reports PostgreSQL and Neo4j separately. A missing Neo4j projection returns a degraded status while PostgreSQL-backed features remain available.
+`GET /health` tests both local data services and returns `healthy`, `connected`, and actionable error messages. Readiness reports PostgreSQL and Neo4j separately. A missing Neo4j projection returns a degraded status while PostgreSQL-backed features remain available.
 
 ## Start scans
 
@@ -123,4 +124,3 @@ The response is frontend-neutral:
 ## Errors
 
 FastAPI validation errors use HTTP `422`. Unsafe archive or scanner failures transition the scan to `failed`; poll the scan resource and inspect `error_message`. Internal exceptions are logged with the scan ID but returned as a non-sensitive generic message.
-

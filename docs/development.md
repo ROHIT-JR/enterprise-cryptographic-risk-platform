@@ -7,6 +7,16 @@
 - Docker Engine and Compose v2 for the full stack
 - PostgreSQL 16 and Neo4j 5.26 when running services outside Compose
 
+## Full local stack
+
+From the repository root:
+
+```bash
+docker-compose up
+```
+
+This starts the Vite frontend on port 5173, FastAPI on port 8000, PostgreSQL on port 5432, and Neo4j on ports 7474 and 7687. Source directories are bind-mounted for frontend and backend reloads, while named volumes preserve database, graph, scan, and frontend dependency data.
+
 ## Backend setup
 
 ```bash
@@ -18,17 +28,20 @@ python -m pip install -r backend/requirements-dev.txt
 For a dependency-free local database and graph fallback:
 
 ```bash
-ECDAT_DATABASE_URL=sqlite+pysqlite:///./ecdat.db \
+DATABASE_URL=sqlite+pysqlite:///./ecdat.db \
 ECDAT_NEO4J_ENABLED=false \
 ECDAT_SEED_DEMO=true \
 uvicorn backend.app.main:app --reload --port 8000
 ```
 
-Configuration uses the `ECDAT_` prefix. Important values include:
+The local connection settings accept both concise names and the existing `ECDAT_` aliases:
 
 | Setting | Default | Purpose |
 |---|---:|---|
-| `ECDAT_DATABASE_URL` | SQLite development file | SQLAlchemy database URL |
+| `DATABASE_URL` / `ECDAT_DATABASE_URL` | SQLite development file | SQLAlchemy database URL |
+| `NEO4J_URI` / `ECDAT_NEO4J_URI` | `bolt://localhost:7687` | Graph database endpoint |
+| `NEO4J_USERNAME` / `ECDAT_NEO4J_USER` | `neo4j` | Graph database user |
+| `NEO4J_PASSWORD` / `ECDAT_NEO4J_PASSWORD` | empty | Graph database password |
 | `ECDAT_SCAN_STORAGE_PATH` | `./scan-data` | Temporary upload workspace |
 | `ECDAT_MAX_UPLOAD_BYTES` | 50 MiB | Compressed upload limit |
 | `ECDAT_NEO4J_ENABLED` | `true` | Enable Neo4j projection |
@@ -44,7 +57,7 @@ npm ci
 npm run dev
 ```
 
-The development server proxies `/api` to port 8000. Use `VITE_API_BASE_URL` for a separately hosted backend.
+`frontend/.env` points `VITE_API_URL` to `http://localhost:8000`. Override that single variable for a separately hosted backend.
 
 ## Adding a scanner
 
@@ -89,4 +102,3 @@ Phase 1 creates tables from SQLAlchemy metadata. Before shared production evolut
 ## Logging and diagnostics
 
 The API emits structured-enough single-line logs with timestamps, severity, logger name, and scan IDs. Responses return `X-Request-ID`, honoring a caller-provided value when present. Avoid logging uploaded source, full certificates, secrets, or raw environment variables.
-

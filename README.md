@@ -43,43 +43,53 @@ PostgreSQL is authoritative for projects, scans, assets, relationships, and risk
 
 See [Architecture](docs/architecture.md), [Development](docs/development.md), and [API reference](docs/api.md) for implementation details.
 
-## Quick start with Docker
+## Requirements
 
-Requirements: Docker Engine with Compose v2 and at least 4 GiB of available memory.
+- Docker Engine
+- Docker Compose (`docker-compose` or the `docker compose` plugin)
+- At least 4 GiB of available memory
+- Node.js 22+ and Python 3.11+ only when running services outside Docker
+
+## Installation
 
 ```bash
-cp .env.example .env
-# Replace every placeholder secret in .env before starting.
-docker compose up --build
+git clone https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform.git
+cd enterprise-cryptographic-risk-platform
+docker-compose up
 ```
 
-Open:
+No cloud account or external database is required. Compose builds the development images, installs dependencies, waits for PostgreSQL and Neo4j, starts FastAPI, and serves Vite on port 5173. The SecureBank demo is seeded on first startup.
 
-- Dashboard: <http://localhost:8080>
-- FastAPI docs: <http://localhost:8000/docs>
+## Local access
+
+- Frontend: <http://localhost:5173>
+- Backend: <http://localhost:8000>
+- API documentation: <http://localhost:8000/docs>
+- Combined connection health: <http://localhost:8000/health>
+- PostgreSQL: `localhost:5432`
 - Neo4j Browser: <http://localhost:7474>
+- Neo4j Bolt: `localhost:7687`
 
-The Compose profile seeds the SecureBank demo on first startup. Set `ECDAT_SEED_DEMO=false` for an empty inventory.
+Stop services without deleting persisted database data:
+
+```bash
+docker-compose down
+```
+
+The built-in credentials are for local development only. Copy `.env.example` to `.env` and replace them before using the stack on a shared machine. Set `ECDAT_SEED_DEMO=false` for an empty inventory.
 
 Docker discovery needs access to the host Docker socket. Determine its group ID with `stat -c '%g' /var/run/docker.sock` and set `DOCKER_GID` in `.env` if it differs from `999`. Treat socket access as privileged and isolate the backend host accordingly.
 
-Stop services without deleting data:
+## Running services outside Docker
 
-```bash
-docker compose down
-```
-
-## Local development
-
-Backend (Python 3.11+):
+Backend:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r backend/requirements-dev.txt
-cp .env.example .env
-ECDAT_DATABASE_URL=sqlite+pysqlite:///./ecdat.db ECDAT_NEO4J_ENABLED=false python -m backend.app.seed
-ECDAT_DATABASE_URL=sqlite+pysqlite:///./ecdat.db ECDAT_NEO4J_ENABLED=false uvicorn backend.app.main:app --reload
+DATABASE_URL=sqlite+pysqlite:///./ecdat.db ECDAT_NEO4J_ENABLED=false python -m backend.app.seed
+DATABASE_URL=sqlite+pysqlite:///./ecdat.db ECDAT_NEO4J_ENABLED=false uvicorn backend.app.main:app --reload
 ```
 
 Frontend (Node.js 22+):
@@ -90,7 +100,7 @@ npm ci
 npm run dev
 ```
 
-Vite proxies `/api` to `http://localhost:8000`. The frontend is then available at <http://localhost:5173>.
+`frontend/.env` sets `VITE_API_URL=http://localhost:8000`. Vite is available at <http://localhost:5173>.
 
 ## Test and quality gates
 
@@ -106,6 +116,7 @@ The repository includes GitHub Actions for the same backend and frontend checks 
 
 | Workflow | Endpoint |
 |---|---|
+| PostgreSQL + Neo4j health | `GET /health` |
 | Dashboard summary | `GET /api/v1/dashboard` |
 | Repository discovery | `POST /api/v1/scans/repository` |
 | Docker discovery | `POST /api/v1/scans/docker` |
@@ -140,13 +151,12 @@ The dashboard is responsive and includes dedicated views for upload progress, in
 
 ## Deployment notes
 
-- **Frontend / Vercel:** deploy `frontend/`; set `VITE_API_BASE_URL` to the public backend URL ending in `/api/v1`.
-- **Backend:** build `backend/Dockerfile` from the repository root context.
-- **Secrets:** `.env` is ignored. No credentials are embedded in application code or Compose manifests.
+- **Local first:** `docker-compose.yml` is the primary Phase 1 deployment and runs all four services on the developer machine.
+- **Future hosting:** the Dockerfiles retain separate development and production stages; override `VITE_API_URL`, database URLs, and credentials in the target environment.
+- **Secrets:** `.env` files are ignored. Only non-secret templates and local development defaults are committed.
 - **Private TLS targets:** disabled by default. Enable only for a controlled internal deployment.
 - **Authentication:** intentionally out of Phase 1. Put the application behind an authenticated reverse proxy before any shared deployment.
 
 ## Phase 2-ready extension points
 
 The domain boundaries allow future quantum risk profiles, harvest-now-decrypt-later analysis, graph centrality, PQC recommendations, and migration optimization without replacing scanner or persistence contracts. See the decision boundaries in [docs/architecture.md](docs/architecture.md).
-

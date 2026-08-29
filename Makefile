@@ -19,8 +19,7 @@ seed:
 	python -m backend.app.seed
 
 compose-up:
-	docker compose up --build
+	docker-compose up
 
 compose-down:
-	docker compose down
-
+	docker-compose down
