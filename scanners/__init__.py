@@ -5,6 +5,7 @@ from scanners.base import (
     ScanSource,
 )
 from scanners.registry import ScannerRegistry, build_default_registry
+from scanners.source_scanner import SourceCodeScanner, SourceScanner
 
 __all__ = [
     "DiscoveredAsset",
@@ -12,5 +13,7 @@ __all__ = [
     "ScanResult",
     "ScanSource",
     "ScannerRegistry",
+    "SourceCodeScanner",
+    "SourceScanner",
     "build_default_registry",
 ]

@@ -1,4 +1,4 @@
-import { Activity, Boxes, FolderKanban, KeyRound, ShieldAlert, Upload } from "lucide-react";
+import { Activity, Boxes, KeyRound, ShieldAlert, TriangleAlert, Upload } from "lucide-react";
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Bar, BarChart, CartesianGrid } from "recharts";
 import { Link } from "react-router-dom";
 import { apiErrorMessage, dashboardApi } from "../api/client";
@@ -21,8 +21,8 @@ export function Dashboard() {
   const metrics = [
     { label: "Total crypto assets", value: data.metrics.total_assets, icon: Boxes, accent: "text-brand-300", surface: "bg-brand-400/10" },
     { label: "Critical assets", value: data.metrics.critical_assets, icon: ShieldAlert, accent: "text-rose-300", surface: "bg-rose-400/10" },
+    { label: "High-risk assets", value: data.metrics.high_assets, icon: TriangleAlert, accent: "text-orange-300", surface: "bg-orange-400/10" },
     { label: "Algorithms found", value: data.metrics.algorithms_found, icon: KeyRound, accent: "text-violet-300", surface: "bg-violet-400/10" },
-    { label: "Projects scanned", value: data.metrics.projects_scanned, icon: FolderKanban, accent: "text-emerald-300", surface: "bg-emerald-400/10" },
   ];
   const riskTotal = data.risk_distribution.reduce((sum, item) => sum + item.value, 0);
 
@@ -120,4 +120,3 @@ export function Dashboard() {
     </div>
   );
 }
-

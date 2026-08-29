@@ -26,6 +26,7 @@ export interface DashboardData {
   metrics: {
     total_assets: number;
     critical_assets: number;
+    high_assets: number;
     algorithms_found: number;
     projects_scanned: number;
   };
@@ -116,4 +117,3 @@ export interface GraphData {
   edges: GraphEdge[];
   source: "neo4j" | "postgresql";
 }
-

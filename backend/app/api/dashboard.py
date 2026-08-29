@@ -22,6 +22,10 @@ def dashboard(db: Session = Depends(get_db)) -> DashboardResponse:
             select(func.count(RiskFinding.id)).where(RiskFinding.severity == "critical")
         )
         or 0,
+        high_assets=db.scalar(
+            select(func.count(RiskFinding.id)).where(RiskFinding.severity == "high")
+        )
+        or 0,
         algorithms_found=db.scalar(
             select(func.count(distinct(Asset.algorithm))).where(Asset.algorithm.is_not(None))
         )

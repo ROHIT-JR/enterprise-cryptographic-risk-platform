@@ -69,7 +69,7 @@ function SidebarContent({ close }: { close?: () => void }) {
           </span>
           Discovery engine ready
         </div>
-        <p className="mt-2 text-[11px] leading-4 text-slate-600">Phase 1 · rule-based analysis</p>
+        <p className="mt-2 text-[11px] leading-4 text-slate-600">Phase 1.5 · real discovery</p>
       </div>
     </>
   );
@@ -116,4 +116,3 @@ export function Layout() {
     </div>
   );
 }
-

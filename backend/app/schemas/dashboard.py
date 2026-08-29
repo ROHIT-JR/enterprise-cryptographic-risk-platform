@@ -7,6 +7,7 @@ from backend.app.schemas.scan import ScanResponse
 class DashboardMetrics(BaseModel):
     total_assets: int
     critical_assets: int
+    high_assets: int
     algorithms_found: int
     projects_scanned: int
 

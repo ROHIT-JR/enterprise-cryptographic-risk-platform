@@ -16,6 +16,7 @@ from scanners.base import (
     ScanSource,
 )
 from scanners.exceptions import InvalidScanTargetError
+from scanners.docker_scanner import DockerfileAnalyzer
 from scanners.patterns import (
     ALGORITHM_PATTERNS,
     DEPENDENCY_LIBRARY_NAMES,
@@ -36,6 +37,8 @@ CONFIG_SUFFIXES = {
     ".properties",
     ".xml",
     ".gradle",
+    ".pem",
+    ".crt",
 }
 DEPENDENCY_FILES = {
     "requirements.txt",
@@ -60,6 +63,19 @@ IGNORED_PARTS = {
     "target",
     "__pycache__",
     "graphify-out",
+}
+LANGUAGE_BY_SUFFIX = {
+    ".py": "python",
+    ".java": "java",
+    ".js": "javascript",
+    ".jsx": "javascript",
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".c": "c",
+    ".h": "c",
+    ".cc": "cpp",
+    ".cpp": "cpp",
+    ".hpp": "cpp",
 }
 
 
@@ -101,9 +117,13 @@ class RepositoryScanner(ScannerPlugin):
                 part in IGNORED_PARTS for part in path.relative_to(root).parts
             ):
                 continue
+            is_dockerfile = (
+                path.name.lower() == "dockerfile" or path.suffix.lower() == ".dockerfile"
+            )
             if (
                 path.suffix.lower() not in SOURCE_SUFFIXES | CONFIG_SUFFIXES
                 and path.name not in DEPENDENCY_FILES
+                and not is_dockerfile
             ):
                 continue
             try:
@@ -119,6 +139,8 @@ class RepositoryScanner(ScannerPlugin):
             scanned_files += 1
             relative = path.relative_to(root).as_posix()
             assets.extend(self._scan_lines(relative, text))
+            if is_dockerfile:
+                assets.extend(DockerfileAnalyzer().analyze_text(text, location=relative))
             if path.name in DEPENDENCY_FILES:
                 assets.extend(self._scan_dependencies(relative, text, path.name))
 
@@ -139,9 +161,12 @@ class RepositoryScanner(ScannerPlugin):
 
     def _scan_lines(self, relative: str, text: str) -> list[DiscoveredAsset]:
         findings: list[DiscoveredAsset] = []
+        language = self._language(relative)
         for line_number, raw_line in enumerate(text.splitlines(), start=1):
             evidence = raw_line.strip()
-            if not evidence or evidence.startswith(("#", "//", "*")):
+            if not evidence or evidence.startswith(("//", "*")):
+                continue
+            if evidence.startswith("#") and not evidence.startswith("#include"):
                 continue
             clipped = evidence[:240]
             for pattern in (*ALGORITHM_PATTERNS, *LIBRARY_PATTERNS):
@@ -152,11 +177,18 @@ class RepositoryScanner(ScannerPlugin):
                     DiscoveredAsset(
                         asset_type=pattern.asset_type,
                         name=name,
-                        algorithm=name if pattern.asset_type == "algorithm" else None,
+                        algorithm=name
+                        if pattern.asset_type in {"algorithm", "protocol"}
+                        else None,
                         location=f"{relative}:{line_number}",
                         evidence=clipped,
                         confidence=pattern.confidence,
-                        details={"file": relative, "line": line_number, "detector": "pattern"},
+                        details={
+                            "file": relative,
+                            "line": line_number,
+                            "language": language,
+                            "detector": "pattern",
+                        },
                     )
                 )
         return findings
@@ -165,7 +197,10 @@ class RepositoryScanner(ScannerPlugin):
         findings: list[DiscoveredAsset] = []
         normalized = text.lower()
         for token, library_name in DEPENDENCY_LIBRARY_NAMES.items():
-            if token not in normalized:
+            if not re.search(
+                rf"(?<![a-z0-9]){re.escape(token)}(?![a-z0-9])",
+                normalized,
+            ):
                 continue
             version = self._dependency_version(text, token, filename)
             findings.append(
@@ -176,10 +211,27 @@ class RepositoryScanner(ScannerPlugin):
                     location=relative,
                     evidence=f"Dependency declaration contains '{token}'",
                     confidence=0.99,
-                    details={"file": relative, "detector": "dependency-manifest"},
+                    details={
+                        "file": relative,
+                        "language": self._language(relative),
+                        "detector": "dependency-manifest",
+                    },
                 )
             )
         return findings
+
+    @staticmethod
+    def _language(relative: str) -> str:
+        path = Path(relative)
+        if path.name in {"requirements.txt", "pyproject.toml", "poetry.lock"}:
+            return "python"
+        if path.name in {"pom.xml", "build.gradle", "build.gradle.kts"}:
+            return "java"
+        if path.name in {"package.json", "package-lock.json"}:
+            return "javascript"
+        if path.name.startswith("conanfile") or path.name == "CMakeLists.txt":
+            return "cpp"
+        return LANGUAGE_BY_SUFFIX.get(path.suffix.lower(), "configuration")
 
     @staticmethod
     def _dependency_version(text: str, token: str, filename: str) -> str | None:

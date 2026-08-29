@@ -8,6 +8,8 @@ class RiskInput(BaseModel):
     algorithm: str | None = None
     asset_type: str
     dependency_count: int = Field(default=0, ge=0)
+    confidence: float = Field(default=0.8, ge=0, le=1)
+    evidence_count: int = Field(default=1, ge=1)
     criticality: str = "medium"
     details: dict[str, Any] = Field(default_factory=dict)
 

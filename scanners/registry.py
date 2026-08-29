@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 from scanners.base import ScannerPlugin, ScanSource
 from scanners.docker import DockerScanner
-from scanners.repository import RepositoryScanner
+from scanners.source_scanner import SourceCodeScanner
 from scanners.tls import TLSScanner
 
 
@@ -39,7 +39,7 @@ def build_default_registry(
 ) -> ScannerRegistry:
     return ScannerRegistry(
         [
-            RepositoryScanner(),
+            SourceCodeScanner(),
             DockerScanner(enabled=docker_enabled, timeout_seconds=timeout_seconds),
             TLSScanner(
                 timeout_seconds=tls_timeout_seconds,

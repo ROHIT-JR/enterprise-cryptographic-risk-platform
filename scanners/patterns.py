@@ -29,7 +29,8 @@ ALGORITHM_PATTERNS = (
         "RSA",
         "algorithm",
         _compile(
-            r"\b(?:RSA(?:\.generate|\.new|_generate|EncryptionPadding|/ECB)|rsa\.generate_private_key|getInstance\s*\(\s*[\"']RSA)"
+            r"\b(?:RSA(?:\.generate|\.new|_generate|_new|EncryptionPadding|/ECB)"
+            r"|rsa\.generate_private_key|getInstance\s*\(\s*[\"']RSA)"
         ),
         0.96,
         "RSA",
@@ -37,7 +38,10 @@ ALGORITHM_PATTERNS = (
     DetectionPattern(
         "ECC",
         "algorithm",
-        _compile(r"\b(?:ECDSA|ECDH|secp256r1|prime256v1|P-256|ec\.generate_private_key)\b"),
+        _compile(
+            r"\b(?:ECDSA|ECDH|secp256r1|prime256v1|P-256|ec\.generate_private_key"
+            r"|getInstance\s*\(\s*[\"']EC)\b"
+        ),
         0.93,
         "ECC",
     ),
@@ -45,7 +49,9 @@ ALGORITHM_PATTERNS = (
         "AES",
         "algorithm",
         _compile(
-            r"\b(?:AES(?:[-_/ ]?(?:128|192|256))?|AES\.new|EVP_aes_|getInstance\s*\(\s*[\"']AES)\b"
+            r"\b(?:AES(?:[-_/ ]?(?:128|192|256))?|AES\.new"
+            r"|EVP_(?:aes_|encrypt|Encrypt(?:Init|Update|Final))"
+            r"|getInstance\s*\(\s*[\"']AES)\b"
         ),
         0.96,
         "AES",
@@ -106,14 +112,40 @@ ALGORITHM_PATTERNS = (
         0.96,
         "HMAC",
     ),
+    DetectionPattern(
+        "TLS 1.3",
+        "protocol",
+        _compile(r"\b(?:TLSv?1[._ ]?3|TLS 1\.3)\b"),
+        0.95,
+        "TLS 1.3",
+    ),
+    DetectionPattern(
+        "TLS 1.2",
+        "protocol",
+        _compile(r"\b(?:TLSv?1[._ ]?2|TLS 1\.2)\b"),
+        0.95,
+        "TLS 1.2",
+    ),
+    DetectionPattern(
+        "Configured TLS certificate",
+        "certificate",
+        _compile(r"\b(?:ssl_certificate|SSLCertificateFile|BEGIN CERTIFICATE)\b"),
+        0.9,
+    ),
 )
 
 
 LIBRARY_PATTERNS = (
     DetectionPattern(
+        "PyOpenSSL",
+        "library",
+        _compile(r"\b(?:from\s+OpenSSL\s+import|import\s+OpenSSL|pyopenssl)\b"),
+        0.98,
+    ),
+    DetectionPattern(
         "OpenSSL",
         "library",
-        _compile(r"\b(?:OpenSSL|openssl/|<openssl/|libssl|libcrypto)\b"),
+        _compile(r"\b(?:openssl/|<openssl/|libssl|libcrypto|OPENSSL_[A-Za-z0-9_]+)\b"),
         0.95,
     ),
     DetectionPattern(
@@ -146,6 +178,15 @@ LIBRARY_PATTERNS = (
         _compile(r"\b(?:from|import)\s+Crypto\b|pycryptodome"),
         0.96,
     ),
+    DetectionPattern(
+        "Node.js crypto",
+        "library",
+        _compile(
+            r"(?:require\s*\(\s*[\"'](?:node:)?crypto[\"']\s*\)"
+            r"|from\s+[\"'](?:node:)?crypto[\"']|from\s+[\"']crypto[\"'])"
+        ),
+        0.98,
+    ),
 )
 
 
@@ -153,12 +194,14 @@ DEPENDENCY_LIBRARY_NAMES: dict[str, str] = {
     "cryptography": "Python cryptography",
     "pycryptodome": "PyCryptodome",
     "pycrypto": "PyCrypto",
+    "pyopenssl": "PyOpenSSL",
     "pynacl": "libsodium",
     "openssl": "OpenSSL",
     "libssl": "OpenSSL",
     "bouncycastle": "Bouncy Castle",
     "cryptopp": "Crypto++",
     "libsodium": "libsodium",
+    "node:crypto": "Node.js crypto",
 }
 
 

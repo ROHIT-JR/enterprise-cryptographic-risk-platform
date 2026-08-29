@@ -73,6 +73,9 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
         incoming_dependencies = Counter(
             relationship.target_ref for relationship in result.relationships
         )
+        corroborating_evidence = Counter(
+            (finding.asset_type, finding.name, finding.algorithm) for finding in result.assets
+        )
         rows_by_ref: dict[str, Asset] = {}
         for finding in result.assets:
             row = Asset(
@@ -86,7 +89,13 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
                 evidence=finding.evidence,
                 confidence=finding.confidence,
                 dependency_count=incoming_dependencies[finding.fingerprint()],
-                details={**finding.details, "dependencies": finding.dependencies},
+                details={
+                    **finding.details,
+                    "dependencies": finding.dependencies,
+                    "corroborating_evidence_count": corroborating_evidence[
+                        (finding.asset_type, finding.name, finding.algorithm)
+                    ],
+                },
             )
             db.add(row)
             db.flush()

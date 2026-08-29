@@ -1,0 +1,6 @@
+{
+  "name": "secure-bank-api-gateway",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {}
+}

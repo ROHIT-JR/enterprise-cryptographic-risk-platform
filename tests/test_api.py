@@ -16,6 +16,7 @@ def test_health_and_seeded_dashboard_contract():
     assert live() == {"status": "ok"}
     assert body["metrics"]["total_assets"] >= 15
     assert body["metrics"]["critical_assets"] > 0
+    assert body["metrics"]["high_assets"] >= 0
     assert body["algorithm_distribution"]
 
 
@@ -27,6 +28,11 @@ def test_openapi_exposes_phase_one_workflows():
     assert "/api/v1/scans/tls" in paths
     assert "/api/v1/scans/{scan_id}/cbom" in paths
     assert "/api/v1/graph" in paths
+    assert "/api/upload/repository" in paths
+    assert "/api/assets" in paths
+    assert "/api/cbom/{project_id}" in paths
+    assert "/api/risk" in paths
+    assert "/api/graph" in paths
 
 
 def test_connection_health_reports_both_local_datastores(monkeypatch):

@@ -43,6 +43,10 @@ class RiskEngine:
         if certificate_factor:
             factors.append(certificate_factor)
 
+        evidence_factor = self._evidence_factor(value)
+        if evidence_factor:
+            factors.append(evidence_factor)
+
         dependency_points = min(value.dependency_count * 5, 20)
         if dependency_points:
             factors.append(
@@ -139,3 +143,23 @@ class RiskEngine:
                 rule_id="CERT-TRUST",
             )
         return None
+
+    @staticmethod
+    def _evidence_factor(value: RiskInput) -> RiskFactor | None:
+        if value.asset_type not in {"algorithm", "library", "certificate", "protocol"}:
+            return None
+        confidence_points = 3 if value.confidence >= 0.95 else 2 if value.confidence >= 0.85 else 0
+        corroboration_points = min(max(value.evidence_count - 1, 0), 2)
+        points = min(confidence_points + corroboration_points, 5)
+        if not points:
+            return None
+        source_label = "source" if value.evidence_count == 1 else "sources"
+        return RiskFactor(
+            category="evidence_confidence",
+            points=points,
+            explanation=(
+                f"Finding confidence is {value.confidence:.0%} across "
+                f"{value.evidence_count} evidence {source_label}"
+            ),
+            rule_id="EVIDENCE-CONFIDENCE",
+        )

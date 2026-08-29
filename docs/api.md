@@ -2,6 +2,20 @@
 
 Base path: `/api/v1`. Interactive OpenAPI documentation is served at `/docs`.
 
+Phase 1.5 also exposes stable compatibility aliases for integrations that do not use the versioned
+base path:
+
+| Method | Endpoint | Result |
+|---|---|---|
+| `POST` | `/api/upload/repository` | Queue a repository ZIP scan |
+| `GET` | `/api/assets` | Paginated, filterable cryptographic inventory |
+| `GET` | `/api/cbom/{project_id}` | Latest completed CBOM for a project |
+| `GET` | `/api/risk` | Severity distribution and highest-risk assets |
+| `GET` | `/api/graph` | Neo4j topology with PostgreSQL fallback |
+
+These aliases use the same services, database records, validation, and response objects as their
+versioned counterparts.
+
 ## Health
 
 ```http

@@ -2,11 +2,11 @@
 
 **Enterprise Cryptographic Discovery, Analysis & Transformation Platform**
 
-ECDAT-X gives security teams an evidence-backed map of where cryptography exists, what depends on it, and why it matters. Phase 1 accepts repository ZIPs, Docker image references, and TLS endpoints; normalizes discoveries into an inventory and CBOM; projects relationships into Neo4j; and calculates explainable rule-based risk.
+ECDAT-X gives security teams an evidence-backed map of where cryptography exists, what depends on it, and why it matters. Phase 1.5 accepts repository ZIPs, Docker image references, and TLS endpoints; normalizes discoveries into an inventory and CBOM; projects relationships into Neo4j; and calculates explainable rule-based risk.
 
 > Phase 1 deliberately excludes authentication, multi-tenancy, machine-learning prediction, migration optimization, and an AI chatbot. Deploy it only on a trusted administrative network.
 
-## Phase 1 capabilities
+## Phase 1.5 capabilities
 
 - Plugin-based repository, Docker, and TLS discovery
 - Python, Java, JavaScript/TypeScript, and C/C++ crypto-pattern detection
@@ -20,6 +20,46 @@ ECDAT-X gives security teams an evidence-backed map of where cryptography exists
 - Deterministic algorithm + dependency + criticality risk scoring
 - React dashboard, upload center, asset explorer, React Flow graph, and risk analysis
 - SecureBank Enterprise demo estate for immediate evaluation
+
+## How repository discovery works
+
+The upload flow securely extracts a ZIP into an isolated job directory, enforces archive and file
+limits, and dispatches the source scanner through the common plugin registry. The scanner examines
+supported source files line by line, records the exact file, line, evidence, confidence, and
+language, then correlates dependency manifests and Dockerfile declarations. The orchestrator
+normalizes findings into PostgreSQL, scores every asset, generates the ECDAT-CBOM, and updates the
+Neo4j projection. If Neo4j is offline, graph responses automatically fall back to PostgreSQL.
+
+| Category | Detected examples |
+|---|---|
+| Symmetric crypto | AES-128/192/256, DES, 3DES |
+| Public-key crypto | RSA, ECC/ECDSA/ECDH, Diffie-Hellman |
+| Hashing and MAC | SHA-1, SHA-256/384/512, SHA-3, HMAC |
+| Libraries | OpenSSL, PyOpenSSL, Bouncy Castle, Crypto++, libsodium, PyCryptodome, Python cryptography, Node.js crypto |
+| Configuration | TLS 1.2/1.3 and configured certificates |
+| Containers | Base image plus declared OpenSSL and cryptographic packages |
+
+### Try the SecureBank repository
+
+```bash
+cd sample_enterprise
+zip -r secure-bank.zip secure-bank
+```
+
+Open <http://localhost:5173/upload>, choose `secure-bank.zip`, and start the repository scan. The
+progress card moves through Scanning, Analyzing, Generating CBOM, and Completed. The result contains
+evidence similar to:
+
+```json
+{
+  "type": "algorithm",
+  "name": "RSA-2048",
+  "location": "secure-bank/authentication-service/auth.py:9",
+  "evidence": "RSA.generate(2048)",
+  "confidence": 0.96,
+  "details": {"language": "python"}
+}
+```
 
 ## Architecture
 
@@ -127,6 +167,9 @@ The repository includes GitHub Actions for the same backend and frontend checks 
 | Risk findings | `GET /api/v1/risks` |
 | Knowledge graph | `GET /api/v1/graph` |
 
+Phase 1.5 compatibility aliases are also available at `POST /api/upload/repository`,
+`GET /api/assets`, `GET /api/cbom/{project_id}`, `GET /api/risk`, and `GET /api/graph`.
+
 Interactive OpenAPI documentation is exposed at `/docs`. Examples and response contracts are in [docs/api.md](docs/api.md).
 
 ## Repository layout
@@ -138,7 +181,8 @@ scanners/         Scanner plugin contracts and built-in discovery plugins
 cbom_engine/      ECDAT-CBOM generator
 knowledge_graph/  Neo4j projection and graph contracts
 risk_engine/      Explainable Phase 1 risk rules
-sample_data/      SecureBank demo and vulnerable repository fixture
+sample_data/      Seed data used by the built-in dashboard demo
+sample_enterprise/ Uploadable mixed-language SecureBank discovery fixture
 tests/            Backend, scanner, CBOM, risk, and API-contract tests
 docs/             Architecture, API, development, and security guidance
 ```

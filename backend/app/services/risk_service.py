@@ -16,6 +16,8 @@ class RiskService:
                 algorithm=asset.algorithm,
                 asset_type=asset.asset_type,
                 dependency_count=asset.dependency_count,
+                confidence=asset.confidence,
+                evidence_count=int(details.get("corroborating_evidence_count", 1)),
                 criticality=project.criticality,
                 details=details,
             )

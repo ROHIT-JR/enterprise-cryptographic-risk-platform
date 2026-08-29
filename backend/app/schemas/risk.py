@@ -3,6 +3,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from backend.app.schemas.common import DistributionItem
+
 
 class RiskResponse(BaseModel):
     id: str
@@ -26,3 +28,9 @@ class RiskPage(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class RiskSummaryResponse(BaseModel):
+    total: int
+    severity_distribution: list[DistributionItem]
+    highest_risks: list[RiskResponse]

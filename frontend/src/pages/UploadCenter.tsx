@@ -7,6 +7,15 @@ import type { Criticality, Scan } from "../types/api";
 
 type ScanKind = "repository" | "docker" | "tls";
 
+function scanStage(scan: Scan): string {
+  if (scan.status === "failed") return "Failed";
+  if (scan.status === "completed") return "Completed";
+  if (scan.progress < 30) return "Scanning";
+  if (scan.progress < 65) return "Analyzing";
+  if (scan.progress < 90) return "Generating CBOM";
+  return "Finalizing";
+}
+
 export function UploadCenter() {
   const [projectName, setProjectName] = useState("SecureBank Enterprise");
   const [criticality, setCriticality] = useState<Criticality>("critical");
@@ -119,7 +128,7 @@ export function UploadCenter() {
             <StatusBadge status={scan.status} />
           </div>
           <div className="p-5 md:p-6">
-            <div className="mb-2 flex justify-between text-xs"><span className="text-slate-500">Discovery progress</span><span className="font-semibold text-slate-300">{scan.progress}%</span></div>
+            <div className="mb-2 flex justify-between text-xs"><span className="text-slate-500">{scanStage(scan)}</span><span className="font-semibold text-slate-300">{scan.progress}%</span></div>
             <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-brand-300 transition-all duration-700" style={{ width: `${scan.progress}%` }} /></div>
             {scan.error_message && <p className="mt-4 text-sm text-rose-300">{scan.error_message}</p>}
             {scan.status === "completed" && (
@@ -139,4 +148,3 @@ export function UploadCenter() {
 function TextInput({ icon, value, onChange, placeholder }: { icon: React.ReactNode; value: string; onChange: (value: string) => void; placeholder: string }) {
   return <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600">{icon}</span><input required value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="field pl-10" /></div>;
 }
-
