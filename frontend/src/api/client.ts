@@ -4,12 +4,19 @@ import type {
   Criticality,
   DashboardData,
   GraphData,
+  BlastRadiusData,
+  IntelligenceRiskData,
+  MigrationRecommendation,
+  MigrationRoadmap,
   RiskPage,
   Scan,
 } from "../types/api";
 
 const apiOrigin = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 const apiBaseUrl = apiOrigin.endsWith("/api/v1") ? apiOrigin : `${apiOrigin}/api/v1`;
+const phase2BaseUrl = apiOrigin.endsWith("/api/v1")
+  ? apiOrigin.replace(/\/api\/v1$/, "/api")
+  : `${apiOrigin}/api`;
 
 export const api = axios.create({
   baseURL: apiBaseUrl,
@@ -72,6 +79,22 @@ export const scansApi = {
       })
     ).data,
   cbomUrl: (scanId: string) => `${api.defaults.baseURL}/scans/${scanId}/cbom`,
+};
+
+export const intelligenceApi = {
+  risk: async () =>
+    (await axios.get<IntelligenceRiskData>(`${phase2BaseUrl}/intelligence/risk`)).data,
+  hndl: async () =>
+    (await axios.get<{ total: number; items: IntelligenceRiskData["items"] }>(`${phase2BaseUrl}/intelligence/hndl`)).data,
+  blastRadius: async (assetId?: string) =>
+    (await axios.get<BlastRadiusData>(`${phase2BaseUrl}/intelligence/blast-radius`, { params: { asset_id: assetId } })).data,
+};
+
+export const migrationApi = {
+  recommendations: async () =>
+    (await axios.get<MigrationRecommendation[]>(`${phase2BaseUrl}/migration/recommendations`)).data,
+  roadmap: async () =>
+    (await axios.get<MigrationRoadmap>(`${phase2BaseUrl}/migration/roadmap`)).data,
 };
 
 export function apiErrorMessage(error: unknown): string {

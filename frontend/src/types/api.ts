@@ -117,3 +117,76 @@ export interface GraphData {
   edges: GraphEdge[];
   source: "neo4j" | "postgresql";
 }
+
+export interface IntelligenceItem {
+  asset_id: string;
+  asset_name: string;
+  asset_type: string;
+  algorithm: string | null;
+  project_id: string;
+  project_name: string;
+  quantum_score: number;
+  quantum_classification: string;
+  hndl_score: number;
+  hndl_risk: Severity;
+  centrality_score: number;
+  dependent_systems: number;
+  business_score: number;
+  migration_complexity_score: number;
+  evidence_confidence: number;
+  evidence_sources: string[];
+  final_score: number;
+  severity: Severity;
+  explanations: string[];
+  factors: Record<string, unknown>;
+}
+
+export interface IntelligenceRiskData {
+  metrics: {
+    total_analyzed: number;
+    vulnerable_assets: number;
+    critical_quantum_risks: number;
+    hndl_exposures: number;
+    average_risk_score: number;
+  };
+  algorithm_vulnerability_distribution: DistributionItem[];
+  severity_distribution: DistributionItem[];
+  items: IntelligenceItem[];
+}
+
+export interface BlastRadiusData {
+  asset_id: string | null;
+  asset_name: string | null;
+  dependent_systems: number;
+  centrality_score: number;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+export interface MigrationRecommendation {
+  asset_id: string;
+  asset_name: string;
+  asset_type: string;
+  current_algorithm: string;
+  recommended_algorithm: string;
+  wave: number;
+  complexity: string;
+  risk_score: number | null;
+  reasons: string[];
+  recommendation: {
+    hybrid_strategy?: string;
+    reason?: string;
+    metrics?: Record<string, string>;
+    constraints?: string[];
+  };
+}
+
+export interface MigrationRoadmap {
+  total_assets: number;
+  waves: Array<{
+    wave: number;
+    title: string;
+    reason: string;
+    items: MigrationRecommendation[];
+  }>;
+}

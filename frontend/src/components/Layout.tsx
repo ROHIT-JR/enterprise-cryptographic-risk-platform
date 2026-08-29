@@ -1,11 +1,16 @@
 import {
   Boxes,
+  Atom,
+  BrainCircuit,
+  CircleDotDashed,
   GitBranch,
   LayoutDashboard,
   Menu,
   Radar,
+  Route,
   ScanLine,
   ShieldCheck,
+  Sparkles,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -17,6 +22,11 @@ const navigation = [
   { to: "/assets", label: "Asset explorer", icon: Boxes },
   { to: "/graph", label: "Knowledge graph", icon: GitBranch },
   { to: "/risks", label: "Risk analysis", icon: ShieldCheck },
+  { to: "/quantum-risk", label: "Quantum risk", icon: Atom },
+  { to: "/intelligence", label: "Asset intelligence", icon: BrainCircuit },
+  { to: "/blast-radius", label: "Blast radius", icon: CircleDotDashed },
+  { to: "/migration", label: "Migration planner", icon: Route },
+  { to: "/pqc", label: "PQC recommendations", icon: Sparkles },
 ];
 
 function Brand() {
@@ -69,7 +79,7 @@ function SidebarContent({ close }: { close?: () => void }) {
           </span>
           Discovery engine ready
         </div>
-        <p className="mt-2 text-[11px] leading-4 text-slate-600">Phase 1.5 · real discovery</p>
+        <p className="mt-2 text-[11px] leading-4 text-slate-600">Phase 2 · quantum intelligence</p>
       </div>
     </>
   );

@@ -9,7 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.app.database import SessionLocal, init_db
-from backend.app.models import Asset, AssetRelationship, Project, Scan
+from backend.app.models import Asset, AssetRelationship, Project, RiskFinding, Scan
+from backend.app.services.intelligence_service import IntelligenceService
 from backend.app.services.risk_service import RiskService
 from cbom_engine import CBOMGenerator
 
@@ -17,11 +18,15 @@ DATA_PATH = Path(__file__).resolve().parents[2] / "sample_data" / "securebank.js
 
 
 def seed_securebank_demo(db: Session) -> Project:
+    payload = json.loads(DATA_PATH.read_text(encoding="utf-8"))
     existing = db.scalar(select(Project).where(Project.name == "SecureBank Enterprise"))
     if existing:
+        _ensure_phase2_demo(db, existing, payload)
+        _refresh_demo_documents(db, existing)
+        db.commit()
+        db.refresh(existing)
         return existing
 
-    payload = json.loads(DATA_PATH.read_text(encoding="utf-8"))
     project = Project(
         name=payload["company"],
         description=payload["description"],
@@ -48,6 +53,7 @@ def seed_securebank_demo(db: Session) -> Project:
             "name": application["name"],
             "location": application["location"],
             "evidence": "SecureBank enterprise application inventory",
+            "details": application.get("details", {}),
         }
         for asset in application["assets"]:
             definitions[asset["key"]] = asset
@@ -93,7 +99,17 @@ def seed_securebank_demo(db: Session) -> Project:
         risks.append(risk)
     db.flush()
 
-    risk_by_asset = {risk.asset_id: risk for risk in risks}
+    _ensure_phase2_demo(db, project, payload)
+    db.flush()
+
+    all_assets = list(db.scalars(select(Asset).where(Asset.project_id == project.id)))
+    all_relationships = list(
+        db.scalars(
+            select(AssetRelationship).where(AssetRelationship.project_id == project.id)
+        )
+    )
+    all_risks = list(db.scalars(select(RiskFinding).where(RiskFinding.project_id == project.id)))
+    risk_by_asset = {risk.asset_id: risk for risk in all_risks}
     asset_payloads = [
         {
             "id": asset.id,
@@ -107,7 +123,7 @@ def seed_securebank_demo(db: Session) -> Project:
             "risk_score": risk_by_asset[asset.id].score,
             "risk_severity": risk_by_asset[asset.id].severity,
         }
-        for asset in assets_by_key.values()
+        for asset in all_assets
     ]
     relationship_payloads = [
         {
@@ -116,7 +132,7 @@ def seed_securebank_demo(db: Session) -> Project:
             "relationship_type": relationship.relationship_type,
             "evidence": relationship.evidence,
         }
-        for relationship in relationships
+        for relationship in all_relationships
     ]
     scan.cbom = CBOMGenerator().generate(
         project={"id": project.id, "name": project.name, "criticality": project.criticality},
@@ -125,15 +141,202 @@ def seed_securebank_demo(db: Session) -> Project:
         relationships=relationship_payloads,
     )
     scan.summary = {
-        "assets_discovered": len(assets_by_key),
-        "asset_types": dict(Counter(asset.asset_type for asset in assets_by_key.values())),
-        "risk_severity": dict(Counter(risk.severity for risk in risks)),
+        "assets_discovered": len(all_assets),
+        "asset_types": dict(Counter(asset.asset_type for asset in all_assets)),
+        "risk_severity": dict(Counter(risk.severity for risk in all_risks)),
         "warnings": [],
         "scanner": {"demo": True, "company": project.name},
     }
     db.commit()
     db.refresh(project)
     return project
+
+
+def _ensure_phase2_demo(db: Session, project: Project, payload: dict[str, Any]) -> None:
+    scan = db.scalar(
+        select(Scan).where(Scan.project_id == project.id).order_by(Scan.created_at.desc()).limit(1)
+    )
+    if not scan:
+        return
+    payment_certificate = db.scalar(
+        select(Asset).where(
+            Asset.project_id == project.id,
+            Asset.asset_type == "certificate",
+            Asset.algorithm.ilike("%RSA%"),
+            Asset.location.ilike("%payment%"),
+        )
+    )
+    payment_service = db.scalar(
+        select(Asset).where(
+            Asset.project_id == project.id,
+            Asset.asset_type == "application",
+            Asset.name == "Payment Service",
+        )
+    )
+    if not payment_certificate or not payment_service:
+        return
+    payment_certificate.name = "SecureBank RSA-2048 Certificate"
+    payment_certificate.details = {
+        **payment_certificate.details,
+        "business_criticality": "critical",
+        "owner": "Enterprise PKI",
+        "data_lifetime_years": 20,
+        "data_sensitivity": "financial",
+        "evidence_sources": ["source_code", "docker", "tls"],
+        "legacy_technology": True,
+        "downtime_requirement": "rolling",
+        "compatibility": "hybrid-ready",
+        "use_case": "key_exchange",
+    }
+    payment_service.details = {
+        **payment_service.details,
+        "business_criticality": "critical",
+        "owner": "Payments Engineering",
+    }
+
+    demo = payload["phase2_demo"]
+    expected = int(demo["dependent_services"])
+    dependent_assets = [payment_service]
+    customer_database = db.scalar(
+        select(Asset).where(
+            Asset.project_id == project.id,
+            Asset.asset_type == "application",
+            Asset.name == "Customer Database",
+        )
+    )
+    if not customer_database:
+        customer_database = Asset(
+            project_id=project.id,
+            scan_id=scan.id,
+            asset_type="application",
+            name="Customer Database",
+            location="data/customer-records",
+            evidence="20-year regulated financial record retention",
+            confidence=1.0,
+            dependency_count=1,
+            details={
+                "business_criticality": "critical",
+                "owner": "Data Platform",
+                "data_lifetime_years": 20,
+                "data_sensitivity": "financial",
+            },
+        )
+        db.add(customer_database)
+        db.flush()
+        _ensure_basic_risk(db, customer_database, project)
+    dependent_assets.append(customer_database)
+
+    for index in range(1, expected - 1):
+        name = f"Dependent Banking Service {index:02d}"
+        application = db.scalar(
+            select(Asset).where(
+                Asset.project_id == project.id,
+                Asset.asset_type == "application",
+                Asset.name == name,
+            )
+        )
+        if not application:
+            application = Asset(
+                project_id=project.id,
+                scan_id=scan.id,
+                asset_type="application",
+                name=name,
+                location=f"services/dependent-{index:02d}",
+                evidence="SecureBank RSA certificate blast-radius simulation",
+                confidence=1.0,
+                dependency_count=1,
+                details={
+                    "business_criticality": "high",
+                    "owner": "Banking Platform",
+                },
+            )
+            db.add(application)
+            db.flush()
+            _ensure_basic_risk(db, application, project)
+        dependent_assets.append(application)
+
+    existing_edges = {
+        (source, target)
+        for source, target in db.execute(
+            select(
+                AssetRelationship.source_asset_id,
+                AssetRelationship.target_asset_id,
+            ).where(AssetRelationship.project_id == project.id)
+        )
+    }
+    for application in dependent_assets:
+        key = (payment_certificate.id, application.id)
+        if key in existing_edges:
+            continue
+        db.add(
+            AssetRelationship(
+                project_id=project.id,
+                source_asset_id=payment_certificate.id,
+                target_asset_id=application.id,
+                relationship_type="PROTECTS",
+                evidence="Shared SecureBank enterprise certificate",
+            )
+        )
+    db.flush()
+    IntelligenceService().analyze_project(db, project)
+    db.flush()
+
+
+def _ensure_basic_risk(db: Session, asset: Asset, project: Project) -> None:
+    existing = db.scalar(select(RiskFinding).where(RiskFinding.asset_id == asset.id))
+    if not existing:
+        db.add(RiskService().assess_asset(asset, project))
+
+
+def _refresh_demo_documents(db: Session, project: Project) -> None:
+    scan = db.scalar(
+        select(Scan).where(Scan.project_id == project.id).order_by(Scan.created_at.desc()).limit(1)
+    )
+    if not scan:
+        return
+    assets = list(db.scalars(select(Asset).where(Asset.project_id == project.id)))
+    relationships = list(
+        db.scalars(
+            select(AssetRelationship).where(AssetRelationship.project_id == project.id)
+        )
+    )
+    risks = list(db.scalars(select(RiskFinding).where(RiskFinding.project_id == project.id)))
+    risk_by_asset = {risk.asset_id: risk for risk in risks}
+    scan.cbom = CBOMGenerator().generate(
+        project={"id": project.id, "name": project.name, "criticality": project.criticality},
+        scan={"id": scan.id, "source_type": scan.source_type, "target": scan.target},
+        assets=[
+            {
+                "id": asset.id,
+                "asset_type": asset.asset_type,
+                "name": asset.name,
+                "algorithm": asset.algorithm,
+                "version": asset.version,
+                "location": asset.location,
+                "evidence": asset.evidence,
+                "confidence": asset.confidence,
+                "risk_score": risk_by_asset[asset.id].score,
+                "risk_severity": risk_by_asset[asset.id].severity,
+            }
+            for asset in assets
+        ],
+        relationships=[
+            {
+                "source_asset_id": relationship.source_asset_id,
+                "target_asset_id": relationship.target_asset_id,
+                "relationship_type": relationship.relationship_type,
+                "evidence": relationship.evidence,
+            }
+            for relationship in relationships
+        ],
+    )
+    scan.summary = {
+        "assets_discovered": len(assets),
+        "asset_types": dict(Counter(asset.asset_type for asset in assets)),
+        "risk_severity": dict(Counter(risk.severity for risk in risks)),
+        "warnings": [],
+        "scanner": {"demo": True, "company": project.name, "phase": "2"},
+    }
 
 
 def main() -> None:

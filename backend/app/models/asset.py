@@ -6,6 +6,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
+    from backend.app.models.business import BusinessContext
+    from backend.app.models.intelligence import MigrationPlan, RiskAnalysis
     from backend.app.models.project import Project
     from backend.app.models.risk import RiskFinding
     from backend.app.models.scan import Scan
@@ -38,6 +40,15 @@ class Asset(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     project: Mapped["Project"] = relationship(back_populates="assets")
     scan: Mapped["Scan"] = relationship(back_populates="assets")
     risk: Mapped["RiskFinding | None"] = relationship(
+        back_populates="asset", cascade="all, delete-orphan", uselist=False
+    )
+    business_context: Mapped["BusinessContext | None"] = relationship(
+        back_populates="asset", cascade="all, delete-orphan", uselist=False
+    )
+    intelligence: Mapped["RiskAnalysis | None"] = relationship(
+        back_populates="asset", cascade="all, delete-orphan", uselist=False
+    )
+    migration_plan: Mapped["MigrationPlan | None"] = relationship(
         back_populates="asset", cascade="all, delete-orphan", uselist=False
     )
 

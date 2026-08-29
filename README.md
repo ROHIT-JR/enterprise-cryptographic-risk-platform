@@ -4,7 +4,12 @@
 
 ECDAT-X gives security teams an evidence-backed map of where cryptography exists, what depends on it, and why it matters. Phase 1.5 accepts repository ZIPs, Docker image references, and TLS endpoints; normalizes discoveries into an inventory and CBOM; projects relationships into Neo4j; and calculates explainable rule-based risk.
 
-> Phase 1 deliberately excludes authentication, multi-tenancy, machine-learning prediction, migration optimization, and an AI chatbot. Deploy it only on a trusted administrative network.
+Phase 2 adds a cryptographic intelligence layer that answers how dangerous a finding is, which
+systems are affected, what must migrate first, and which post-quantum alternative fits the
+environment. It preserves every Phase 1.5 scanner and persistence contract.
+
+> Phase 2 deliberately excludes authentication, multi-tenancy, cloud deployment, automated
+> migration execution, and an AI chatbot. Deploy it only on a trusted administrative network.
 
 ## Phase 1.5 capabilities
 
@@ -20,6 +25,62 @@ ECDAT-X gives security teams an evidence-backed map of where cryptography exists
 - Deterministic algorithm + dependency + criticality risk scoring
 - React dashboard, upload center, asset explorer, React Flow graph, and risk analysis
 - SecureBank Enterprise demo estate for immediate evaluation
+
+## Phase 2 cryptographic intelligence
+
+- Multi-channel evidence correlation across source, Docker, TLS, certificates, and libraries
+- Configurable quantum-vulnerability knowledge in `risk_engine/algorithm_risks.json`
+- Harvest Now, Decrypt Later analysis using sensitivity, lifetime, exposure, and algorithm risk
+- Neo4j-backed dependency degree, blast radius, and critical-path impact with PostgreSQL fallback
+- Assignable business ownership, criticality, retention, downtime, and compatibility context
+- Migration complexity scoring for dependencies, legacy technology, downtime, and compatibility
+- Normalized 0–100 final risk with a complete six-factor explanation
+- Constraint-aware ML-KEM and ML-DSA recommendations with hybrid transition strategies
+- Dependency-aware roadmap waves that migrate primitives, shared libraries, then applications
+- Quantum Risk, Asset Intelligence, Blast Radius, Migration Planner, and PQC dashboard pages
+
+The SecureBank Phase 2 scenario demonstrates a shared RSA-2048 certificate protecting 43 systems,
+20-year customer-data retention, a final risk score of 94, and a three-wave PQC migration plan.
+
+## ECDAT-X intelligence architecture
+
+```mermaid
+flowchart LR
+    DISCOVERY[Phase 1.5 discovery] --> INVENTORY[(Normalized inventory)]
+    INVENTORY --> EVIDENCE[Evidence intelligence]
+    INVENTORY --> QUANTUM[Quantum classification]
+    INVENTORY --> HNDL[HNDL analysis]
+    INVENTORY --> GRAPH[Dependency centrality]
+    INVENTORY --> BUSINESS[Business context]
+    EVIDENCE --> FINAL[Final risk engine]
+    QUANTUM --> FINAL
+    HNDL --> FINAL
+    GRAPH --> FINAL
+    BUSINESS --> FINAL
+    COMPLEXITY[Migration complexity] --> FINAL
+    FINAL --> PQC[PQC recommendations]
+    GRAPH --> ROADMAP[Migration roadmap]
+    PQC --> ROADMAP
+```
+
+### Risk scoring methodology
+
+The ECDAT score is a weighted, normalized sum: quantum vulnerability 30%, HNDL exposure 20%,
+dependency centrality 15%, business criticality 15%, migration complexity 10%, and evidence
+confidence 10%. Scores of 0–30 are Low, 31–60 Medium, 61–80 High, and 81–100 Critical. Every
+response includes the component contributions and plain-language reasons.
+
+### Migration workflow
+
+1. Confirm a finding through independent evidence channels.
+2. Classify quantum vulnerability and HNDL exposure.
+3. Calculate the affected application blast radius.
+4. Apply business and operational migration constraints.
+5. Select ML-KEM, ML-DSA, or a hybrid TLS strategy.
+6. Sequence trust anchors and primitives before shared libraries and applications.
+
+See [Phase 2 architecture](docs/phase2-architecture.md) for the model, persistence, API, and
+roadmap contracts.
 
 ## How repository discovery works
 
@@ -170,6 +231,15 @@ The repository includes GitHub Actions for the same backend and frontend checks 
 Phase 1.5 compatibility aliases are also available at `POST /api/upload/repository`,
 `GET /api/assets`, `GET /api/cbom/{project_id}`, `GET /api/risk`, and `GET /api/graph`.
 
+| Phase 2 workflow | Endpoint |
+|---|---|
+| Final quantum risk | `GET /api/intelligence/risk` |
+| HNDL exposure | `GET /api/intelligence/hndl` |
+| Blast radius | `GET /api/intelligence/blast-radius` |
+| Business context | `PUT /api/intelligence/business-context/{asset_id}` |
+| PQC recommendations | `GET /api/migration/recommendations` |
+| Migration roadmap | `GET /api/migration/roadmap` |
+
 Interactive OpenAPI documentation is exposed at `/docs`. Examples and response contracts are in [docs/api.md](docs/api.md).
 
 ## Repository layout
@@ -180,7 +250,8 @@ frontend/         React/Vite/Tailwind analyst dashboard
 scanners/         Scanner plugin contracts and built-in discovery plugins
 cbom_engine/      ECDAT-CBOM generator
 knowledge_graph/  Neo4j projection and graph contracts
-risk_engine/      Explainable Phase 1 risk rules
+risk_engine/      Phase 1 compatibility rules and Phase 2 intelligence engines
+migration_engine/ PQC selection and dependency-aware roadmap generation
 sample_data/      Seed data used by the built-in dashboard demo
 sample_enterprise/ Uploadable mixed-language SecureBank discovery fixture
 tests/            Backend, scanner, CBOM, risk, and API-contract tests
@@ -201,6 +272,7 @@ The dashboard is responsive and includes dedicated views for upload progress, in
 - **Private TLS targets:** disabled by default. Enable only for a controlled internal deployment.
 - **Authentication:** intentionally out of Phase 1. Put the application behind an authenticated reverse proxy before any shared deployment.
 
-## Phase 2-ready extension points
+## Phase 3-ready extension points
 
-The domain boundaries allow future quantum risk profiles, harvest-now-decrypt-later analysis, graph centrality, PQC recommendations, and migration optimization without replacing scanner or persistence contracts. See the decision boundaries in [docs/architecture.md](docs/architecture.md).
+The domain boundaries allow future multi-tenancy, cloud deployment, continuous migration execution,
+and a governed AI assistant without replacing scanner, intelligence, or persistence contracts.

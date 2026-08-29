@@ -16,6 +16,23 @@ base path:
 These aliases use the same services, database records, validation, and response objects as their
 versioned counterparts.
 
+## Phase 2 intelligence and migration
+
+```http
+GET /api/intelligence/risk
+GET /api/intelligence/hndl
+GET /api/intelligence/blast-radius?asset_id={asset_id}
+PUT /api/intelligence/business-context/{asset_id}
+GET /api/migration/recommendations
+GET /api/migration/roadmap
+```
+
+The risk response contains six normalized component scores, evidence channels, HNDL status,
+dependent-system count, severity, and explanation. The blast-radius endpoint uses Neo4j when it is
+available and the persisted PostgreSQL projection otherwise. Migration recommendations include
+the current algorithm, PQC target, hybrid strategy, performance and compatibility characteristics,
+complexity, and roadmap wave.
+
 ## Health
 
 ```http

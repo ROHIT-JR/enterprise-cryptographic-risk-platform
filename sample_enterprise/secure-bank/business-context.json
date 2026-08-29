@@ -1,0 +1,19 @@
+{
+  "customer_database": {
+    "owner": "Data Platform",
+    "data_sensitivity": "financial",
+    "data_lifetime_years": 20,
+    "protected_by": "RSA-2048"
+  },
+  "payment_service": {
+    "owner": "Payments Engineering",
+    "business_criticality": "critical",
+    "downtime_requirement": "rolling"
+  },
+  "rsa_certificate": {
+    "owner": "Enterprise PKI",
+    "algorithm": "RSA-2048",
+    "dependent_services": 43,
+    "evidence_sources": ["source_code", "docker", "tls"]
+  }
+}

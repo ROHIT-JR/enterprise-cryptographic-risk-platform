@@ -6,7 +6,7 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.app.api import api_router, health, phase15
+from backend.app.api import api_router, health, phase15, phase2
 from backend.app.config import get_settings
 from backend.app.database import SessionLocal, init_db
 from backend.app.logging_config import configure_logging
@@ -30,8 +30,8 @@ async def lifespan(_: FastAPI):
 def create_app() -> FastAPI:
     application = FastAPI(
         title=settings.app_name,
-        version="0.1.0",
-        description="Enterprise cryptographic discovery, CBOM, graph, and explainable risk API.",
+        version="0.2.0",
+        description="Enterprise cryptographic discovery and quantum-risk intelligence API.",
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url=f"{settings.api_prefix}/openapi.json",
@@ -41,7 +41,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "OPTIONS"],
         allow_headers=["Accept", "Content-Type", "X-Request-ID"],
     )
 
@@ -57,6 +57,7 @@ def create_app() -> FastAPI:
 
     application.include_router(health.public_router)
     application.include_router(phase15.router)
+    application.include_router(phase2.router)
     application.include_router(api_router, prefix=settings.api_prefix)
     return application
 

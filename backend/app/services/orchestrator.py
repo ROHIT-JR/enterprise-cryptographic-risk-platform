@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from backend.app.config import get_settings
 from backend.app.database import SessionLocal
 from backend.app.models import Asset, AssetRelationship, Project, RiskFinding, Scan
+from backend.app.services.intelligence_service import IntelligenceService
 from backend.app.services.neo4j_service import create_graph_store
 from backend.app.services.risk_service import RiskService
 from cbom_engine import CBOMGenerator
@@ -131,6 +132,10 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
             risks.append(risk)
         db.flush()
 
+        intelligence = IntelligenceService().analyze_project(db, project)
+        scan.progress = 74
+        db.flush()
+
         asset_payloads = [
             _asset_mapping(asset, next((risk for risk in risks if risk.asset_id == asset.id), None))
             for asset in rows_by_ref.values()
@@ -166,6 +171,15 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
             "assets_discovered": len(rows_by_ref),
             "asset_types": dict(type_counts),
             "risk_severity": dict(severity_counts),
+            "quantum_intelligence": {
+                "assets_analyzed": len(intelligence),
+                "critical_quantum_risks": sum(
+                    item.quantum_classification == "critical" for item in intelligence
+                ),
+                "hndl_exposures": sum(
+                    item.hndl_risk in {"critical", "high"} for item in intelligence
+                ),
+            },
             "warnings": warnings,
             "scanner": result.metadata,
         }

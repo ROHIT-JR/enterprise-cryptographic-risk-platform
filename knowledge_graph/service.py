@@ -210,3 +210,28 @@ class Neo4jGraphStore:
                         properties=dict(relationship),
                     )
         return GraphPayload(nodes=list(nodes.values()), edges=list(edges.values()), source="neo4j")
+
+    def dependency_metrics(self, *, project_id: str) -> dict[str, dict[str, Any]]:
+        """Return Neo4j-backed degree and application blast-radius metrics by asset."""
+        if not self._driver:
+            raise ServiceUnavailable("Neo4j is not configured")
+        query = """
+            MATCH (p:Project {id: $project_id})-[:CONTAINS]->(a:Asset)
+            OPTIONAL MATCH (a)-[]-(neighbor:Asset)
+            WITH p, a, count(DISTINCT neighbor) AS degree
+            OPTIONAL MATCH path =
+                (a)-[:USES|CONTAINS|DEPENDS_ON|PROTECTS*1..4]-(application:Asset:Application)
+            WHERE all(node IN nodes(path) WHERE node:Asset)
+              AND EXISTS { MATCH (p)-[:CONTAINS]->(application) }
+            RETURN a.id AS asset_id,
+                   degree,
+                   collect(DISTINCT application.id) AS dependent_ids
+        """
+        metrics: dict[str, dict[str, Any]] = {}
+        with self._driver.session() as session:
+            for record in session.run(query, project_id=project_id):
+                metrics[str(record["asset_id"])] = {
+                    "degree": int(record["degree"] or 0),
+                    "dependent_ids": [str(item) for item in record["dependent_ids"] if item],
+                }
+        return metrics

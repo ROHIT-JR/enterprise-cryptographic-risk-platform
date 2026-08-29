@@ -1,0 +1,11 @@
+{
+  "RSA": {"classification": "critical", "score": 100, "quantum_vulnerable": true, "reason": "Shor's algorithm breaks RSA key establishment and signatures."},
+  "ECC": {"classification": "critical", "score": 100, "quantum_vulnerable": true, "reason": "Shor's algorithm breaks elliptic-curve cryptography."},
+  "ECDH": {"classification": "critical", "score": 100, "quantum_vulnerable": true, "reason": "ECDH key agreement is vulnerable to Shor's algorithm."},
+  "DIFFIE-HELLMAN": {"classification": "critical", "score": 100, "quantum_vulnerable": true, "reason": "Classical Diffie-Hellman is vulnerable to Shor's algorithm."},
+  "AES-128": {"classification": "medium", "score": 50, "quantum_vulnerable": false, "reason": "Grover-style search reduces the effective security margin of AES-128."},
+  "AES-256": {"classification": "low", "score": 20, "quantum_vulnerable": false, "reason": "AES-256 retains a strong security margin against known quantum attacks."},
+  "SHA-256": {"classification": "low", "score": 15, "quantum_vulnerable": false, "reason": "SHA-256 remains acceptable with a reduced quantum security margin."},
+  "ML-KEM": {"classification": "secure", "score": 0, "quantum_vulnerable": false, "reason": "ML-KEM is standardized for post-quantum key encapsulation."},
+  "ML-DSA": {"classification": "secure", "score": 0, "quantum_vulnerable": false, "reason": "ML-DSA is standardized for post-quantum digital signatures."}
+}

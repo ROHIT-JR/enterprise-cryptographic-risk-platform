@@ -1,18 +1,19 @@
 {
   "company": "SecureBank Enterprise",
-  "description": "Reference banking environment for ECDAT-X Phase 1 demonstrations.",
+  "description": "Reference banking environment for ECDAT-X Phase 2 intelligence demonstrations.",
   "criticality": "critical",
   "applications": [
     {
       "key": "payment-service",
       "name": "Payment Service",
       "location": "services/payment",
+      "details": {"business_criticality": "critical", "owner": "Payments Engineering"},
       "assets": [
         {"key": "payment-openssl", "type": "library", "name": "OpenSSL", "version": "3.0.13", "location": "payment-api:container", "evidence": "libssl3 3.0.13 installed"},
         {"key": "payment-rsa", "type": "algorithm", "name": "RSA-2048", "algorithm": "RSA-2048", "location": "services/payment/signing.py:48", "evidence": "rsa.generate_private_key(public_exponent=65537, key_size=2048)"},
         {"key": "payment-aes", "type": "algorithm", "name": "AES-256-GCM", "algorithm": "AES-256-GCM", "location": "services/payment/vault.py:77", "evidence": "AESGCM.generate_key(bit_length=256)"},
         {"key": "payment-tls", "type": "protocol", "name": "TLS 1.2", "algorithm": "TLS 1.2", "location": "payments.securebank.example:443", "evidence": "Negotiated protocol: TLSv1.2"},
-        {"key": "payment-cert", "type": "certificate", "name": "payments.securebank.example", "algorithm": "RSA-2048", "location": "payments.securebank.example:443/certificate", "evidence": "X.509 public key RSA-2048", "details": {"status": "valid"}}
+        {"key": "payment-cert", "type": "certificate", "name": "SecureBank RSA-2048 Certificate", "algorithm": "RSA-2048", "location": "payments.securebank.example:443/certificate", "evidence": "X.509 public key RSA-2048", "details": {"status": "valid", "business_criticality": "critical", "owner": "Enterprise PKI", "data_lifetime_years": 20, "data_sensitivity": "financial", "evidence_sources": ["source_code", "docker", "tls"], "legacy_technology": true, "downtime_requirement": "rolling", "compatibility": "hybrid-ready", "use_case": "key_exchange"}}
       ],
       "relationships": [
         ["payment-service", "payment-openssl", "USES"],
@@ -21,6 +22,14 @@
         ["payment-service", "payment-tls", "USES"],
         ["payment-cert", "payment-service", "PROTECTS"]
       ]
+    },
+    {
+      "key": "customer-database",
+      "name": "Customer Database",
+      "location": "data/customer-records",
+      "details": {"business_criticality": "critical", "owner": "Data Platform", "data_lifetime_years": 20, "data_sensitivity": "financial"},
+      "assets": [],
+      "relationships": []
     },
     {
       "key": "authentication-service",
@@ -77,6 +86,10 @@
         ["vpn-cert", "vpn-gateway", "PROTECTS"]
       ]
     }
-  ]
+  ],
+  "phase2_demo": {
+    "rsa_certificate_key": "payment-cert",
+    "customer_database_key": "customer-database",
+    "dependent_services": 43
+  }
 }
-
