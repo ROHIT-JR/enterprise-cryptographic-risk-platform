@@ -25,6 +25,8 @@ CRYPTO_PACKAGES = re.compile(
 
 
 class DockerScanner(ScannerPlugin):
+    name = "Docker Cryptographic Discovery"
+    version = "3.0.0"
     source_type = ScanSource.DOCKER
 
     def __init__(self, *, enabled: bool = True, timeout_seconds: int = 45) -> None:

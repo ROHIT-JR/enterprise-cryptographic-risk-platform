@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 class Scan(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "scans"
 
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     project_id: Mapped[str] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
     )

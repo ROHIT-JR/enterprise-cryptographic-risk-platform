@@ -3,8 +3,9 @@ from neo4j.exceptions import Neo4jError, ServiceUnavailable
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend.app.auth.dependencies import get_current_user
 from backend.app.database import get_db
-from backend.app.models import Asset, AssetRelationship, Project, RiskFinding
+from backend.app.models import Asset, AssetRelationship, Project, RiskFinding, User
 from backend.app.schemas.graph import GraphEdgeResponse, GraphNodeResponse, GraphResponse
 from backend.app.services.neo4j_service import create_graph_store
 
@@ -16,21 +17,43 @@ def get_graph(
     project_id: str | None = None,
     limit: int = Query(500, ge=1, le=2_000),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> GraphResponse:
+    organization_id = user.organization_id if isinstance(user, User) else None
+    if project_id and organization_id:
+        owned = db.scalar(
+            select(Project.id).where(
+                Project.id == project_id, Project.organization_id == organization_id
+            )
+        )
+        if not owned:
+            return GraphResponse(nodes=[], edges=[], source="postgresql")
     store = create_graph_store()
     try:
         if store.health():
-            payload = store.query(project_id=project_id, limit=limit)
+            payload = store.query(
+                project_id=project_id, organization_id=organization_id, limit=limit
+            )
             return GraphResponse(**payload.model_dump())
     except (Neo4jError, ServiceUnavailable, OSError):
         pass
     finally:
         store.close()
-    return _postgres_graph(db, project_id=project_id, limit=limit)
+    return _postgres_graph(
+        db, project_id=project_id, organization_id=organization_id, limit=limit
+    )
 
 
-def _postgres_graph(db: Session, *, project_id: str | None, limit: int) -> GraphResponse:
+def _postgres_graph(
+    db: Session,
+    *,
+    project_id: str | None,
+    organization_id: str | None = None,
+    limit: int,
+) -> GraphResponse:
     project_statement = select(Project)
+    if organization_id:
+        project_statement = project_statement.where(Project.organization_id == organization_id)
     if project_id:
         project_statement = project_statement.where(Project.id == project_id)
     projects = list(db.scalars(project_statement.order_by(Project.name)))

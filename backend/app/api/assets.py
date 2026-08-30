@@ -3,8 +3,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from backend.app.api.serializers import serialize_asset
+from backend.app.auth.dependencies import get_current_user
 from backend.app.database import get_db
-from backend.app.models import Asset, RiskFinding
+from backend.app.models import Asset, RiskFinding, User
 from backend.app.schemas.asset import AssetPage, AssetResponse
 
 router = APIRouter(prefix="/assets", tags=["assets"])
@@ -19,8 +20,11 @@ def list_assets(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> AssetPage:
     filters = []
+    if isinstance(user, User):
+        filters.append(Asset.organization_id == user.organization_id)
     if project_id:
         filters.append(Asset.project_id == project_id)
     if asset_type:
@@ -62,12 +66,16 @@ def list_assets(
 
 
 @router.get("/{asset_id}", response_model=AssetResponse)
-def get_asset(asset_id: str, db: Session = Depends(get_db)) -> AssetResponse:
+def get_asset(
+    asset_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> AssetResponse:
     asset = db.scalar(
         select(Asset)
         .where(Asset.id == asset_id)
         .options(joinedload(Asset.project), joinedload(Asset.risk))
     )
-    if not asset:
+    if not asset or (isinstance(user, User) and asset.organization_id != user.organization_id):
         raise HTTPException(status_code=404, detail="Asset not found")
     return serialize_asset(asset)

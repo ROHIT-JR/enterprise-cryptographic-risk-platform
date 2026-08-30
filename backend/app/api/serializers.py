@@ -15,6 +15,7 @@ def serialize_asset(asset: Asset) -> AssetResponse:
     )
     return AssetResponse(
         id=asset.id,
+        organization_id=asset.organization_id,
         project_id=asset.project_id,
         project_name=asset.project.name,
         scan_id=asset.scan_id,
@@ -35,6 +36,7 @@ def serialize_asset(asset: Asset) -> AssetResponse:
 def serialize_risk(risk: RiskFinding, asset: Asset, project: Project) -> RiskResponse:
     return RiskResponse(
         id=risk.id,
+        organization_id=risk.organization_id,
         asset_id=asset.id,
         asset_name=asset.name,
         asset_type=asset.asset_type,

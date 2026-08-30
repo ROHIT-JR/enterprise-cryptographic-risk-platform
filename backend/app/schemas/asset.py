@@ -12,6 +12,7 @@ class AssetRiskSummary(BaseModel):
 
 class AssetResponse(BaseModel):
     id: str
+    organization_id: str
     project_id: str
     project_name: str
     scan_id: str

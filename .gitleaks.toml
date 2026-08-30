@@ -1,0 +1,11 @@
+title = "ECDAT-X secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documented placeholders in environment templates"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.production\.example$''',
+]

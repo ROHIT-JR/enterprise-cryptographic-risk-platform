@@ -15,8 +15,8 @@ from scanners.base import (
     ScanResult,
     ScanSource,
 )
-from scanners.exceptions import InvalidScanTargetError
 from scanners.docker_scanner import DockerfileAnalyzer
+from scanners.exceptions import InvalidScanTargetError
 from scanners.patterns import (
     ALGORITHM_PATTERNS,
     DEPENDENCY_LIBRARY_NAMES,
@@ -80,6 +80,8 @@ LANGUAGE_BY_SUFFIX = {
 
 
 class RepositoryScanner(ScannerPlugin):
+    name = "Source Code Cryptographic Discovery"
+    version = "3.0.0"
     source_type = ScanSource.REPOSITORY
 
     def __init__(self, *, max_file_bytes: int = 2 * 1024 * 1024) -> None:

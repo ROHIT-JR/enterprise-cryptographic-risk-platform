@@ -23,6 +23,8 @@ from scanners.exceptions import InvalidScanTargetError, ScannerError
 
 
 class TLSScanner(ScannerPlugin):
+    name = "TLS Cryptographic Discovery"
+    version = "3.0.0"
     source_type = ScanSource.TLS
 
     def __init__(self, *, timeout_seconds: float = 8, allow_private_targets: bool = False) -> None:

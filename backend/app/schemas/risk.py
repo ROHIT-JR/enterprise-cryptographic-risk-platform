@@ -8,6 +8,7 @@ from backend.app.schemas.common import DistributionItem
 
 class RiskResponse(BaseModel):
     id: str
+    organization_id: str
     asset_id: str
     asset_name: str
     asset_type: str

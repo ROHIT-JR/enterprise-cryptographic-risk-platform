@@ -8,8 +8,25 @@ Phase 2 adds a cryptographic intelligence layer that answers how dangerous a fin
 systems are affected, what must migrate first, and which post-quantum alternative fits the
 environment. It preserves every Phase 1.5 scanner and persistence contract.
 
-> Phase 2 deliberately excludes authentication, multi-tenancy, cloud deployment, automated
-> migration execution, and an AI chatbot. Deploy it only on a trusted administrative network.
+Phase 3 turns the platform into an organization-isolated enterprise service with JWT
+authentication, role-based access, audit trails, exportable reports, production deployment assets,
+security CI, and a public scanner extension contract. Discovery and intelligence remain intact.
+
+> ECDAT-X is a security administration system. Use the production profile, TLS termination,
+> external secrets, and restricted scanner workers before exposing it beyond a trusted network.
+
+## Phase 3 enterprise platform
+
+- JWT access tokens, rotating refresh tokens, and salted scrypt password hashing
+- Administrator, security analyst, auditor, and viewer permissions
+- Organization isolation for projects, scans, assets, risks, and migration plans
+- Audit history and cryptographic inventory, quantum-risk, migration, PDF, JSON, and CBOM exports
+- Admin, security-operations, and auditor dashboard experiences
+- Stable scanner plugin interface and Python entry-point discovery
+- Full component health, API/proxy rate limits, hardened headers, and exact-origin CORS
+- Alembic migrations, production Compose, internal data networks, and Nginx reverse proxy
+- Test, build, dependency, secret, and Trivy GitHub Actions
+- Apache-2.0 licensing and contributor/security/community governance
 
 ## Phase 1.5 capabilities
 
@@ -142,7 +159,8 @@ flowchart LR
 
 PostgreSQL is authoritative for projects, scans, assets, relationships, and risk findings. Neo4j is a rebuildable projection; if Neo4j is unavailable, the graph API continues from PostgreSQL.
 
-See [Architecture](docs/architecture.md), [Development](docs/development.md), and [API reference](docs/api.md) for implementation details.
+See [Architecture](docs/architecture.md), [Development](docs/development.md), and
+[Enterprise API reference](docs/api-reference.md) for implementation details.
 
 ## Requirements
 
@@ -160,6 +178,10 @@ docker-compose up
 ```
 
 No cloud account or external database is required. Compose builds the development images, installs dependencies, waits for PostgreSQL and Neo4j, starts FastAPI, and serves Vite on port 5173. The SecureBank demo is seeded on first startup.
+
+Local demo users share the `ECDAT_DEMO_PASSWORD` value from `.env`: `securebank-admin`,
+`security-analyst`, and `security-auditor`, in organization `SecureBank`. Replace or disable these
+accounts outside the local demo.
 
 ## Local access
 
@@ -207,7 +229,7 @@ npm run dev
 
 ```bash
 pytest
-ruff check backend scanners cbom_engine knowledge_graph risk_engine tests
+ruff check backend scanners cbom_engine knowledge_graph risk_engine migration_engine tests
 cd frontend && npm run typecheck && npm run test -- --run && npm run build
 ```
 
@@ -218,6 +240,8 @@ The repository includes GitHub Actions for the same backend and frontend checks 
 | Workflow | Endpoint |
 |---|---|
 | PostgreSQL + Neo4j health | `GET /health` |
+| Full platform health | `GET /health/full` |
+| Login / refresh | `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh` |
 | Dashboard summary | `GET /api/v1/dashboard` |
 | Repository discovery | `POST /api/v1/scans/repository` |
 | Docker discovery | `POST /api/v1/scans/docker` |
@@ -233,14 +257,16 @@ Phase 1.5 compatibility aliases are also available at `POST /api/upload/reposito
 
 | Phase 2 workflow | Endpoint |
 |---|---|
-| Final quantum risk | `GET /api/intelligence/risk` |
-| HNDL exposure | `GET /api/intelligence/hndl` |
-| Blast radius | `GET /api/intelligence/blast-radius` |
-| Business context | `PUT /api/intelligence/business-context/{asset_id}` |
-| PQC recommendations | `GET /api/migration/recommendations` |
-| Migration roadmap | `GET /api/migration/roadmap` |
+| Final quantum risk | `GET /api/v1/intelligence/risk` |
+| HNDL exposure | `GET /api/v1/intelligence/hndl` |
+| Blast radius | `GET /api/v1/intelligence/blast-radius` |
+| Business context | `PUT /api/v1/intelligence/business-context/{asset_id}` |
+| PQC recommendations | `GET /api/v1/migration/recommendations` |
+| Migration roadmap | `GET /api/v1/migration/roadmap` |
 
-Interactive OpenAPI documentation is exposed at `/docs`. Examples and response contracts are in [docs/api.md](docs/api.md).
+Interactive OpenAPI documentation is exposed at `/docs`. Enterprise examples and response
+contracts are in [docs/api-reference.md](docs/api-reference.md); discovery-specific contracts are
+in [docs/api.md](docs/api.md).
 
 ## Repository layout
 
@@ -270,9 +296,12 @@ The dashboard is responsive and includes dedicated views for upload progress, in
 - **Future hosting:** the Dockerfiles retain separate development and production stages; override `VITE_API_URL`, database URLs, and credentials in the target environment.
 - **Secrets:** `.env` files are ignored. Only non-secret templates and local development defaults are committed.
 - **Private TLS targets:** disabled by default. Enable only for a controlled internal deployment.
-- **Authentication:** intentionally out of Phase 1. Put the application behind an authenticated reverse proxy before any shared deployment.
+- **Enterprise deployment:** use `deployment/docker-compose.prod.yml`; see [deployment](docs/deployment.md).
+- **Authentication:** all application APIs require JWT authentication; health and authentication
+  bootstrap endpoints remain public.
 
-## Phase 3-ready extension points
+## Extension points
 
-The domain boundaries allow future multi-tenancy, cloud deployment, continuous migration execution,
-and a governed AI assistant without replacing scanner, intelligence, or persistence contracts.
+The plugin contract supports future AWS, Azure, Kubernetes, and HSM scanners. Production images are
+cloud-portable without forcing a provider. A shared job queue and distributed rate limiter are the
+next scale upgrades; automated migration execution and an AI assistant remain outside this release.

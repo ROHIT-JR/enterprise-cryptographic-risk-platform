@@ -12,6 +12,9 @@ if TYPE_CHECKING:
 class RiskAnalysis(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "risk_analysis"
 
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     project_id: Mapped[str] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -39,6 +42,9 @@ class RiskAnalysis(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 class MigrationPlan(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "migration_plan"
 
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     project_id: Mapped[str] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
     )

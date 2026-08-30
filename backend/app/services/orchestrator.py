@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from backend.app.config import get_settings
 from backend.app.database import SessionLocal
 from backend.app.models import Asset, AssetRelationship, Project, RiskFinding, Scan
+from backend.app.services.audit_service import record_audit
 from backend.app.services.intelligence_service import IntelligenceService
 from backend.app.services.neo4j_service import create_graph_store
 from backend.app.services.risk_service import RiskService
@@ -80,6 +81,7 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
         rows_by_ref: dict[str, Asset] = {}
         for finding in result.assets:
             row = Asset(
+                organization_id=project.organization_id,
                 project_id=project.id,
                 scan_id=scan.id,
                 asset_type=finding.asset_type,
@@ -114,6 +116,7 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
                 continue
             seen_edges.add(edge_key)
             edge = AssetRelationship(
+                organization_id=project.organization_id,
                 project_id=project.id,
                 source_asset_id=source.id,
                 target_asset_id=target_row.id,
@@ -186,6 +189,16 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
         scan.status = "completed"
         scan.progress = 100
         scan.completed_at = datetime.now(UTC)
+        record_audit(
+            db,
+            action="scan.completed",
+            organization_id=scan.organization_id,
+            metadata={
+                "scan_id": scan.id,
+                "source_type": scan.source_type,
+                "assets_discovered": len(rows_by_ref),
+            },
+        )
         db.commit()
         logger.info(
             "Completed %s scan %s with %d assets", scan.source_type, scan.id, len(rows_by_ref)
@@ -232,6 +245,7 @@ def _project_mapping(project: Project) -> dict[str, Any]:
         "id": project.id,
         "name": project.name,
         "criticality": project.criticality,
+        "organization_id": project.organization_id,
     }
 
 

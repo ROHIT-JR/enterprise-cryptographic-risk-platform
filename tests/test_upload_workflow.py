@@ -23,7 +23,7 @@ class InlineSourceScanner(SourceCodeScanner):
 
 
 def _repository_archive() -> BinaryIO:
-    stream = tempfile.SpooledTemporaryFile()
+    stream = tempfile.SpooledTemporaryFile()  # noqa: SIM115 - returned to the upload test
     with zipfile.ZipFile(stream, "w") as bundle:
         bundle.writestr(
             "secure-bank/auth.py",

@@ -8,8 +8,19 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend.app.auth.passwords import hash_password
+from backend.app.auth.permissions import Role
+from backend.app.config import get_settings
 from backend.app.database import SessionLocal, init_db
-from backend.app.models import Asset, AssetRelationship, Project, RiskFinding, Scan
+from backend.app.models import (
+    Asset,
+    AssetRelationship,
+    Organization,
+    Project,
+    RiskFinding,
+    Scan,
+    User,
+)
 from backend.app.services.intelligence_service import IntelligenceService
 from backend.app.services.risk_service import RiskService
 from cbom_engine import CBOMGenerator
@@ -19,7 +30,18 @@ DATA_PATH = Path(__file__).resolve().parents[2] / "sample_data" / "securebank.js
 
 def seed_securebank_demo(db: Session) -> Project:
     payload = json.loads(DATA_PATH.read_text(encoding="utf-8"))
-    existing = db.scalar(select(Project).where(Project.name == "SecureBank Enterprise"))
+    organization = db.scalar(select(Organization).where(Organization.name == "SecureBank"))
+    if not organization:
+        organization = Organization(name="SecureBank", industry="Financial Services")
+        db.add(organization)
+        db.flush()
+    _ensure_phase3_users(db, organization)
+    existing = db.scalar(
+        select(Project).where(
+            Project.organization_id == organization.id,
+            Project.name == "SecureBank Enterprise",
+        )
+    )
     if existing:
         _ensure_phase2_demo(db, existing, payload)
         _refresh_demo_documents(db, existing)
@@ -28,6 +50,7 @@ def seed_securebank_demo(db: Session) -> Project:
         return existing
 
     project = Project(
+        organization_id=organization.id,
         name=payload["company"],
         description=payload["description"],
         criticality=payload["criticality"],
@@ -35,6 +58,7 @@ def seed_securebank_demo(db: Session) -> Project:
     db.add(project)
     db.flush()
     scan = Scan(
+        organization_id=organization.id,
         project_id=project.id,
         source_type="repository",
         target="securebank-enterprise-demo.zip",
@@ -63,6 +87,7 @@ def seed_securebank_demo(db: Session) -> Project:
     assets_by_key: dict[str, Asset] = {}
     for key, definition in definitions.items():
         asset = Asset(
+            organization_id=organization.id,
             project_id=project.id,
             scan_id=scan.id,
             asset_type=definition["type"],
@@ -82,6 +107,7 @@ def seed_securebank_demo(db: Session) -> Project:
     relationships: list[AssetRelationship] = []
     for source_key, target_key, relationship_type in relationship_specs:
         relationship = AssetRelationship(
+            organization_id=organization.id,
             project_id=project.id,
             source_asset_id=assets_by_key[source_key].id,
             target_asset_id=assets_by_key[target_key].id,
@@ -206,6 +232,7 @@ def _ensure_phase2_demo(db: Session, project: Project, payload: dict[str, Any]) 
     )
     if not customer_database:
         customer_database = Asset(
+            organization_id=project.organization_id,
             project_id=project.id,
             scan_id=scan.id,
             asset_type="application",
@@ -237,6 +264,7 @@ def _ensure_phase2_demo(db: Session, project: Project, payload: dict[str, Any]) 
         )
         if not application:
             application = Asset(
+                organization_id=project.organization_id,
                 project_id=project.id,
                 scan_id=scan.id,
                 asset_type="application",
@@ -270,6 +298,7 @@ def _ensure_phase2_demo(db: Session, project: Project, payload: dict[str, Any]) 
             continue
         db.add(
             AssetRelationship(
+                organization_id=project.organization_id,
                 project_id=project.id,
                 source_asset_id=payment_certificate.id,
                 target_asset_id=application.id,
@@ -335,8 +364,34 @@ def _refresh_demo_documents(db: Session, project: Project) -> None:
         "asset_types": dict(Counter(asset.asset_type for asset in assets)),
         "risk_severity": dict(Counter(risk.severity for risk in risks)),
         "warnings": [],
-        "scanner": {"demo": True, "company": project.name, "phase": "2"},
+        "scanner": {"demo": True, "company": project.name, "phase": "3"},
     }
+
+
+def _ensure_phase3_users(db: Session, organization: Organization) -> None:
+    password_hash = hash_password(get_settings().demo_password)
+    definitions = (
+        ("securebank-admin", "admin@securebank.demo", Role.ADMINISTRATOR),
+        ("security-analyst", "analyst@securebank.demo", Role.SECURITY_ANALYST),
+        ("security-auditor", "auditor@securebank.demo", Role.AUDITOR),
+    )
+    for username, email, role in definitions:
+        user = db.scalar(
+            select(User).where(
+                User.organization_id == organization.id,
+                User.username == username,
+            )
+        )
+        if not user:
+            db.add(
+                User(
+                    organization_id=organization.id,
+                    username=username,
+                    email=email,
+                    password_hash=password_hash,
+                    role=role.value,
+                )
+            )
 
 
 def main() -> None:

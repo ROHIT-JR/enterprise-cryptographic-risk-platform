@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     )
     seed_demo: bool = False
     secret_key: str = "development-only-not-used-for-authentication"
+    jwt_issuer: str = "ecdat-x"
+    jwt_audience: str = "ecdat-x-api"
+    access_token_minutes: int = 15
+    refresh_token_days: int = 7
+    rate_limit_per_minute: int = 120
+    demo_password: str = "SecureBank-Demo-2026"
     log_level: str = "INFO"
 
     @field_validator("cors_origins", mode="before")

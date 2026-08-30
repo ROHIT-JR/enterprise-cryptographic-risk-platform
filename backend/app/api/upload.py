@@ -18,12 +18,16 @@ from fastapi import (
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend.app.auth.dependencies import get_current_user, require_permissions
+from backend.app.auth.permissions import Permission
 from backend.app.config import get_settings
 from backend.app.database import get_db
-from backend.app.models import Scan
+from backend.app.models import Scan, User
 from backend.app.schemas.scan import CBOMResponse, DockerScanRequest, ScanResponse, TLSScanRequest
+from backend.app.services.audit_service import record_audit
 from backend.app.services.orchestrator import run_scan_job
 from backend.app.services.scan_service import create_scan, get_or_create_project
+from backend.app.services.tenant_service import resolve_organization_id
 from scanners import ScanSource
 
 router = APIRouter(prefix="/scans", tags=["scans"])
@@ -33,6 +37,7 @@ router = APIRouter(prefix="/scans", tags=["scans"])
     "/repository",
     response_model=ScanResponse,
     status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(require_permissions(Permission.RUN_SCANS))],
 )
 async def scan_repository(
     background_tasks: BackgroundTasks,
@@ -40,12 +45,19 @@ async def scan_repository(
     project_name: str = Form(..., min_length=2, max_length=160),
     criticality: Literal["low", "medium", "high", "critical"] = Form("medium"),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> Scan:
     filename = Path(file.filename or "repository.zip").name
     if Path(filename).suffix.lower() != ".zip":
         raise HTTPException(status_code=415, detail="Repository uploads must be ZIP archives")
 
-    project = get_or_create_project(db, name=project_name, criticality=criticality)
+    organization_id = resolve_organization_id(db, user)
+    project = get_or_create_project(
+        db,
+        name=project_name,
+        criticality=criticality,
+        organization_id=organization_id,
+    )
     scan = create_scan(
         db,
         project=project,
@@ -80,16 +92,36 @@ async def scan_repository(
         await file.close()
 
     background_tasks.add_task(run_scan_job, scan.id, str(archive_path))
+    record_audit(
+        db,
+        action="repository.uploaded",
+        organization_id=organization_id,
+        user=user if isinstance(user, User) else None,
+        metadata={"scan_id": scan.id, "filename": filename},
+    )
+    db.commit()
     return scan
 
 
-@router.post("/docker", response_model=ScanResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/docker",
+    response_model=ScanResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(require_permissions(Permission.RUN_SCANS))],
+)
 def scan_docker(
     payload: DockerScanRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> Scan:
-    project = get_or_create_project(db, name=payload.project_name, criticality=payload.criticality)
+    organization_id = resolve_organization_id(db, user)
+    project = get_or_create_project(
+        db,
+        name=payload.project_name,
+        criticality=payload.criticality,
+        organization_id=organization_id,
+    )
     scan = create_scan(
         db,
         project=project,
@@ -99,16 +131,36 @@ def scan_docker(
     db.commit()
     db.refresh(scan)
     background_tasks.add_task(run_scan_job, scan.id, payload.image)
+    record_audit(
+        db,
+        action="scan.started",
+        organization_id=organization_id,
+        user=user if isinstance(user, User) else None,
+        metadata={"scan_id": scan.id, "source_type": "docker"},
+    )
+    db.commit()
     return scan
 
 
-@router.post("/tls", response_model=ScanResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/tls",
+    response_model=ScanResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(require_permissions(Permission.RUN_SCANS))],
+)
 def scan_tls(
     payload: TLSScanRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> Scan:
-    project = get_or_create_project(db, name=payload.project_name, criticality=payload.criticality)
+    organization_id = resolve_organization_id(db, user)
+    project = get_or_create_project(
+        db,
+        name=payload.project_name,
+        criticality=payload.criticality,
+        organization_id=organization_id,
+    )
     scan = create_scan(
         db,
         project=project,
@@ -118,6 +170,14 @@ def scan_tls(
     db.commit()
     db.refresh(scan)
     background_tasks.add_task(run_scan_job, scan.id, payload.endpoint)
+    record_audit(
+        db,
+        action="scan.started",
+        organization_id=organization_id,
+        user=user if isinstance(user, User) else None,
+        metadata={"scan_id": scan.id, "source_type": "tls"},
+    )
+    db.commit()
     return scan
 
 
@@ -126,25 +186,36 @@ def list_scans(
     project_id: str | None = None,
     limit: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> list[Scan]:
     statement = select(Scan)
+    if isinstance(user, User):
+        statement = statement.where(Scan.organization_id == user.organization_id)
     if project_id:
         statement = statement.where(Scan.project_id == project_id)
     return list(db.scalars(statement.order_by(Scan.created_at.desc()).limit(limit)))
 
 
 @router.get("/{scan_id}", response_model=ScanResponse)
-def get_scan(scan_id: str, db: Session = Depends(get_db)) -> Scan:
+def get_scan(
+    scan_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Scan:
     scan = db.get(Scan, scan_id)
-    if not scan:
+    if not scan or (isinstance(user, User) and scan.organization_id != user.organization_id):
         raise HTTPException(status_code=404, detail="Scan not found")
     return scan
 
 
 @router.get("/{scan_id}/cbom", response_model=CBOMResponse)
-def get_cbom(scan_id: str, db: Session = Depends(get_db)) -> CBOMResponse:
+def get_cbom(
+    scan_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> CBOMResponse:
     scan = db.get(Scan, scan_id)
-    if not scan:
+    if not scan or (isinstance(user, User) and scan.organization_id != user.organization_id):
         raise HTTPException(status_code=404, detail="Scan not found")
     if not scan.cbom:
         raise HTTPException(

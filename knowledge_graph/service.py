@@ -91,6 +91,7 @@ class Neo4jGraphStore:
             """
             MERGE (p:Project {id: $project_id})
             SET p.name = $project_name, p.criticality = $criticality
+            SET p.organization_id = $organization_id
             MERGE (s:Scan {id: $scan_id})
             SET s.source_type = $source_type, s.target = $target, s.status = $status
             MERGE (p)-[:CONTAINS]->(s)
@@ -98,6 +99,7 @@ class Neo4jGraphStore:
             project_id=str(project["id"]),
             project_name=project["name"],
             criticality=project.get("criticality", "medium"),
+            organization_id=project.get("organization_id"),
             scan_id=str(scan["id"]),
             source_type=scan.get("source_type"),
             target=scan.get("target"),
@@ -151,13 +153,20 @@ class Neo4jGraphStore:
             evidence=relationship.get("evidence"),
         ).consume()
 
-    def query(self, *, project_id: str | None = None, limit: int = 500) -> GraphPayload:
+    def query(
+        self,
+        *,
+        project_id: str | None = None,
+        organization_id: str | None = None,
+        limit: int = 500,
+    ) -> GraphPayload:
         if not self._driver:
             raise ServiceUnavailable("Neo4j is not configured")
         node_limit = max(1, min(limit, 2_000))
         query = """
             MATCH (p:Project)
-            WHERE $project_id IS NULL OR p.id = $project_id
+            WHERE ($project_id IS NULL OR p.id = $project_id)
+              AND ($organization_id IS NULL OR p.organization_id = $organization_id)
             MATCH (p)-[:CONTAINS]->(a:Asset)
             WITH p, collect(DISTINCT a)[..$limit] AS assets
             UNWIND assets AS a
@@ -168,7 +177,12 @@ class Neo4jGraphStore:
         nodes: dict[str, GraphNode] = {}
         edges: dict[str, GraphEdge] = {}
         with self._driver.session() as session:
-            for record in session.run(query, project_id=project_id, limit=node_limit):
+            for record in session.run(
+                query,
+                project_id=project_id,
+                organization_id=organization_id,
+                limit=node_limit,
+            ):
                 project = record["p"]
                 asset = record["a"]
                 project_key = f"project:{project['id']}"

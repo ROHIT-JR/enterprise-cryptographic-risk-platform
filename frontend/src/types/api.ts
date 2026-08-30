@@ -10,6 +10,7 @@ export interface DistributionItem {
 
 export interface Scan {
   id: string;
+  organization_id: string;
   project_id: string;
   source_type: ScanSource;
   target: string;
@@ -43,6 +44,7 @@ export interface AssetRisk {
 
 export interface Asset {
   id: string;
+  organization_id: string;
   project_id: string;
   project_name: string;
   scan_id: string;
@@ -75,6 +77,7 @@ export interface RiskFactor {
 
 export interface RiskFinding {
   id: string;
+  organization_id: string;
   asset_id: string;
   asset_name: string;
   asset_type: string;
@@ -189,4 +192,58 @@ export interface MigrationRoadmap {
     reason: string;
     items: MigrationRecommendation[];
   }>;
+}
+
+export type UserRole = "administrator" | "security_analyst" | "auditor" | "viewer";
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  role: UserRole;
+  organization_id: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: "bearer";
+  expires_in: number;
+  user: AuthUser;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  industry: string | null;
+  created_at: string;
+}
+
+export interface AuditLog {
+  id: string;
+  user_id: string | null;
+  action: string;
+  timestamp: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface EnterpriseOverview {
+  organizations: number;
+  users: number;
+  projects: number;
+  scans: number;
+  assets: number;
+  critical_risks: number;
+  migration_assets: number;
+  recent_audit: AuditLog[];
+}
+
+export interface FullHealth {
+  backend: string;
+  postgres: string;
+  neo4j: string;
+  scanner_engine: string;
+  scanners: string[];
 }

@@ -7,8 +7,10 @@ from neo4j.exceptions import Neo4jError, ServiceUnavailable
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from backend.app.auth.dependencies import get_current_user, require_permissions
+from backend.app.auth.permissions import Permission
 from backend.app.database import get_db
-from backend.app.models import Asset, BusinessContext, Project, RiskAnalysis
+from backend.app.models import Asset, BusinessContext, Project, RiskAnalysis, User
 from backend.app.schemas.common import DistributionItem
 from backend.app.schemas.graph import GraphEdgeResponse, GraphNodeResponse
 from backend.app.schemas.intelligence import (
@@ -20,6 +22,7 @@ from backend.app.schemas.intelligence import (
     IntelligenceMetrics,
     IntelligenceRiskResponse,
 )
+from backend.app.services.audit_service import record_audit
 from backend.app.services.intelligence_service import IntelligenceService
 from backend.app.services.neo4j_service import create_graph_store
 
@@ -51,7 +54,9 @@ def _item(analysis: RiskAnalysis, asset: Asset, project: Project) -> Intelligenc
     )
 
 
-def _rows(db: Session, project_id: str | None = None):
+def _rows(
+    db: Session, project_id: str | None = None, organization_id: str | None = None
+):
     statement = (
         select(RiskAnalysis, Asset, Project)
         .join(Asset, RiskAnalysis.asset_id == Asset.id)
@@ -59,6 +64,8 @@ def _rows(db: Session, project_id: str | None = None):
     )
     if project_id:
         statement = statement.where(RiskAnalysis.project_id == project_id)
+    if organization_id:
+        statement = statement.where(RiskAnalysis.organization_id == organization_id)
     return db.execute(
         statement.order_by(RiskAnalysis.final_score.desc(), Asset.name)
     ).all()
@@ -68,8 +75,10 @@ def _rows(db: Session, project_id: str | None = None):
 def get_intelligence_risk(
     project_id: str | None = None,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> IntelligenceRiskResponse:
-    rows = _rows(db, project_id)
+    organization_id = user.organization_id if isinstance(user, User) else None
+    rows = _rows(db, project_id, organization_id)
     items = [_item(analysis, asset, project) for analysis, asset, project in rows]
     severities = Counter(item.severity for item in items)
     vulnerability = Counter(item.quantum_classification for item in items)
@@ -101,10 +110,12 @@ def get_intelligence_risk(
 def get_hndl_analysis(
     project_id: str | None = None,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> HNDLResponse:
+    organization_id = user.organization_id if isinstance(user, User) else None
     items = [
         _item(analysis, asset, project)
-        for analysis, asset, project in _rows(db, project_id)
+        for analysis, asset, project in _rows(db, project_id, organization_id)
         if analysis.hndl_score > 0
     ]
     return HNDLResponse(total=len(items), items=items)
@@ -115,8 +126,11 @@ def get_blast_radius(
     asset_id: str | None = None,
     project_id: str | None = None,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> BlastRadiusResponse:
     statement = select(RiskAnalysis, Asset).join(Asset, RiskAnalysis.asset_id == Asset.id)
+    if isinstance(user, User):
+        statement = statement.where(RiskAnalysis.organization_id == user.organization_id)
     if asset_id:
         statement = statement.where(RiskAnalysis.asset_id == asset_id)
     elif project_id:
@@ -189,14 +203,21 @@ def get_blast_radius(
     )
 
 
-@router.put("/business-context/{asset_id}", response_model=BusinessContextResponse)
+@router.put(
+    "/business-context/{asset_id}",
+    response_model=BusinessContextResponse,
+    dependencies=[Depends(require_permissions(Permission.ANALYZE_RISKS))],
+)
 def assign_business_context(
     asset_id: str,
     payload: BusinessContextUpdate,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> BusinessContextResponse:
     asset = db.get(Asset, asset_id)
-    if not asset:
+    if not asset or (
+        isinstance(user, User) and asset.organization_id != user.organization_id
+    ):
         raise HTTPException(status_code=404, detail="Asset not found")
     context = db.scalar(select(BusinessContext).where(BusinessContext.asset_id == asset_id))
     if context:
@@ -210,5 +231,12 @@ def assign_business_context(
         raise HTTPException(status_code=404, detail="Project not found")
     db.flush()
     IntelligenceService().analyze_project(db, project)
+    record_audit(
+        db,
+        action="risk.business_context_updated",
+        organization_id=asset.organization_id,
+        user=user if isinstance(user, User) else None,
+        metadata={"asset_id": asset.id, "criticality": payload.criticality},
+    )
     db.commit()
     return BusinessContextResponse(asset_id=asset_id, **payload.model_dump())

@@ -30,7 +30,7 @@ class DependencyCentralityEngine:
         total = max(len(nodes) - 1, 1)
         raw: dict[str, tuple[list[str], float, float]] = {}
         maximum_dependents = 1
-        for node_id, node in nodes.items():
+        for node_id, _node in nodes.items():
             reachable = self._reachable(node_id, adjacency)
             applications = sorted(
                 item

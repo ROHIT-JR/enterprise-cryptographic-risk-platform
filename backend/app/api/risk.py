@@ -3,8 +3,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend.app.api.serializers import serialize_risk
+from backend.app.auth.dependencies import get_current_user
 from backend.app.database import get_db
-from backend.app.models import Asset, Project, RiskFinding
+from backend.app.models import Asset, Project, RiskFinding, User
 from backend.app.schemas.common import DistributionItem
 from backend.app.schemas.risk import RiskPage
 
@@ -18,8 +19,11 @@ def list_risks(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> RiskPage:
     filters = []
+    if isinstance(user, User):
+        filters.append(RiskFinding.organization_id == user.organization_id)
     if project_id:
         filters.append(RiskFinding.project_id == project_id)
     if severity:
@@ -49,10 +53,15 @@ def list_risks(
 
 
 @router.get("/distribution", response_model=list[DistributionItem])
-def risk_distribution(db: Session = Depends(get_db)) -> list[DistributionItem]:
+def risk_distribution(
+    db: Session = Depends(get_db), user: User = Depends(get_current_user)
+) -> list[DistributionItem]:
+    statement = select(RiskFinding.severity, func.count(RiskFinding.id))
+    if isinstance(user, User):
+        statement = statement.where(RiskFinding.organization_id == user.organization_id)
     counts = dict(
         db.execute(
-            select(RiskFinding.severity, func.count(RiskFinding.id)).group_by(RiskFinding.severity)
+            statement.group_by(RiskFinding.severity)
         ).all()
     )
     return [

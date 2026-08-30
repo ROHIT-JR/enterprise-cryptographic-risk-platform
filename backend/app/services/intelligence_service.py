@@ -16,6 +16,7 @@ from backend.app.models import (
     RiskAnalysis,
     RiskFinding,
 )
+from backend.app.services.audit_service import record_audit
 from migration_engine import (
     MigrationRoadmapEngine,
     PQCRecommendationEngine,
@@ -136,6 +137,7 @@ class IntelligenceService:
             )
             analysis = db.scalar(select(RiskAnalysis).where(RiskAnalysis.asset_id == asset.id))
             values = {
+                "organization_id": project.organization_id,
                 "project_id": project.id,
                 "quantum_score": quantum.score,
                 "hndl_score": hndl.score,
@@ -177,6 +179,18 @@ class IntelligenceService:
             contexts=contexts,
             centrality=centrality,
             vulnerable_ids=vulnerable_ids,
+        )
+        record_audit(
+            db,
+            action="risk.analysis_completed",
+            organization_id=project.organization_id,
+            metadata={"project_id": project.id, "assets_analyzed": len(analyses)},
+        )
+        record_audit(
+            db,
+            action="migration.generated",
+            organization_id=project.organization_id,
+            metadata={"project_id": project.id, "vulnerable_assets": len(vulnerable_ids)},
         )
         db.flush()
         return analyses
@@ -333,6 +347,7 @@ class IntelligenceService:
             plan = db.scalar(select(MigrationPlan).where(MigrationPlan.asset_id == asset_id))
             item = wave_by_id[asset_id]
             values = {
+                "organization_id": project.organization_id,
                 "project_id": project.id,
                 "recommended_algorithm": recommendation["recommended_algorithm"],
                 "wave": item.wave,

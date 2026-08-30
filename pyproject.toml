@@ -1,6 +1,6 @@
 [project]
 name = "ecdat-x"
-version = "0.1.0"
+version = "0.3.0"
 description = "Enterprise Cryptographic Discovery, Analysis & Transformation Platform"
 requires-python = ">=3.11"
 
@@ -20,4 +20,3 @@ ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
-

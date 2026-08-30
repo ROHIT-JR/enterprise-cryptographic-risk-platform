@@ -10,18 +10,46 @@ import type {
   MigrationRoadmap,
   RiskPage,
   Scan,
+  AuthUser,
+  TokenResponse,
+  Organization,
+  AuditLog,
+  EnterpriseOverview,
+  FullHealth,
 } from "../types/api";
 
 const apiOrigin = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 const apiBaseUrl = apiOrigin.endsWith("/api/v1") ? apiOrigin : `${apiOrigin}/api/v1`;
-const phase2BaseUrl = apiOrigin.endsWith("/api/v1")
-  ? apiOrigin.replace(/\/api\/v1$/, "/api")
-  : `${apiOrigin}/api`;
 
 export const api = axios.create({
   baseURL: apiBaseUrl,
   timeout: 60_000,
   headers: { Accept: "application/json" },
+});
+
+export const authStorage = {
+  access: () => sessionStorage.getItem("ecdat_access_token"),
+  refresh: () => sessionStorage.getItem("ecdat_refresh_token"),
+  user: (): AuthUser | null => {
+    const value = sessionStorage.getItem("ecdat_user");
+    return value ? (JSON.parse(value) as AuthUser) : null;
+  },
+  save: (tokens: TokenResponse) => {
+    sessionStorage.setItem("ecdat_access_token", tokens.access_token);
+    sessionStorage.setItem("ecdat_refresh_token", tokens.refresh_token);
+    sessionStorage.setItem("ecdat_user", JSON.stringify(tokens.user));
+  },
+  clear: () => {
+    sessionStorage.removeItem("ecdat_access_token");
+    sessionStorage.removeItem("ecdat_refresh_token");
+    sessionStorage.removeItem("ecdat_user");
+  },
+};
+
+api.interceptors.request.use((config) => {
+  const token = authStorage.access();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
 });
 
 export const dashboardApi = {
@@ -83,18 +111,53 @@ export const scansApi = {
 
 export const intelligenceApi = {
   risk: async () =>
-    (await axios.get<IntelligenceRiskData>(`${phase2BaseUrl}/intelligence/risk`)).data,
+    (await api.get<IntelligenceRiskData>("/intelligence/risk")).data,
   hndl: async () =>
-    (await axios.get<{ total: number; items: IntelligenceRiskData["items"] }>(`${phase2BaseUrl}/intelligence/hndl`)).data,
+    (await api.get<{ total: number; items: IntelligenceRiskData["items"] }>("/intelligence/hndl")).data,
   blastRadius: async (assetId?: string) =>
-    (await axios.get<BlastRadiusData>(`${phase2BaseUrl}/intelligence/blast-radius`, { params: { asset_id: assetId } })).data,
+    (await api.get<BlastRadiusData>("/intelligence/blast-radius", { params: { asset_id: assetId } })).data,
 };
 
 export const migrationApi = {
   recommendations: async () =>
-    (await axios.get<MigrationRecommendation[]>(`${phase2BaseUrl}/migration/recommendations`)).data,
+    (await api.get<MigrationRecommendation[]>("/migration/recommendations")).data,
   roadmap: async () =>
-    (await axios.get<MigrationRoadmap>(`${phase2BaseUrl}/migration/roadmap`)).data,
+    (await api.get<MigrationRoadmap>("/migration/roadmap")).data,
+};
+
+export const authApi = {
+  login: async (organization: string, username: string, password: string) =>
+    (await api.post<TokenResponse>("/auth/login", { organization, username, password })).data,
+  register: async (payload: {
+    organization_name: string;
+    industry?: string;
+    username: string;
+    email: string;
+    password: string;
+  }) => (await api.post<TokenResponse>("/auth/register", payload)).data,
+  me: async () => (await api.get<AuthUser>("/auth/me")).data,
+  refresh: async (refreshToken: string) =>
+    (await api.post<TokenResponse>("/auth/refresh", { refresh_token: refreshToken })).data,
+  logout: async (refreshToken: string) =>
+    api.post("/auth/logout", { refresh_token: refreshToken }),
+};
+
+export const enterpriseApi = {
+  overview: async () => (await api.get<EnterpriseOverview>("/enterprise/overview")).data,
+  organization: async () => (await api.get<Organization>("/organizations/current")).data,
+  users: async () => (await api.get<AuthUser[]>("/users")).data,
+  audit: async () => (await api.get<AuditLog[]>("/audit-logs")).data,
+  health: async () => (await axios.get<FullHealth>(`${apiOrigin}/health/full`)).data,
+  report: async (
+    type: "inventory" | "quantum-risk" | "migration",
+    format: "json" | "pdf" | "cbom",
+  ) =>
+    (
+      await api.get<Blob>(`/reports/${type}`, {
+        params: { format },
+        responseType: "blob",
+      })
+    ).data,
 };
 
 export function apiErrorMessage(error: unknown): string {

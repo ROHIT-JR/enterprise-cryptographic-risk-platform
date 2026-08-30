@@ -23,6 +23,7 @@ class RiskService:
             )
         )
         return RiskFinding(
+            organization_id=project.organization_id,
             project_id=project.id,
             asset_id=asset.id,
             score=assessment.score,

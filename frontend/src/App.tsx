@@ -1,5 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "./auth/AuthContext";
+import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import { LoadingState } from "./components/ui";
 
@@ -13,14 +15,21 @@ const AssetIntelligence = lazy(() => import("./pages/AssetIntelligence").then((m
 const BlastRadius = lazy(() => import("./pages/BlastRadius").then((module) => ({ default: module.BlastRadius })));
 const MigrationPlanner = lazy(() => import("./pages/MigrationPlanner").then((module) => ({ default: module.MigrationPlanner })));
 const PQCRecommendations = lazy(() => import("./pages/PQCRecommendations").then((module) => ({ default: module.PQCRecommendations })));
+const Login = lazy(() => import("./pages/Login").then((module) => ({ default: module.Login })));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then((module) => ({ default: module.AdminDashboard })));
+const SecurityOperations = lazy(() => import("./pages/SecurityOperations").then((module) => ({ default: module.SecurityOperations })));
+const AuditorView = lazy(() => import("./pages/AuditorView").then((module) => ({ default: module.AuditorView })));
 const NotFound = lazy(() => import("./pages/NotFound").then((module) => ({ default: module.NotFound })));
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<div className="min-h-screen bg-ink-950"><LoadingState /></div>}>
-        <Routes>
-          <Route element={<Layout />}>
+      <AuthProvider>
+        <Suspense fallback={<div className="min-h-screen bg-ink-950"><LoadingState /></div>}>
+          <Routes>
+            <Route path="login" element={<Login />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="upload" element={<UploadCenter />} />
             <Route path="assets" element={<AssetExplorer />} />
@@ -31,10 +40,15 @@ export default function App() {
             <Route path="blast-radius" element={<BlastRadius />} />
             <Route path="migration" element={<MigrationPlanner />} />
             <Route path="pqc" element={<PQCRecommendations />} />
+            <Route path="admin" element={<AdminDashboard />} />
+            <Route path="operations" element={<SecurityOperations />} />
+            <Route path="audit" element={<AuditorView />} />
             <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </Suspense>
+              </Route>
+            </Route>
+          </Routes>
+        </Suspense>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

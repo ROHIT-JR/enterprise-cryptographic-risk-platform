@@ -20,6 +20,7 @@ class ScanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    organization_id: str
     project_id: str
     source_type: str
     target: str

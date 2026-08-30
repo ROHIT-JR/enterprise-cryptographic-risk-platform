@@ -11,9 +11,14 @@ def get_or_create_project(
     name: str,
     criticality: str = "medium",
     description: str | None = None,
+    organization_id: str,
 ) -> Project:
     normalized = " ".join(name.split())
-    project = db.scalar(select(Project).where(Project.name == normalized))
+    project = db.scalar(
+        select(Project).where(
+            Project.organization_id == organization_id, Project.name == normalized
+        )
+    )
     if project:
         if criticality and project.criticality != criticality:
             project.criticality = criticality
@@ -21,7 +26,12 @@ def get_or_create_project(
             project.description = description
         db.flush()
         return project
-    project = Project(name=normalized, criticality=criticality, description=description)
+    project = Project(
+        organization_id=organization_id,
+        name=normalized,
+        criticality=criticality,
+        description=description,
+    )
     db.add(project)
     db.flush()
     return project
@@ -35,6 +45,7 @@ def create_scan(
     target: str,
 ) -> Scan:
     scan = Scan(
+        organization_id=project.organization_id,
         project_id=project.id,
         source_type=source_type,
         target=target,

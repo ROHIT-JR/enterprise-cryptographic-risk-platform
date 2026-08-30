@@ -1,5 +1,29 @@
 # ECDAT-X architecture
 
+## Phase 3 enterprise boundary
+
+Phase 3 wraps the Phase 1–2 discovery and intelligence pipeline in identity, tenant, audit,
+report, and deployment boundaries. PostgreSQL remains authoritative and Neo4j rebuildable.
+
+```mermaid
+flowchart LR
+  USER[Admin / Analyst / Auditor / Viewer] --> JWT[JWT + RBAC]
+  JWT --> API[Versioned FastAPI]
+  API --> TENANT[Organization scope]
+  TENANT --> PG[(PostgreSQL)]
+  TENANT --> ORCH[Existing scan orchestrator]
+  ORCH --> PLUGINS[Scanner plugin registry]
+  PLUGINS --> DISCOVERY[Source / Docker / TLS]
+  ORCH --> INTEL[Quantum risk + HNDL + migration]
+  ORCH --> NEO[(Neo4j projection)]
+  API --> REPORTS[JSON / PDF / CBOM reports]
+  API --> AUDIT[Audit trail]
+```
+
+Access-token validation is stateless; refresh-token digests and revocation are relational. Tenant
+IDs are denormalized onto high-volume domain tables for explicit, indexable isolation. A shared
+limiter and asynchronous job queue are the first scale upgrades for multi-instance deployments.
+
 ## Design goals
 
 Phase 1 establishes a reliable intelligence layer between raw scanner evidence and future PQC migration decisions. The architecture prioritizes evidence retention, deterministic analysis, scanner extensibility, and graceful degradation.

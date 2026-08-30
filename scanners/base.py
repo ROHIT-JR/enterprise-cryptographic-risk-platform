@@ -41,7 +41,7 @@ class DiscoveredRelationship(BaseModel):
 
 
 class ScanResult(BaseModel):
-    source: ScanSource
+    source: str
     target: str
     assets: list[DiscoveredAsset] = Field(default_factory=list)
     relationships: list[DiscoveredRelationship] = Field(default_factory=list)
@@ -50,8 +50,13 @@ class ScanResult(BaseModel):
 
 
 class ScannerPlugin(ABC):
-    source_type: ScanSource
+    source_type: ScanSource | str
+    name: str = "Unnamed scanner"
+    version: str = "1.0.0"
 
     @abstractmethod
     async def scan(self, target: str | Path, **options: Any) -> ScanResult:
         """Analyze a target and return normalized discovery findings."""
+
+    def health(self) -> dict[str, str]:
+        return {"status": "healthy", "name": self.name, "version": self.version}
