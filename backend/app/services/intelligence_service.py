@@ -47,6 +47,9 @@ class IntelligenceService:
         self.business = BusinessCriticalityEngine()
         self.complexity = MigrationComplexityEngine()
         self.final = FinalRiskEngine()
+        self.mosca = __import__('risk_engine.mosca_model', fromlist=['MoscaModel']).MoscaModel()
+        self.evidence_fusion = __import__('risk_engine.evidence_fusion', fromlist=['EvidenceFusionEngine']).EvidenceFusionEngine()
+        self.advanced_ext = __import__('risk_engine.advanced_risk_extension', fromlist=['AdvancedRiskExtension']).AdvancedRiskExtension()
         self.recommendations = PQCRecommendationEngine()
         self.roadmap = MigrationRoadmapEngine()
 
@@ -92,10 +95,28 @@ class IntelligenceService:
             quantum = self.quantum.assess(algorithm)
             if quantum.quantum_vulnerable:
                 vulnerable_ids.add(asset.id)
-            evidence = self.evidence.assess(
+            # Original evidence assessment (kept for explanation)
+            evidence_original = self.evidence.assess(
                 asset.name,
                 sources_by_family[self._algorithm_family(algorithm)],
             )
+            # New evidence fusion using Dempster‑Shafer
+            # Convert each source confidence into a simple mass dict (True mass = confidence)
+            source_masses = []
+            for src in sources_by_family[self._algorithm_family(algorithm)]:
+                # For demonstration, treat each source as having the same confidence as the original evidence
+                # In a real implementation, each source would have its own confidence metric
+                mass = {
+                    "True": evidence_original.confidence / 100.0,
+                    "False": 0.0,
+                    "Both": 1.0 - (evidence_original.confidence / 100.0),
+                }
+                source_masses.append(mass)
+            evidence_fused = self.evidence_fusion.fuse(source_masses)
+            # Use fused confidence for downstream scoring
+            evidence_confidence = evidence_fused["confidence"]
+            evidence_explanation = evidence_original.explanation
+
             hndl = self.hndl.assess(
                 HNDLInput(
                     asset=asset.name,
@@ -122,7 +143,7 @@ class IntelligenceService:
             if graph.dependent_systems:
                 explanations.append(f"Used by {graph.dependent_systems} dependent systems")
             explanations.extend(complexity.reasons)
-            explanations.append(evidence.explanation)
+            explanations.append(evidence_explanation)
             final = self.final.assess(
                 FinalRiskInput(
                     asset=asset.name,
@@ -131,7 +152,7 @@ class IntelligenceService:
                     dependency_centrality=graph.centrality_score * 100,
                     business_criticality=business.score,
                     migration_complexity=complexity.score,
-                    evidence_confidence=evidence.confidence,
+                    evidence_confidence=evidence_confidence,
                     explanations=explanations,
                 )
             )
@@ -144,13 +165,13 @@ class IntelligenceService:
                 "centrality_score": graph.centrality_score,
                 "business_score": business.score,
                 "migration_complexity_score": complexity.score,
-                "evidence_confidence": evidence.confidence,
+                "evidence_confidence": evidence_confidence,
                 "final_score": final.score,
                 "severity": final.severity,
                 "hndl_risk": hndl.hndl_risk,
                 "quantum_classification": quantum.classification,
                 "dependent_systems": graph.dependent_systems,
-                "evidence_sources": evidence.evidence_sources,
+                "evidence_sources": evidence_original.evidence_sources,
                 "explanations": final.explanation,
                 "factors": {
                     **final.components,
