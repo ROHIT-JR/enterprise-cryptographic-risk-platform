@@ -1,5 +1,5 @@
-import pytest
 from risk_engine.advanced_risk_extension import AdvancedRiskExtension
+
 
 def test_advanced_risk_extension_enhance():
     ext = AdvancedRiskExtension()

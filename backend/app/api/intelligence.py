@@ -153,17 +153,34 @@ def get_blast_radius(
         )
     analysis, asset = analysis_row
     dependent_ids = list(analysis.factors.get("dependent_ids", []))
+    org_id = (
+        user.organization_id
+        if isinstance(user, User)
+        else getattr(asset, "organization_id", None)
+    )
     graph_store = create_graph_store()
     try:
         if graph_store.health():
-            metrics = graph_store.dependency_metrics(project_id=asset.project_id).get(asset.id)
+            metrics = graph_store.dependency_metrics(
+                project_id=asset.project_id,
+                organization_id=org_id,
+            ).get(asset.id)
             if metrics:
                 dependent_ids = metrics["dependent_ids"]
     except (Neo4jError, ServiceUnavailable, OSError):
         pass
     finally:
         graph_store.close()
-    dependents = list(db.scalars(select(Asset).where(Asset.id.in_(dependent_ids))))
+    if dependent_ids:
+        dep_query = select(Asset).where(
+            Asset.id.in_(dependent_ids),
+            Asset.project_id == asset.project_id,
+        )
+        if org_id:
+            dep_query = dep_query.where(Asset.organization_id == org_id)
+        dependents = list(db.scalars(dep_query))
+    else:
+        dependents = []
     nodes = [
         GraphNodeResponse(
             id=asset.id,

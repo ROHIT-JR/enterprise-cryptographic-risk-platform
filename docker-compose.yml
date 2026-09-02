@@ -65,6 +65,7 @@ services:
       - ./cbom_engine:/app/cbom_engine
       - ./knowledge_graph:/app/knowledge_graph
       - ./risk_engine:/app/risk_engine
+      - ./graph_analysis:/app/graph_analysis
       - ./sample_data:/app/sample_data:ro
       - scan_data:/app/scan-data
       - /var/run/docker.sock:/var/run/docker.sock

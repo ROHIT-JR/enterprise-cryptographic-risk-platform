@@ -20,6 +20,14 @@ LABELS = {
     "configuration": "Configuration",
 }
 RELATIONSHIPS = {"USES", "CONTAINS", "DEPENDS_ON", "PROTECTS"}
+ALLOWED_METRIC_PROPERTIES = {
+    "degree_centrality": "degreeCentrality",
+    "betweenness_centrality": "betweennessCentrality",
+    "pagerank_score": "pageRankScore",
+    "community_id": "communityId",
+    "blast_radius": "blastRadius",
+    "centrality_score": "centralityScore",
+}
 
 
 class Neo4jGraphStore:
@@ -43,6 +51,12 @@ class Neo4jGraphStore:
     def close(self) -> None:
         if self._driver:
             self._driver.close()
+
+    def __enter__(self) -> Neo4jGraphStore:
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self.close()
 
     def health(self) -> bool:
         if not self._driver:
@@ -225,12 +239,16 @@ class Neo4jGraphStore:
                     )
         return GraphPayload(nodes=list(nodes.values()), edges=list(edges.values()), source="neo4j")
 
-    def dependency_metrics(self, *, project_id: str) -> dict[str, dict[str, Any]]:
+    def dependency_metrics(
+        self, *, project_id: str, organization_id: str | None = None
+    ) -> dict[str, dict[str, Any]]:
         """Return Neo4j-backed degree and application blast-radius metrics by asset."""
         if not self._driver:
             raise ServiceUnavailable("Neo4j is not configured")
         query = """
-            MATCH (p:Project {id: $project_id})-[:CONTAINS]->(a:Asset)
+            MATCH (p:Project {id: $project_id})
+            WHERE ($organization_id IS NULL OR p.organization_id = $organization_id)
+            MATCH (p)-[:CONTAINS]->(a:Asset)
             OPTIONAL MATCH (a)-[]-(neighbor:Asset)
             WITH p, a, count(DISTINCT neighbor) AS degree
             OPTIONAL MATCH path =
@@ -243,9 +261,56 @@ class Neo4jGraphStore:
         """
         metrics: dict[str, dict[str, Any]] = {}
         with self._driver.session() as session:
-            for record in session.run(query, project_id=project_id):
+            for record in session.run(
+                query, project_id=project_id, organization_id=organization_id
+            ):
                 metrics[str(record["asset_id"])] = {
                     "degree": int(record["degree"] or 0),
                     "dependent_ids": [str(item) for item in record["dependent_ids"] if item],
                 }
         return metrics
+
+    def update_asset_metrics(
+        self,
+        *,
+        project_id: str,
+        organization_id: str,
+        metrics: Mapping[str, Mapping[str, Any]],
+    ) -> None:
+        """Safely write computed graph metrics back to Neo4j nodes.
+
+        Requires both project_id and organization_id to enforce tenant isolation.
+        Parameterizes all values and writes only whitelisted metric properties.
+        """
+        if not self._driver:
+            raise ServiceUnavailable("Neo4j is not configured")
+        if not organization_id:
+            raise ValueError("organization_id is required for tenant isolation")
+        if not metrics:
+            return
+
+        updates = []
+        for asset_id, data in metrics.items():
+            props: dict[str, Any] = {}
+            for metric_key, prop_name in ALLOWED_METRIC_PROPERTIES.items():
+                if (val := data.get(metric_key)) is not None:
+                    props[prop_name] = val
+            if props:
+                updates.append({"asset_id": str(asset_id), "properties": props})
+
+        if not updates:
+            return
+
+        query = """
+            UNWIND $updates AS u
+            MATCH (p:Project {id: $project_id, organization_id: $organization_id})
+            MATCH (p)-[:CONTAINS]->(a:Asset {id: u.asset_id})
+            SET a += u.properties
+        """
+        with self._driver.session() as session:
+            session.run(
+                query,
+                project_id=project_id,
+                organization_id=organization_id,
+                updates=updates,
+            ).consume()

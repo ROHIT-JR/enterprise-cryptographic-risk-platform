@@ -1,5 +1,5 @@
-import pytest
 from risk_engine.evidence_fusion import EvidenceFusionEngine
+
 
 def test_evidence_fusion_low_conflict():
     engine = EvidenceFusionEngine()

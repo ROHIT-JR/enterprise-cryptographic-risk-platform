@@ -1,5 +1,5 @@
-import pytest
 from risk_engine.mosca_model import MoscaModel
+
 
 def test_mosca_critical_deadline():
     model = MoscaModel()

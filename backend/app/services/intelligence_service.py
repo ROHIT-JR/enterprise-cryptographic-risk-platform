@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from collections import defaultdict, deque
 from typing import Any
@@ -17,13 +18,17 @@ from backend.app.models import (
     RiskFinding,
 )
 from backend.app.services.audit_service import record_audit
+from graph_analysis.networkx_layer import NetworkXGraphLayer
 from migration_engine import (
     MigrationRoadmapEngine,
     PQCRecommendationEngine,
     PQCRecommendationInput,
 )
 from risk_engine.business_criticality import BusinessCriticalityEngine
-from risk_engine.dependency_centrality import DependencyCentralityEngine
+from risk_engine.dependency_centrality import (
+    CentralityAssessment,
+    DependencyCentralityEngine,
+)
 from risk_engine.evidence_engine import EvidenceIntelligenceEngine
 from risk_engine.final_risk_engine import FinalRiskEngine, FinalRiskInput
 from risk_engine.hndl_analysis import HNDLAnalysisEngine, HNDLInput
@@ -32,6 +37,8 @@ from risk_engine.migration_complexity import (
     MigrationComplexityInput,
 )
 from risk_engine.quantum_risk import QuantumRiskEngine
+
+logger = logging.getLogger(__name__)
 
 INTELLIGENCE_TYPES = {"algorithm", "certificate", "protocol", "library"}
 
@@ -44,12 +51,19 @@ class IntelligenceService:
         self.quantum = QuantumRiskEngine()
         self.hndl = HNDLAnalysisEngine()
         self.centrality = DependencyCentralityEngine()
+        self.networkx_layer = NetworkXGraphLayer()
         self.business = BusinessCriticalityEngine()
         self.complexity = MigrationComplexityEngine()
         self.final = FinalRiskEngine()
-        self.mosca = __import__('risk_engine.mosca_model', fromlist=['MoscaModel']).MoscaModel()
-        self.evidence_fusion = __import__('risk_engine.evidence_fusion', fromlist=['EvidenceFusionEngine']).EvidenceFusionEngine()
-        self.advanced_ext = __import__('risk_engine.advanced_risk_extension', fromlist=['AdvancedRiskExtension']).AdvancedRiskExtension()
+        self.mosca = __import__(
+            "risk_engine.mosca_model", fromlist=["MoscaModel"]
+        ).MoscaModel()
+        self.evidence_fusion = __import__(
+            "risk_engine.evidence_fusion", fromlist=["EvidenceFusionEngine"]
+        ).EvidenceFusionEngine()
+        self.advanced_ext = __import__(
+            "risk_engine.advanced_risk_extension", fromlist=["AdvancedRiskExtension"]
+        ).AdvancedRiskExtension()
         self.recommendations = PQCRecommendationEngine()
         self.roadmap = MigrationRoadmapEngine()
 
@@ -82,7 +96,81 @@ class IntelligenceService:
             (relationship.source_asset_id, relationship.target_asset_id)
             for relationship in relationships
         ]
-        centrality = self.centrality.analyze_all(nodes=nodes, edges=edge_pairs)
+        # The PostgreSQL inventory is authoritative; calculate legacy baseline for all assets
+        centrality: dict[str, CentralityAssessment] = self.centrality.analyze_all(
+            nodes=nodes, edges=edge_pairs
+        )
+
+        # Attempt NetworkX-based metrics enhancement if available
+        try:
+            payload = self.networkx_layer.fetch_payload(
+                project_id=project.id,
+                organization_id=project.organization_id,
+            )
+            if payload and payload.nodes:
+                G = self.networkx_layer.build_graph(payload)
+                if G.number_of_nodes() > 0:
+                    nx_metrics = self.networkx_layer.compute_metrics(
+                        G,
+                        project_id=project.id,
+                        organization_id=project.organization_id,
+                    )
+                    if nx_metrics:
+                        # Overlay NetworkX metrics onto PostgreSQL assets
+                        for asset in assets:
+                            if asset.id in nx_metrics:
+                                mdata = nx_metrics[asset.id]
+                                legacy = centrality[asset.id]
+                                deg_val = float(
+                                    mdata.get(
+                                        "degree_centrality",
+                                        legacy.degree_centrality,
+                                    )
+                                )
+                                score_val = float(
+                                    mdata.get(
+                                        "centrality_score",
+                                        mdata.get(
+                                            "blast_radius",
+                                            legacy.centrality_score,
+                                        ),
+                                    )
+                                )
+                                centrality[asset.id] = CentralityAssessment(
+                                    asset=legacy.asset,
+                                    dependent_systems=int(
+                                        mdata.get("dependent_systems", legacy.dependent_systems)
+                                    ),
+                                    degree_centrality=round(
+                                        min(max(deg_val, 0.0), 1.0), 4
+                                    ),
+                                    critical_path_impact=legacy.critical_path_impact,
+                                    centrality_score=round(
+                                        min(max(score_val, 0.0), 1.0), 4
+                                    ),
+                                    dependent_ids=list(
+                                        mdata.get("dependent_ids", legacy.dependent_ids)
+                                    ),
+                                )
+                        # Write-back once after successful computation (non-fatal)
+                        try:
+                            self.networkx_layer.write_back(
+                                project_id=project.id,
+                                metrics=nx_metrics,
+                                organization_id=project.organization_id,
+                            )
+                        except Exception as wb_exc:
+                            logger.warning(
+                                "NetworkX metric write-back failed for project %s: %s",
+                                project.id,
+                                wb_exc,
+                            )
+        except Exception as exc:
+            logger.warning(
+                "NetworkX graph intelligence failed for project %s; using legacy centrality: %s",
+                project.id,
+                exc,
+            )
         sources_by_family = self._evidence_sources(assets)
         analyses: list[RiskAnalysis] = []
         vulnerable_ids: set[str] = set()
@@ -103,8 +191,8 @@ class IntelligenceService:
             # New evidence fusion using Dempster‑Shafer
             # Convert each source confidence into a simple mass dict (True mass = confidence)
             source_masses = []
-            for src in sources_by_family[self._algorithm_family(algorithm)]:
-                # For demonstration, treat each source as having the same confidence as the original evidence
+            for _src in sources_by_family[self._algorithm_family(algorithm)]:
+                # Treat each source as having the same confidence as original evidence
                 # In a real implementation, each source would have its own confidence metric
                 mass = {
                     "True": evidence_original.confidence / 100.0,

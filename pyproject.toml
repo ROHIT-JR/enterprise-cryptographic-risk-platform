@@ -4,6 +4,12 @@ version = "0.3.0"
 description = "Enterprise Cryptographic Discovery, Analysis & Transformation Platform"
 requires-python = ">=3.11"
 
+dependencies = [
+    "networkx==3.4.2",
+    "numpy==2.2.3",
+    "scipy==1.15.2",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
