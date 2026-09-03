@@ -377,17 +377,23 @@ class IntelligenceService:
         assets_by_id = {asset.id: asset for asset in assets}
         adjacency: dict[str, set[str]] = defaultdict(set)
         dependencies: list[tuple[str, str]] = []
+        dep_map: dict[str, list[str]] = defaultdict(list)
+        
         for relationship in relationships:
             source, target = relationship.source_asset_id, relationship.target_asset_id
             adjacency[source].add(target)
             adjacency[target].add(source)
             if relationship.relationship_type == "PROTECTS":
                 dependencies.append((target, source))
+                dep_map[target].append(source)
             else:
                 dependencies.append((source, target))
+                dep_map[source].append(target)
+                
         candidates = set(vulnerable_ids)
         for asset_id in vulnerable_ids:
             candidates.update(self._connected_migration_nodes(asset_id, adjacency, assets_by_id))
+            
         roadmap_assets = {
             asset_id: {
                 "name": assets_by_id[asset_id].name,
@@ -395,17 +401,26 @@ class IntelligenceService:
             }
             for asset_id in candidates
         }
-        roadmap = self.roadmap.generate(
-            assets=roadmap_assets,
-            dependencies=dependencies,
-            included_ids=candidates,
-        )
-        wave_by_id = {item.asset_id: item for item in roadmap}
+        
+        # Gather all risk analyses to extract raw risk factors for the M4 optimizer
+        risk_analyses = db.scalars(
+            select(RiskAnalysis).where(RiskAnalysis.asset_id.in_(candidates))
+        ).all()
+        risk_by_id = {r.asset_id: r for r in risk_analyses}
+        
+        # 1. First Pass: Compute properties required by both Optimizer and Fallback
+        computed_plans = {}
+        optimizer_inputs = []
+        
+        # Late import to prevent circular dependency
+        from migration_engine.optimizer_models import OptimizerInput
+        
         for asset_id in candidates:
             asset = assets_by_id[asset_id]
             context = contexts[asset_id]
             graph = centrality[asset_id]
             current_algorithm = asset.algorithm or asset.name
+            
             if asset.asset_type == "application":
                 recommendation = {
                     "asset": asset.name,
@@ -447,6 +462,7 @@ class IntelligenceService:
                 except Exception as e:
                     logger.warning("TOPSIS recommendation failed for %s: %s", asset.name, e)
                     recommendation = self.recommendations.recommend(req_input).model_dump()
+                    
             complexity = self.complexity.assess(
                 MigrationComplexityInput(
                     dependency_count=graph.dependent_systems,
@@ -456,22 +472,108 @@ class IntelligenceService:
                     compatibility=context.compatibility,
                 )
             )
-            plan = db.scalar(select(MigrationPlan).where(MigrationPlan.asset_id == asset_id))
-            item = wave_by_id[asset_id]
-            values = {
-                "organization_id": project.organization_id,
-                "project_id": project.id,
-                "recommended_algorithm": recommendation["recommended_algorithm"],
-                "wave": item.wave,
-                "complexity": complexity.migration_complexity,
-                "reasons": [item.reason, *complexity.reasons],
+            
+            # Retrieve available risk scores
+            risk_model = risk_by_id.get(asset_id)
+            quantum_score = risk_model.quantum_score if risk_model else None
+            hndl_score = risk_model.hndl_score if risk_model else None
+            business_score = risk_model.business_score if risk_model else None
+            
+            # Map blast radius using the NetworkX Graph's output
+            blast_radius = min(100.0, float(graph.dependent_systems * 10))  # Approximation based on deps, usually properly set in NetworkX
+            
+            optimizer_inputs.append(OptimizerInput(
+                asset_id=asset_id,
+                asset_name=asset.name,
+                asset_type=asset.asset_type,
+                quantum_score=quantum_score,
+                hndl_score=hndl_score,
+                blast_radius=blast_radius,
+                business_criticality=business_score,
+                migration_complexity=complexity.migration_complexity_score if hasattr(complexity, "migration_complexity_score") else 50.0,
+                recommended_algorithm=recommendation["recommended_algorithm"],
+                dependencies=dep_map[asset_id],
+                vendor_ready=True,
+                compatibility_blocked=False,
+                legacy_reasons=complexity.reasons,
+                recommendation_metadata=recommendation
+            ))
+            
+            computed_plans[asset_id] = {
                 "recommendation": recommendation,
+                "complexity": complexity,
             }
-            if plan:
-                for key, value in values.items():
-                    setattr(plan, key, value)
-            else:
-                db.add(MigrationPlan(asset_id=asset_id, **values))
+
+        # 2. Attempt M4 Optimization
+        optimized_result = None
+        if getattr(self, "optimizer", None) is None:
+            try:
+                from migration_engine.optimizer import DependencyAwareOptimizer
+                self.optimizer = DependencyAwareOptimizer()
+            except ImportError:
+                pass
+
+        if getattr(self, "optimizer", None) is not None:
+            try:
+                optimized_result = self.optimizer.optimize(optimizer_inputs)
+            except Exception as e:
+                logger.warning("DependencyAwareOptimizer failed: %s. Falling back to baseline roadmap.", e)
+
+        # 3. Apply results
+        if optimized_result and optimized_result.assets:
+            for asset_id, opt_asset in optimized_result.assets.items():
+                plan = db.scalar(select(MigrationPlan).where(MigrationPlan.asset_id == asset_id))
+                computed = computed_plans[asset_id]
+                
+                values = {
+                    "organization_id": project.organization_id,
+                    "project_id": project.id,
+                    "recommended_algorithm": opt_asset.recommended_algorithm,
+                    "wave": opt_asset.wave,
+                    "complexity": computed["complexity"].migration_complexity,
+                    "reasons": opt_asset.rationale,
+                    "recommendation": computed["recommendation"],
+                    "priority_score": opt_asset.priority_score,
+                    "confidence": opt_asset.confidence,
+                    "optimizer_version": optimized_result.optimizer_version,
+                    "constraints": opt_asset.constraints,
+                }
+                if plan:
+                    for key, value in values.items():
+                        setattr(plan, key, value)
+                else:
+                    db.add(MigrationPlan(asset_id=asset_id, **values))
+        else:
+            # Fallback to Phase 2 roadmap
+            roadmap = self.roadmap.generate(
+                assets=roadmap_assets,
+                dependencies=dependencies,
+                included_ids=candidates,
+            )
+            wave_by_id = {item.asset_id: item for item in roadmap}
+            
+            for asset_id in candidates:
+                computed = computed_plans[asset_id]
+                item = wave_by_id[asset_id]
+                plan = db.scalar(select(MigrationPlan).where(MigrationPlan.asset_id == asset_id))
+                values = {
+                    "organization_id": project.organization_id,
+                    "project_id": project.id,
+                    "recommended_algorithm": computed["recommendation"]["recommended_algorithm"],
+                    "wave": item.wave,
+                    "complexity": computed["complexity"].migration_complexity,
+                    "reasons": [item.reason, *computed["complexity"].reasons],
+                    "recommendation": computed["recommendation"],
+                    "priority_score": None,
+                    "confidence": None,
+                    "optimizer_version": None,
+                    "constraints": [],
+                }
+                if plan:
+                    for key, value in values.items():
+                        setattr(plan, key, value)
+                else:
+                    db.add(MigrationPlan(asset_id=asset_id, **values))
 
     @staticmethod
     def _connected_migration_nodes(

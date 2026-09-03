@@ -52,8 +52,12 @@ class MigrationPlan(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         ForeignKey("assets.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
     )
     recommended_algorithm: Mapped[str] = mapped_column(String(255), nullable=False)
-    wave: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    wave: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     complexity: Mapped[str] = mapped_column(String(16), nullable=False)
+    priority_score: Mapped[float | None] = mapped_column(Float)
+    confidence: Mapped[float | None] = mapped_column(Float)
+    optimizer_version: Mapped[str | None] = mapped_column(String(32))
+    constraints: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     reasons: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     recommendation: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
