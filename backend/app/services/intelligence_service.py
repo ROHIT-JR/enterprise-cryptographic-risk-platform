@@ -435,15 +435,18 @@ class IntelligenceService:
                     "constraints": [],
                 }
             else:
-                recommendation = self.recommendations.recommend(
-                    PQCRecommendationInput(
-                        asset=asset.name,
-                        current_algorithm=current_algorithm,
-                        use_case=str(asset.details.get("use_case", asset.asset_type)),
-                        compatibility=context.compatibility,
-                        memory_constraint=str(asset.details.get("memory_constraint", "standard")),
-                    )
-                ).model_dump()
+                req_input = PQCRecommendationInput(
+                    asset=asset.name,
+                    current_algorithm=current_algorithm,
+                    use_case=str(asset.details.get("use_case", asset.asset_type)),
+                    compatibility=context.compatibility,
+                    memory_constraint=str(asset.details.get("memory_constraint", "standard")),
+                )
+                try:
+                    recommendation = self.topsis_recommendations.recommend(req_input).model_dump()
+                except Exception as e:
+                    logger.warning("TOPSIS recommendation failed for %s: %s", asset.name, e)
+                    recommendation = self.recommendations.recommend(req_input).model_dump()
             complexity = self.complexity.assess(
                 MigrationComplexityInput(
                     dependency_count=graph.dependent_systems,

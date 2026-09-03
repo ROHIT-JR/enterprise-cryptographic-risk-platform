@@ -4,6 +4,10 @@ from migration_engine.pqc_recommendation import (
     PQCRecommendationInput,
 )
 from migration_engine.roadmap import MigrationRoadmapEngine, RoadmapItem
+from migration_engine.topsis_recommendation import (
+    TOPSISRecommendation,
+    TOPSISRecommendationEngine,
+)
 
 __all__ = [
     "MigrationRoadmapEngine",
@@ -11,4 +15,6 @@ __all__ = [
     "PQCRecommendationEngine",
     "PQCRecommendationInput",
     "RoadmapItem",
+    "TOPSISRecommendation",
+    "TOPSISRecommendationEngine",
 ]
