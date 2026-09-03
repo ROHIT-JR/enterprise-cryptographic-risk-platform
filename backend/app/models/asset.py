@@ -1,6 +1,7 @@
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import JSON, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -8,6 +9,7 @@ from backend.app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 if TYPE_CHECKING:
     from backend.app.models.business import BusinessContext
     from backend.app.models.intelligence import MigrationPlan, RiskAnalysis
+    from backend.app.models.lifecycle import CryptoLifecycleEvent
     from backend.app.models.project import Project
     from backend.app.models.risk import RiskFinding
     from backend.app.models.scan import Scan
@@ -39,6 +41,11 @@ class Asset(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     confidence: Mapped[float] = mapped_column(Float, default=0.8, nullable=False)
     dependency_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    
+    # Lifecycle Tracking
+    lifecycle_state: Mapped[str] = mapped_column(String(32), default="DISCOVERED", nullable=False, index=True)
+    governance_status: Mapped[str] = mapped_column(String(32), default="ACTIVE", nullable=False, index=True)
+    lifecycle_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
 
     project: Mapped["Project"] = relationship(back_populates="assets")
     scan: Mapped["Scan"] = relationship(back_populates="assets")
@@ -53,6 +60,9 @@ class Asset(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     migration_plan: Mapped["MigrationPlan | None"] = relationship(
         back_populates="asset", cascade="all, delete-orphan", uselist=False
+    )
+    lifecycle_events: Mapped[list["CryptoLifecycleEvent"]] = relationship(
+        back_populates="asset", cascade="all, delete-orphan"
     )
 
 

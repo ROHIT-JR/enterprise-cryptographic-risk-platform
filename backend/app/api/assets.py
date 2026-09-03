@@ -79,3 +79,102 @@ def get_asset(
     if not asset or (isinstance(user, User) and asset.organization_id != user.organization_id):
         raise HTTPException(status_code=404, detail="Asset not found")
     return serialize_asset(asset)
+
+
+from pydantic import BaseModel
+
+class LifecycleTransitionBody(BaseModel):
+    target_state: str | None = None
+    target_governance_status: str | None = None
+    reason: str | None = None
+    force_override: bool = False
+
+@router.get("/{asset_id}/lifecycle")
+def get_lifecycle(
+    asset_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    asset = db.scalar(
+        select(Asset).where(Asset.id == asset_id, Asset.organization_id == user.organization_id)
+    )
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+        
+    # Get history
+    from backend.app.models.lifecycle import CryptoLifecycleEvent
+    events = list(db.scalars(
+        select(CryptoLifecycleEvent)
+        .where(CryptoLifecycleEvent.asset_id == asset_id)
+        .order_by(CryptoLifecycleEvent.created_at.desc())
+    ))
+    
+    return {
+        "lifecycle_state": asset.lifecycle_state,
+        "governance_status": asset.governance_status,
+        "lifecycle_updated_at": asset.lifecycle_updated_at,
+        "history": [
+            {
+                "id": e.id,
+                "previous_state": e.previous_state,
+                "new_state": e.new_state,
+                "previous_governance_status": e.previous_governance_status,
+                "new_governance_status": e.new_governance_status,
+                "source": e.source,
+                "reason": e.reason,
+                "actor_role": e.actor_role,
+                "migration_wave": e.migration_wave,
+                "created_at": e.created_at
+            } for e in events
+        ]
+    }
+
+@router.post("/{asset_id}/lifecycle/transition")
+def transition_lifecycle(
+    asset_id: str,
+    body: LifecycleTransitionBody,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    asset = db.scalar(
+        select(Asset).where(Asset.id == asset_id, Asset.organization_id == user.organization_id)
+    )
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+        
+    from backend.app.services.lifecycle_service import LifecycleService
+    from lifecycle_engine import TransitionRequest, LifecycleState, GovernanceStatus
+    
+    svc = LifecycleService()
+    try:
+        t_state = LifecycleState(body.target_state.upper()) if body.target_state else None
+        t_gov = GovernanceStatus(body.target_governance_status.upper()) if body.target_governance_status else None
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Invalid state or status value")
+
+    try:
+        asset = svc.process_transition(
+            db=db,
+            asset_id=asset_id,
+            organization_id=asset.organization_id,
+            project_id=asset.project_id,
+            request=TransitionRequest(
+                target_state=t_state,
+                target_governance_status=t_gov,
+                reason=body.reason,
+                source="API",
+                is_automated=False,
+                actor_role=user.role,
+                force_override=body.force_override
+            ),
+            actor=user
+        )
+        db.commit()
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
+    return {
+        "lifecycle_state": asset.lifecycle_state,
+        "governance_status": asset.governance_status,
+        "lifecycle_updated_at": asset.lifecycle_updated_at
+    }

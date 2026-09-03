@@ -18,6 +18,8 @@ from backend.app.models import (
     RiskFinding,
 )
 from backend.app.services.audit_service import record_audit
+from backend.app.services.lifecycle_service import LifecycleService
+from lifecycle_engine import TransitionRequest, LifecycleState, GovernanceStatus
 from graph_analysis.networkx_layer import NetworkXGraphLayer
 from migration_engine import (
     MigrationRoadmapEngine,
@@ -55,6 +57,7 @@ class IntelligenceService:
         self.business = BusinessCriticalityEngine()
         self.complexity = MigrationComplexityEngine()
         self.final = FinalRiskEngine()
+        self.lifecycle = LifecycleService()
         self.mosca = __import__(
             "risk_engine.mosca_model", fromlist=["MoscaModel"]
         ).MoscaModel()
@@ -65,6 +68,8 @@ class IntelligenceService:
             "risk_engine.advanced_risk_extension", fromlist=["AdvancedRiskExtension"]
         ).AdvancedRiskExtension()
         self.recommendations = PQCRecommendationEngine()
+        from migration_engine.topsis_recommendation import TOPSISRecommendationEngine
+        self.topsis_recommendations = TOPSISRecommendationEngine()
         self.roadmap = MigrationRoadmapEngine()
 
     def analyze_project(self, db: Session, project: Project) -> list[RiskAnalysis]:
@@ -574,6 +579,64 @@ class IntelligenceService:
                         setattr(plan, key, value)
                 else:
                     db.add(MigrationPlan(asset_id=asset_id, **values))
+
+        # 4. Lifecycle Transitions (Audit Trail)
+        db.flush() # Ensure plans are persisted before we link metadata
+        for asset_id in candidates:
+            plan = db.scalar(select(MigrationPlan).where(MigrationPlan.asset_id == asset_id))
+            asset = assets_by_id[asset_id]
+            
+            # Step 1: DISCOVERED -> ASSESSED
+            # Evidence: Must have a completed risk assessment.
+            has_assessment = asset_id in risk_by_id
+            if asset.lifecycle_state == "DISCOVERED" and has_assessment:
+                self.lifecycle.process_transition(
+                    db, asset_id, project.organization_id, project.id, 
+                    TransitionRequest(target_state=LifecycleState.ASSESSED, source="Intelligence Pipeline", is_automated=True)
+                )
+                
+            # Step 2: ASSESSED -> RECOMMENDED
+            # Evidence: Must have a specific PQC recommendation that is not empty/none or 'Keep existing cryptography'.
+            recommendation_dict = computed_plans.get(asset_id, {}).get("recommendation", {})
+            recommendation_val = recommendation_dict.get("recommended_algorithm", "") if isinstance(recommendation_dict, dict) else ""
+            has_recommendation = bool(recommendation_val and recommendation_val.strip() and "keep existing" not in recommendation_val.lower())
+            
+            if asset.lifecycle_state == "ASSESSED" and has_recommendation:
+                self.lifecycle.process_transition(
+                    db, asset_id, project.organization_id, project.id, 
+                    TransitionRequest(target_state=LifecycleState.RECOMMENDED, source="Intelligence Pipeline", is_automated=True)
+                )
+                
+            # Step 3: RECOMMENDED -> MIGRATION_PLANNED / BLOCKED
+            if asset.lifecycle_state == "RECOMMENDED":
+                metadata = {
+                    "migration_plan_id": plan.id if plan else None,
+                    "optimizer_version": plan.optimizer_version if plan else None,
+                    "migration_wave": plan.wave if plan else None
+                }
+                if plan and plan.wave is not None:
+                    self.lifecycle.process_transition(
+                        db, asset_id, project.organization_id, project.id, 
+                        TransitionRequest(
+                            target_state=LifecycleState.MIGRATION_PLANNED, 
+                            target_governance_status=GovernanceStatus.ACTIVE, 
+                            source="M4 Optimizer", 
+                            is_automated=True, 
+                            metadata=metadata
+                        )
+                    )
+                else:
+                    self.lifecycle.process_transition(
+                        db, asset_id, project.organization_id, project.id, 
+                        TransitionRequest(
+                            target_state=LifecycleState.RECOMMENDED, 
+                            target_governance_status=GovernanceStatus.BLOCKED, 
+                            reason="Blocked by hard constraints or prerequisite constraints",
+                            source="M4 Optimizer", 
+                            is_automated=True, 
+                            metadata=metadata
+                        )
+                    )
 
     @staticmethod
     def _connected_migration_nodes(
