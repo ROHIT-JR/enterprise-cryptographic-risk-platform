@@ -35,6 +35,7 @@ const navigation = [
   { to: "/blast-radius", label: "Blast radius", icon: CircleDotDashed, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
   { to: "/migration", label: "Migration planner", icon: Route, roles: ["administrator", "security_analyst"] },
   { to: "/pqc", label: "PQC recommendations", icon: Sparkles, roles: ["administrator", "security_analyst"] },
+  { to: "/validation", label: "Research validation", icon: BrainCircuit, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
 ];
 
 function Brand() {

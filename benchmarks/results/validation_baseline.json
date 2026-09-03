@@ -1,0 +1,2571 @@
+{
+  "benchmark_version": "1.0",
+  "timestamp": "2026-09-03T10:57:11Z",
+  "environment": {
+    "python": "3.14.6",
+    "platform": "Linux-7.0.12+kali-amd64-x86_64-with-glibc2.42",
+    "cpu": "Unknown CPU"
+  },
+  "experiments": [
+    {
+      "nodes": 100,
+      "topology": "chain",
+      "dataset_seed": 42,
+      "graph_nodes": 100,
+      "graph_edges": 99,
+      "total_duration_ms": 464.57,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "measured",
+          "duration_ms": 9.79
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 1.63
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 3.03
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 100,
+          "edges": 99,
+          "scc_count": 100,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "measured",
+              "duration_ms": 9.79
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 1.63
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 3.03
+            }
+          },
+          "timings_ms": {
+            "build_graph": 0.27,
+            "compute_metrics": 405.62,
+            "scc_detection": 0.2
+          },
+          "structural_metrics": {
+            "scc_count": 100,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0492,
+            "max_blast_radius": 0.0708
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 100,
+      "topology": "star",
+      "dataset_seed": 42,
+      "graph_nodes": 100,
+      "graph_edges": 99,
+      "total_duration_ms": 53.8,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "measured",
+          "duration_ms": 0.85
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 0.76
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 0.47
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 100,
+          "edges": 99,
+          "scc_count": 100,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "measured",
+              "duration_ms": 0.85
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 0.76
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 0.47
+            }
+          },
+          "timings_ms": {
+            "build_graph": 0.21,
+            "compute_metrics": 37.88,
+            "scc_detection": 0.26
+          },
+          "structural_metrics": {
+            "scc_count": 100,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0075,
+            "max_blast_radius": 0.2525
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 100,
+      "topology": "scc",
+      "dataset_seed": 42,
+      "graph_nodes": 100,
+      "graph_edges": 110,
+      "total_duration_ms": 65.84,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "measured",
+          "duration_ms": 8.03
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 1.27
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 2.18
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 100,
+          "edges": 110,
+          "scc_count": 1,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "measured",
+              "duration_ms": 8.03
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 1.27
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 2.18
+            }
+          },
+          "timings_ms": {
+            "build_graph": 0.22,
+            "compute_metrics": 39.55,
+            "scc_detection": 0.16
+          },
+          "structural_metrics": {
+            "scc_count": 1,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0672,
+            "max_blast_radius": 0.1238
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 100,
+      "topology": "scale_free",
+      "dataset_seed": 42,
+      "graph_nodes": 100,
+      "graph_edges": 197,
+      "total_duration_ms": 65.19,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "measured",
+          "duration_ms": 1.44
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 0.98
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 1.05
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 100,
+          "edges": 197,
+          "scc_count": 100,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "measured",
+              "duration_ms": 1.44
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 0.98
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 1.05
+            }
+          },
+          "timings_ms": {
+            "build_graph": 0.29,
+            "compute_metrics": 38.47,
+            "scc_detection": 0.14
+          },
+          "structural_metrics": {
+            "scc_count": 100,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0126,
+            "max_blast_radius": 0.108
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 1000,
+      "topology": "chain",
+      "dataset_seed": 42,
+      "graph_nodes": 1000,
+      "graph_edges": 999,
+      "total_duration_ms": 1133.11,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "measured",
+          "duration_ms": 482.43
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 1.48
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 189.73
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 1000,
+          "edges": 999,
+          "scc_count": 1000,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "measured",
+              "duration_ms": 482.43
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 1.48
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 189.73
+            }
+          },
+          "timings_ms": {
+            "build_graph": 2.02,
+            "compute_metrics": 317.12,
+            "scc_detection": 1.32
+          },
+          "structural_metrics": {
+            "scc_count": 1000,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0515,
+            "max_blast_radius": 0.0795
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 1000,
+      "topology": "star",
+      "dataset_seed": 42,
+      "graph_nodes": 1000,
+      "graph_edges": 999,
+      "total_duration_ms": 309.44,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "measured",
+          "duration_ms": 65.84
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 1.54
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 4.62
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 1000,
+          "edges": 999,
+          "scc_count": 1000,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "measured",
+              "duration_ms": 65.84
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 1.54
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 4.62
+            }
+          },
+          "timings_ms": {
+            "build_graph": 2.76,
+            "compute_metrics": 52.95,
+            "scc_detection": 1.48
+          },
+          "structural_metrics": {
+            "scc_count": 1000,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0007,
+            "max_blast_radius": 0.2502
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 1000,
+      "topology": "scc",
+      "dataset_seed": 42,
+      "graph_nodes": 1000,
+      "graph_edges": 1100,
+      "total_duration_ms": 1092.15,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "measured",
+          "duration_ms": 798.42
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 1.8
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 50.53
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 1000,
+          "edges": 1099,
+          "scc_count": 1,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "measured",
+              "duration_ms": 798.42
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 1.8
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 50.53
+            }
+          },
+          "timings_ms": {
+            "build_graph": 2.0,
+            "compute_metrics": 111.84,
+            "scc_detection": 1.09
+          },
+          "structural_metrics": {
+            "scc_count": 1,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0134,
+            "max_blast_radius": 0.0767
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 1000,
+      "topology": "scale_free",
+      "dataset_seed": 42,
+      "graph_nodes": 1000,
+      "graph_edges": 1997,
+      "total_duration_ms": 574.33,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "measured",
+          "duration_ms": 79.14
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 1.79
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 10.75
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 1000,
+          "edges": 1997,
+          "scc_count": 1000,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "measured",
+              "duration_ms": 79.14
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 1.79
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 10.75
+            }
+          },
+          "timings_ms": {
+            "build_graph": 2.91,
+            "compute_metrics": 114.59,
+            "scc_detection": 0.98
+          },
+          "structural_metrics": {
+            "scc_count": 1000,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0013,
+            "max_blast_radius": 0.0421
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 5000,
+      "topology": "chain",
+      "dataset_seed": 42,
+      "graph_nodes": 5000,
+      "graph_edges": 4999,
+      "total_duration_ms": 5325.3,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "skipped",
+          "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 4.33
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 4140.24
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 5000,
+          "edges": 4999,
+          "scc_count": 5000,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "skipped",
+              "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 4.33
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 4140.24
+            }
+          },
+          "timings_ms": {
+            "build_graph": 11.19,
+            "compute_metrics": 475.19,
+            "scc_detection": 5.4
+          },
+          "structural_metrics": {
+            "scc_count": 5000,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0479,
+            "max_blast_radius": 0.0791
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 5000,
+      "topology": "star",
+      "dataset_seed": 42,
+      "graph_nodes": 5000,
+      "graph_edges": 4999,
+      "total_duration_ms": 1008.41,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "skipped",
+          "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 4.38
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 71.92
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 5000,
+          "edges": 4999,
+          "scc_count": 5000,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "skipped",
+              "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 4.38
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 71.92
+            }
+          },
+          "timings_ms": {
+            "build_graph": 10.6,
+            "compute_metrics": 246.32,
+            "scc_detection": 6.16
+          },
+          "structural_metrics": {
+            "scc_count": 5000,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0001,
+            "max_blast_radius": 0.25
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 5000,
+      "topology": "scc",
+      "dataset_seed": 42,
+      "graph_nodes": 5000,
+      "graph_edges": 5500,
+      "total_duration_ms": 2052.24,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "skipped",
+          "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 5.8
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 627.61
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 5000,
+          "edges": 5500,
+          "scc_count": 1,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "skipped",
+              "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 5.8
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 627.61
+            }
+          },
+          "timings_ms": {
+            "build_graph": 10.42,
+            "compute_metrics": 661.0,
+            "scc_detection": 5.69
+          },
+          "structural_metrics": {
+            "scc_count": 1,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0036,
+            "max_blast_radius": 0.0233
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 5000,
+      "topology": "scale_free",
+      "dataset_seed": 42,
+      "graph_nodes": 5000,
+      "graph_edges": 9997,
+      "total_duration_ms": 7021.34,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "skipped",
+          "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 9.9
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 53.38
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 5000,
+          "edges": 9997,
+          "scc_count": 5000,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "skipped",
+              "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 9.9
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 53.38
+            }
+          },
+          "timings_ms": {
+            "build_graph": 15.71,
+            "compute_metrics": 811.68,
+            "scc_detection": 7.26
+          },
+          "structural_metrics": {
+            "scc_count": 5000,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0003,
+            "max_blast_radius": 0.0353
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 10000,
+      "topology": "chain",
+      "dataset_seed": 42,
+      "graph_nodes": 10000,
+      "graph_edges": 9999,
+      "total_duration_ms": 20372.99,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "skipped",
+          "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 7.66
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 18026.66
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 10000,
+          "edges": 9999,
+          "scc_count": 10000,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "skipped",
+              "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 7.66
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 18026.66
+            }
+          },
+          "timings_ms": {
+            "build_graph": 21.53,
+            "compute_metrics": 778.59,
+            "scc_detection": 12.77
+          },
+          "structural_metrics": {
+            "scc_count": 10000,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0478,
+            "max_blast_radius": 0.079
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 10000,
+      "topology": "star",
+      "dataset_seed": 42,
+      "graph_nodes": 10000,
+      "graph_edges": 9999,
+      "total_duration_ms": 2080.54,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "skipped",
+          "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 11.35
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 48.24
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 10000,
+          "edges": 9999,
+          "scc_count": 10000,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "skipped",
+              "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 11.35
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 48.24
+            }
+          },
+          "timings_ms": {
+            "build_graph": 25.1,
+            "compute_metrics": 462.05,
+            "scc_detection": 14.84
+          },
+          "structural_metrics": {
+            "scc_count": 10000,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0001,
+            "max_blast_radius": 0.25
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 10000,
+      "topology": "scc",
+      "dataset_seed": 42,
+      "graph_nodes": 10000,
+      "graph_edges": 11000,
+      "total_duration_ms": 5452.3,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "skipped",
+          "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 9.99
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 2048.36
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 10000,
+          "edges": 11000,
+          "scc_count": 1,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "skipped",
+              "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 9.99
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 2048.36
+            }
+          },
+          "timings_ms": {
+            "build_graph": 21.05,
+            "compute_metrics": 1689.4,
+            "scc_detection": 12.76
+          },
+          "structural_metrics": {
+            "scc_count": 1,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.002,
+            "max_blast_radius": 0.0161
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    },
+    {
+      "nodes": 10000,
+      "topology": "scale_free",
+      "dataset_seed": 42,
+      "graph_nodes": 10000,
+      "graph_edges": 19997,
+      "total_duration_ms": 31296.87,
+      "stages": {
+        "betweenness_centrality": {
+          "status": "skipped",
+          "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+        },
+        "pagerank": {
+          "status": "measured",
+          "duration_ms": 15.25
+        },
+        "topological_sort": {
+          "status": "measured",
+          "duration_ms": 162.53
+        }
+      },
+      "scenarios": {
+        "mosca": {
+          "x_plus_y_less_than_z": {
+            "deadline_risk": "Low",
+            "formula": "5 + 2 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_equals_z": {
+            "deadline_risk": "Low",
+            "formula": "1000 + 1035 > 2035",
+            "explanation": "Current schedule meets quantum timeline"
+          },
+          "x_plus_y_greater_than_z": {
+            "deadline_risk": "Critical",
+            "formula": "2000 + 50 > 2035",
+            "explanation": "Migration must begin immediately"
+          },
+          "monotonicity_check": {
+            "base": {
+              "deadline_risk": "Low",
+              "formula": "1000 + 1000 > 2035",
+              "explanation": "Current schedule meets quantum timeline"
+            },
+            "increased_lifetime": {
+              "deadline_risk": "Critical",
+              "formula": "1500 + 1000 > 2035",
+              "explanation": "Migration must begin immediately"
+            },
+            "increased_migration": {
+              "deadline_risk": "Critical",
+              "formula": "1000 + 1500 > 2035",
+              "explanation": "Migration must begin immediately"
+            }
+          }
+        },
+        "graph": {
+          "nodes": 10000,
+          "edges": 19997,
+          "scc_count": 10000,
+          "stages": {
+            "betweenness_centrality": {
+              "status": "skipped",
+              "reason": "Exact betweenness benchmark disabled above configured node threshold to avoid excessive benchmark cost."
+            },
+            "pagerank": {
+              "status": "measured",
+              "duration_ms": 15.25
+            },
+            "topological_sort": {
+              "status": "measured",
+              "duration_ms": 162.53
+            }
+          },
+          "timings_ms": {
+            "build_graph": 115.88,
+            "compute_metrics": 2356.95,
+            "scc_detection": 14.06
+          },
+          "structural_metrics": {
+            "scc_count": 10000,
+            "wcc_count": 1,
+            "avg_blast_radius": 0.0001,
+            "max_blast_radius": 0.0249
+          }
+        },
+        "topsis": {
+          "baseline_ml_kem_winner": "ML-KEM-512",
+          "high_security_winner": "ML-KEM-512",
+          "sensitivity": {
+            "base_winner": "ML-KEM-512",
+            "perturbed_winner": "ML-KEM-512",
+            "stability_percentage": 100
+          }
+        },
+        "optimizer": {
+          "chain_waves": {
+            "A_wave": 3,
+            "B_wave": 2,
+            "C_wave": 1
+          },
+          "blocked_waves": {
+            "D_wave": null,
+            "E_wave": null,
+            "F_wave": 1
+          },
+          "scc_waves": {
+            "G_wave": 1,
+            "H_wave": 1
+          }
+        },
+        "fusion": {
+          "agreeing": {
+            "confidence": 80,
+            "evidence_strength": "High",
+            "conflict": false
+          },
+          "weak": {
+            "confidence": 54,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "highly_conflicting": {
+            "confidence": 50,
+            "evidence_strength": "Low",
+            "conflict": true
+          },
+          "missing": {
+            "confidence": 0,
+            "evidence_strength": "Low",
+            "conflict": false
+          },
+          "single": {
+            "confidence": 70,
+            "evidence_strength": "Medium",
+            "conflict": false
+          }
+        },
+        "lifecycle": {
+          "idempotency": {
+            "was_idempotent": true
+          },
+          "blocked_path": {
+            "new_state": "RECOMMENDED",
+            "new_governance": "BLOCKED",
+            "success": true
+          },
+          "normal_path": {
+            "new_state": "MIGRATION_PLANNED",
+            "new_governance": "ACTIVE",
+            "success": true
+          }
+        }
+      }
+    }
+  ]
+}
