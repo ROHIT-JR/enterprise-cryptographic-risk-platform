@@ -24,6 +24,7 @@ COPY knowledge_graph /app/knowledge_graph
 COPY risk_engine /app/risk_engine
 COPY migration_engine /app/migration_engine
 COPY graph_analysis /app/graph_analysis
+COPY lifecycle_engine /app/lifecycle_engine
 COPY sample_data /app/sample_data
 COPY alembic.ini /app/alembic.ini
 COPY backend/migrations /app/backend/migrations

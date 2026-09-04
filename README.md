@@ -169,15 +169,75 @@ See [Architecture](docs/architecture.md), [Development](docs/development.md), an
 - At least 4 GiB of available memory
 - Node.js 22+ and Python 3.11+ only when running services outside Docker
 
-## Installation
+## Run the complete application with Docker
+
+No cloud account or external database is required. Docker Compose starts PostgreSQL, Neo4j,
+FastAPI, and the Vite frontend, then seeds the SecureBank demonstration on first startup.
+
+### First-time setup
+
+Install Docker Engine and Docker Compose v2, make sure the Docker service is running, and then run:
 
 ```bash
 git clone https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform.git
 cd enterprise-cryptographic-risk-platform
-docker-compose up
+cp .env.example .env
+sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)/" .env
+docker compose up --build -d --wait --wait-timeout 240
+docker compose ps
+curl -fsS http://localhost:8000/health
 ```
 
-No cloud account or external database is required. Compose builds the development images, installs dependencies, waits for PostgreSQL and Neo4j, starts FastAPI, and serves Vite on port 5173. The SecureBank demo is seeded on first startup.
+If the repository is already cloned, start from its root instead:
+
+```bash
+cd '/path/to/enterprise-cryptographic-risk-platform'
+cp -n .env.example .env
+sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)/" .env
+docker compose up --build -d --wait --wait-timeout 240
+docker compose ps
+curl -fsS http://localhost:8000/health
+```
+
+The first build can take several minutes. Startup is complete when PostgreSQL, Neo4j, the backend,
+and the frontend are all reported as `healthy`.
+
+### Recurring startup
+
+The database and demo data remain in Docker volumes. For later sessions, run:
+
+```bash
+cd '/path/to/enterprise-cryptographic-risk-platform'
+docker compose up -d --wait --wait-timeout 240
+docker compose ps
+```
+
+Rebuild after pulling code or changing dependencies:
+
+```bash
+docker compose up --build -d --wait --wait-timeout 240
+```
+
+Stop the application without deleting data:
+
+```bash
+docker compose down
+```
+
+View service logs when startup fails:
+
+```bash
+docker compose ps -a
+docker compose logs --tail=200 postgres neo4j backend frontend
+```
+
+Reset the local demo only when persisted data is no longer needed. This permanently deletes the
+local ECDAT-X PostgreSQL, Neo4j, scan, and frontend dependency volumes:
+
+```bash
+docker compose down -v --remove-orphans
+docker compose up --build -d --wait --wait-timeout 240
+```
 
 Local demo users share the `ECDAT_DEMO_PASSWORD` value from `.env`: `securebank-admin`,
 `security-analyst`, and `security-auditor`, in organization `SecureBank`. Replace or disable these
@@ -192,12 +252,6 @@ accounts outside the local demo.
 - PostgreSQL: `localhost:5432`
 - Neo4j Browser: <http://localhost:7474>
 - Neo4j Bolt: `localhost:7687`
-
-Stop services without deleting persisted database data:
-
-```bash
-docker-compose down
-```
 
 The built-in credentials are for local development only. Copy `.env.example` to `.env` and replace them before using the stack on a shared machine. Set `ECDAT_SEED_DEMO=false` for an empty inventory.
 
@@ -229,7 +283,7 @@ npm run dev
 
 ```bash
 pytest
-ruff check backend scanners cbom_engine knowledge_graph risk_engine migration_engine tests
+ruff check backend scanners cbom_engine knowledge_graph graph_analysis lifecycle_engine risk_engine migration_engine tests
 cd frontend && npm run typecheck && npm run test -- --run && npm run build
 ```
 
