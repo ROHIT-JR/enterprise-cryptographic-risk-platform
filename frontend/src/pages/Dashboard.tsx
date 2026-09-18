@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Activity,
   Atom,
@@ -72,7 +73,10 @@ async function downloadReport() {
     a.download = `ecdat-inventory-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  } catch { /* silent fail without backend */ }
+  } catch (caught) {
+    console.error("CBOM Export failed:", caught);
+    window.alert("Failed to export CBOM. Ensure the enterprise reporting service is running and retry.");
+  }
 }
 
 export function Dashboard() {
@@ -80,21 +84,49 @@ export function Dashboard() {
   if (loading) return <LoadingState />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
 
-  const quantumExposure =
-    data.metrics.quantum_exposure_percent != null
-      ? `${data.metrics.quantum_exposure_percent}%`
-      : data.metrics.total_assets > 0
-        ? `${Math.round((data.metrics.critical_assets / data.metrics.total_assets) * 100)}%`
-        : "—";
+  const hasQuantumExposure = data.metrics.quantum_exposure_percent != null;
+  const quantumMetric = hasQuantumExposure
+    ? {
+        label: "Quantum Exposure",
+        value: `${data.metrics.quantum_exposure_percent}%`,
+        sub: "Shor/Grover vulnerable algorithms",
+      }
+    : {
+        label: "Critical Asset Ratio",
+        value:
+          data.metrics.total_assets > 0
+            ? `${Math.round((data.metrics.critical_assets / data.metrics.total_assets) * 100)}%`
+            : "0%",
+        sub: "Critical findings / total inventory",
+      };
 
-  const overallRiskScore =
-    data.metrics.average_risk_score != null ? Math.round(data.metrics.average_risk_score) : "—";
+  const computedRiskScore = useMemo(() => {
+    if (data.metrics.average_risk_score != null) {
+      return {
+        value: Math.round(data.metrics.average_risk_score),
+        sub: `${formatNumber(data.metrics.algorithms_found)} primitives mapped`,
+      };
+    }
+    const total = data.risk_distribution.reduce((sum, item) => sum + item.value, 0);
+    if (total === 0) {
+      return { value: 0, sub: "No active vulnerabilities" };
+    }
+    const weights: Record<string, number> = { critical: 95, high: 70, medium: 45, low: 20 };
+    const weightedSum = data.risk_distribution.reduce((sum, item) => {
+      const w = weights[item.name.toLowerCase()] ?? 30;
+      return sum + w * item.value;
+    }, 0);
+    return {
+      value: Math.round(weightedSum / total),
+      sub: "Weighted distribution average",
+    };
+  }, [data]);
 
   const metrics = [
     { label: "Total Assets Discovered", value: formatNumber(data.metrics.total_assets),   icon: Boxes,       sub: `${data.metrics.projects_scanned} projects normalized` },
     { label: "Critical Findings",       value: formatNumber(data.metrics.critical_assets), icon: ShieldAlert, sub: "Immediate migration pressure", alert: true },
-    { label: "Quantum Exposure",         value: quantumExposure,                           icon: Atom,        sub: "Shor/Grover vulnerable algorithms" },
-    { label: "Overall Risk Score",       value: overallRiskScore,                          icon: Activity,    sub: `${formatNumber(data.metrics.algorithms_found)} primitives mapped` },
+    { label: quantumMetric.label,       value: quantumMetric.value,                       icon: Atom,        sub: quantumMetric.sub },
+    { label: "Overall Risk Score",       value: computedRiskScore.value,                   icon: Activity,    sub: computedRiskScore.sub },
   ];
 
   const riskTotal = data.risk_distribution.reduce((sum, item) => sum + item.value, 0);

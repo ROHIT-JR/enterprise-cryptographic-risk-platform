@@ -28,3 +28,10 @@ export const severityStyles: Record<Severity, string> = {
   low:      "border-emerald-300 bg-emerald-50/90 text-emerald-950",
 };
 
+export const severityHexColors: Record<Severity, string> = {
+  critical: "#dc2626",
+  high:     "#ea580c",
+  medium:   "#d97706",
+  low:      "#16a34a",
+};
+

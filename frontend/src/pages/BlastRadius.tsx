@@ -1,5 +1,5 @@
 import { CircleDotDashed, Network, X, Zap } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -119,20 +119,31 @@ export function BlastRadius() {
     };
   }, [degrees, nodeList]);
 
+  const timeoutsRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach((t) => window.clearTimeout(t));
+    };
+  }, []);
+
   const triggerAnimation = useCallback(() => {
     if (isAnimating) return;
+    timeoutsRef.current.forEach((t) => window.clearTimeout(t));
+    timeoutsRef.current = [];
     setIsAnimating(true);
     setShowPanel(false);
     setFrame(0);
     const steps: AnimFrame[] = [1, 2, 3, 4];
     steps.forEach((f, i) => {
-      setTimeout(() => {
+      const tid = window.setTimeout(() => {
         setFrame(f);
         if (i === steps.length - 1) {
           setIsAnimating(false);
           setShowPanel(true);
         }
       }, (i + 1) * 350);
+      timeoutsRef.current.push(tid);
     });
   }, [isAnimating]);
 
@@ -222,8 +233,8 @@ export function BlastRadius() {
       <div className={`flex gap-5 ${showPanel ? "xl:flex-row" : ""}`}>
         <div className="min-w-0 flex-1">
           <Card className="overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-slate-150 px-5 py-4 text-xs text-slate-500">
-              <CircleDotDashed className="h-4 w-4 text-blue-600" />
+            <div className="flex items-center gap-2 border-b border-zinc-200 px-5 py-3.5 text-xs text-zinc-500">
+              <CircleDotDashed className="h-4 w-4 text-indigo-600" />
               Crypto asset → applications → business services
             </div>
             {graph.nodes.length ? (
@@ -241,8 +252,8 @@ export function BlastRadius() {
                   <MiniMap
                     nodeColor={(node) =>
                       node.id === data.asset_id
-                        ? frame > 0 ? "#ef4444" : "#a78bfa"
-                        : "#3b82f6"
+                        ? frame > 0 ? "#dc2626" : "#a78bfa"
+                        : "#4f46e5"
                     }
                     maskColor="rgba(248,250,252,.80)"
                     className="graph-minimap"
@@ -262,14 +273,14 @@ export function BlastRadius() {
         {showPanel && (
           <div className="animate-slide-in-right w-full xl:w-80 shrink-0">
             <Card className="overflow-hidden">
-              <div className="flex items-center justify-between border-b border-slate-150 px-5 py-4">
+              <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-3.5">
                 <div className="flex items-center gap-2">
                   <Network className="h-4 w-4 text-red-600" />
-                  <p className="text-sm font-semibold text-slate-900">Blast Radius Impact</p>
+                  <p className="text-sm font-bold text-zinc-950">Blast Radius Impact</p>
                 </div>
                 <button
                   onClick={() => { setShowPanel(false); setFrame(0); }}
-                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
                 >
                   <X className="h-4 w-4" />
                 </button>

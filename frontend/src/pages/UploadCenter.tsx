@@ -165,6 +165,15 @@ export function UploadCenter() {
             <div className="space-y-4">
               {/* Drag & Drop Zone with high-contrast WCAG styling */}
               <div
+                role="button"
+                tabIndex={0}
+                aria-label="Upload source code repository archive"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    inputRef.current?.click();
+                  }
+                }}
                 onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
                 onDragLeave={() => setDragActive(false)}
                 onDrop={(e) => {

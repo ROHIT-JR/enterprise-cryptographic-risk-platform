@@ -25,12 +25,12 @@ import { useAsync } from "../hooks/useAsync";
 import type { IntelligenceItem } from "../types/api";
 
 const colors: Record<string, string> = {
-  critical: "#ef4444",
-  high:     "#f97316",
-  medium:   "#f59e0b",
-  low:      "#22c55e",
-  secure:   "#3b82f6",
-  unknown:  "#94a3b8",
+  critical: "#dc2626",
+  high:     "#ea580c",
+  medium:   "#d97706",
+  low:      "#16a34a",
+  secure:   "#4f46e5",
+  unknown:  "#71717a",
 };
 
 const CURRENT_YEAR = new Date().getFullYear();

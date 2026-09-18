@@ -68,12 +68,9 @@ export function KnowledgeGraph() {
   const graph = useMemo(() => {
     if (!data) return { nodes: [] as Node[], edges: [] as Edge[] };
 
-    const searchLower = search.toLowerCase();
-    const visible = data.nodes.filter(
-      (node) =>
-        (filter === "all" || node.type === filter) &&
-        (search === "" || node.label.toLowerCase().includes(searchLower)),
-    );
+    const searchLower = search.trim().toLowerCase();
+    const isSearchActive = searchLower !== "";
+    const visible = data.nodes.filter((node) => filter === "all" || node.type === filter);
     const visibleIds = new Set(visible.map((node) => node.id));
 
     const buckets = new Map<number, GraphNode[]>();
@@ -94,7 +91,8 @@ export function KnowledgeGraph() {
         const degree = nodeDegree.get(item.id) ?? 0;
         // Node width scales with degree: min 150, max 210
         const nodeWidth = 150 + Math.round((degree / maxDegree) * 60);
-        const isSearchMatch = search !== "" && item.label.toLowerCase().includes(searchLower);
+        const isSearchMatch = isSearchActive && item.label.toLowerCase().includes(searchLower);
+        const opacity = isSearchActive ? (isSearchMatch ? 1 : 0.35) : 1;
 
         nodes.push({
           id: item.id,
@@ -107,38 +105,61 @@ export function KnowledgeGraph() {
           targetPosition: Position.Top,
           style: {
             width: nodeWidth,
-            borderRadius: 12,
+            borderRadius: 8,
             border: isSearchMatch
-              ? `2px solid ${colors[item.type] ?? "#64748b"}`
-              : `1px solid ${colors[item.type] ?? "#94a3b8"}50`,
-            background: isSearchMatch ? `${colors[item.type] ?? "#3b82f6"}12` : "#ffffff",
-            color: "#334155",
-            padding: "11px 14px",
+              ? "2px solid #4f46e5"
+              : `1px solid ${colors[item.type] ?? "#94a3b8"}60`,
+            background: isSearchMatch ? "#eef2ff" : "#ffffff",
+            color: "#09090b",
+            padding: "10px 12px",
             fontSize: degree > (maxDegree * 0.5) ? 13 : 11,
-            fontWeight: degree > (maxDegree * 0.5) ? 700 : 600,
+            fontWeight: isSearchMatch || degree > (maxDegree * 0.5) ? 700 : 600,
+            opacity,
             boxShadow: isSearchMatch
-              ? `0 0 14px ${colors[item.type] ?? "#3b82f6"}40`
-              : "0 1px 3px rgba(0,0,0,0.06)",
+              ? "0 0 0 3px rgba(79, 70, 229, 0.25), 0 4px 12px rgba(79, 70, 229, 0.15)"
+              : "0 1px 2px rgba(0,0,0,0.05)",
+            transition: "opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
           },
         });
       });
       yOffset += Math.ceil(items.length / columns) * 150 + 70;
     }
 
+    const matchIds = new Set(
+      isSearchActive
+        ? data.nodes.filter((n) => n.label.toLowerCase().includes(searchLower)).map((n) => n.id)
+        : [],
+    );
+
     const edges: Edge[] = data.edges
       .filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target))
-      .map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        label: edge.type,
-        type: "smoothstep",
-        animated: edge.type === "USES",
-        markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
-        style: { stroke: "#cbd5e1", strokeWidth: 1.4 },
-        labelStyle: { fill: "#94a3b8", fontSize: 9, fontWeight: 700 },
-        labelBgStyle: { fill: "#f8fafc", fillOpacity: 0.95 },
-      }));
+      .map((edge) => {
+        const isEdgeHighlighted =
+          !isSearchActive || matchIds.has(edge.source) || matchIds.has(edge.target);
+        return {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          label: edge.type,
+          type: "smoothstep",
+          animated: edge.type === "USES",
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: isEdgeHighlighted ? (isSearchActive ? "#4f46e5" : "#64748b") : "#cbd5e1",
+          },
+          style: {
+            stroke: isEdgeHighlighted ? (isSearchActive ? "#4f46e5" : "#94a3b8") : "#e2e8f0",
+            strokeWidth: isEdgeHighlighted && isSearchActive ? 2 : 1.4,
+            opacity: isEdgeHighlighted ? 1 : 0.25,
+          },
+          labelStyle: {
+            fill: isEdgeHighlighted ? "#475569" : "#94a3b8",
+            fontSize: 9,
+            fontWeight: 700,
+          },
+          labelBgStyle: { fill: "#ffffff", fillOpacity: 0.95 },
+        };
+      });
 
     return { nodes, edges };
   }, [data, filter, search, nodeDegree]);
@@ -155,9 +176,9 @@ export function KnowledgeGraph() {
         title="Knowledge graph"
         description="Trace how applications, libraries, algorithms, protocols, and certificates influence one another."
         action={
-          <div className="flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-[11px] text-slate-400">
-            <Database className="h-3.5 w-3.5 text-brand-300" />
-            Source: <span className="font-semibold capitalize text-slate-200">{data.source}</span>
+          <div className="flex items-center gap-2 rounded border border-zinc-200 bg-zinc-50 px-3 py-1.5 font-mono text-xs text-zinc-600">
+            <Database className="h-3.5 w-3.5 text-indigo-600" />
+            Source: <span className="font-bold capitalize text-zinc-950">{data.source}</span>
           </div>
         }
       />
@@ -193,11 +214,18 @@ export function KnowledgeGraph() {
 
       <Card className="overflow-hidden">
         {/* Toolbar */}
-        <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Network className="h-4 w-4 text-blue-600" />
-            <span>{graph.nodes.length} / {data.nodes.length} nodes</span>
-            <span className="text-slate-300">·</span>
+        <div className="flex flex-col gap-3 border-b border-zinc-200 px-5 py-3.5 md:flex-row md:items-center md:justify-between bg-zinc-50/50">
+          <div className="flex items-center gap-2 font-mono text-xs text-zinc-500">
+            <Network className="h-4 w-4 text-indigo-600" />
+            <span>
+              {graph.nodes.length} / {data.nodes.length} nodes
+              {search.trim() !== "" && (
+                <span className="ml-1 text-indigo-700 font-bold">
+                  ({graph.nodes.filter((n) => (n.data?.raw?.label as string)?.toLowerCase().includes(search.trim().toLowerCase())).length} matched)
+                </span>
+              )}
+            </span>
+            <span className="text-zinc-300">·</span>
             <span>{graph.edges.length} relationships</span>
           </div>
           <div className="flex items-center gap-3">
