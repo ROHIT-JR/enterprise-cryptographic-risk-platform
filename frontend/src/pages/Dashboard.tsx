@@ -81,26 +81,14 @@ async function downloadReport() {
 
 export function Dashboard() {
   const { data, error, loading, reload } = useAsync(dashboardApi.get, []);
-  if (loading) return <LoadingState />;
-  if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
 
-  const hasQuantumExposure = data.metrics.quantum_exposure_percent != null;
-  const quantumMetric = hasQuantumExposure
-    ? {
-        label: "Quantum Exposure",
-        value: `${data.metrics.quantum_exposure_percent}%`,
-        sub: "Shor/Grover vulnerable algorithms",
-      }
-    : {
-        label: "Critical Asset Ratio",
-        value:
-          data.metrics.total_assets > 0
-            ? `${Math.round((data.metrics.critical_assets / data.metrics.total_assets) * 100)}%`
-            : "0%",
-        sub: "Critical findings / total inventory",
-      };
-
+  // Hooks must run unconditionally on every render, so this has to sit above
+  // the loading/error early returns below — otherwise the hook is skipped
+  // while loading and only starts firing once data arrives, which changes
+  // the hook count between renders and crashes React ("Rendered more hooks
+  // than during the previous render").
   const computedRiskScore = useMemo(() => {
+    if (!data) return { value: 0, sub: "" };
     if (data.metrics.average_risk_score != null) {
       return {
         value: Math.round(data.metrics.average_risk_score),
@@ -121,6 +109,25 @@ export function Dashboard() {
       sub: "Weighted distribution average",
     };
   }, [data]);
+
+  if (loading) return <LoadingState />;
+  if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
+
+  const hasQuantumExposure = data.metrics.quantum_exposure_percent != null;
+  const quantumMetric = hasQuantumExposure
+    ? {
+        label: "Quantum Exposure",
+        value: `${data.metrics.quantum_exposure_percent}%`,
+        sub: "Shor/Grover vulnerable algorithms",
+      }
+    : {
+        label: "Critical Asset Ratio",
+        value:
+          data.metrics.total_assets > 0
+            ? `${Math.round((data.metrics.critical_assets / data.metrics.total_assets) * 100)}%`
+            : "0%",
+        sub: "Critical findings / total inventory",
+      };
 
   const metrics = [
     { label: "Total Assets Discovered", value: formatNumber(data.metrics.total_assets),   icon: Boxes,       sub: `${data.metrics.projects_scanned} projects normalized` },
