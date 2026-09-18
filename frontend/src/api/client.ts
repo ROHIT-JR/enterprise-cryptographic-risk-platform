@@ -115,7 +115,11 @@ export const intelligenceApi = {
   hndl: async () =>
     (await api.get<{ total: number; items: IntelligenceRiskData["items"] }>("/intelligence/hndl")).data,
   blastRadius: async (assetId?: string) =>
-    (await api.get<BlastRadiusData>("/intelligence/blast-radius", { params: { asset_id: assetId } })).data,
+    (
+      await api.get<BlastRadiusData>("/intelligence/blast-radius", {
+        params: { asset_id: assetId, depth: 3 },
+      })
+    ).data,
 };
 
 export const migrationApi = {
