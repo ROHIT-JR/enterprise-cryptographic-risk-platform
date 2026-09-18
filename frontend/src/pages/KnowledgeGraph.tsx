@@ -107,18 +107,18 @@ export function KnowledgeGraph() {
           targetPosition: Position.Top,
           style: {
             width: nodeWidth,
-            borderRadius: 14,
+            borderRadius: 12,
             border: isSearchMatch
               ? `2px solid ${colors[item.type] ?? "#64748b"}`
-              : `1px solid ${colors[item.type] ?? "#64748b"}55`,
-            background: isSearchMatch ? `${colors[item.type] ?? "#64748b"}20` : "#101f32",
-            color: "#e2e8f0",
-            padding: "12px 14px",
+              : `1px solid ${colors[item.type] ?? "#94a3b8"}50`,
+            background: isSearchMatch ? `${colors[item.type] ?? "#3b82f6"}12` : "#ffffff",
+            color: "#334155",
+            padding: "11px 14px",
             fontSize: degree > (maxDegree * 0.5) ? 13 : 11,
             fontWeight: degree > (maxDegree * 0.5) ? 700 : 600,
             boxShadow: isSearchMatch
-              ? `0 0 20px ${colors[item.type] ?? "#64748b"}55`
-              : `0 8px 25px ${colors[item.type] ?? "#64748b"}10`,
+              ? `0 0 14px ${colors[item.type] ?? "#3b82f6"}40`
+              : "0 1px 3px rgba(0,0,0,0.06)",
           },
         });
       });
@@ -134,10 +134,10 @@ export function KnowledgeGraph() {
         label: edge.type,
         type: "smoothstep",
         animated: edge.type === "USES",
-        markerEnd: { type: MarkerType.ArrowClosed, color: "#475569" },
-        style: { stroke: "#475569", strokeWidth: 1.4 },
-        labelStyle: { fill: "#64748b", fontSize: 9, fontWeight: 700 },
-        labelBgStyle: { fill: "#07101d", fillOpacity: 0.9 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
+        style: { stroke: "#cbd5e1", strokeWidth: 1.4 },
+        labelStyle: { fill: "#94a3b8", fontSize: 9, fontWeight: 700 },
+        labelBgStyle: { fill: "#f8fafc", fillOpacity: 0.95 },
       }));
 
     return { nodes, edges };
@@ -168,15 +168,15 @@ export function KnowledgeGraph() {
           <button
             key={type}
             onClick={() => setFilter(filter === type ? "all" : type)}
-            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold capitalize transition ${
+            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize transition ${
               filter === type
-                ? "border-white/20 bg-white/10 text-white"
-                : "border-white/[0.06] bg-white/[0.02] text-slate-400 hover:border-white/10"
+                ? "border-slate-300 bg-slate-100 text-slate-900 font-semibold"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
             }`}
           >
             <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ background: colors[type] ?? "#64748b" }}
+              className="h-2 w-2 rounded-full"
+              style={{ background: colors[type] ?? "#94a3b8" }}
             />
             {NODE_TYPE_LABELS[type] ?? type}
           </button>
@@ -184,7 +184,7 @@ export function KnowledgeGraph() {
         {filter !== "all" && (
           <button
             onClick={() => setFilter("all")}
-            className="flex items-center gap-1 rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-1 text-[10px] text-slate-500 hover:text-slate-300"
+            className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-500 hover:text-slate-700"
           >
             <X className="h-3 w-3" /> Clear filter
           </button>
@@ -193,17 +193,17 @@ export function KnowledgeGraph() {
 
       <Card className="overflow-hidden">
         {/* Toolbar */}
-        <div className="flex flex-col gap-3 border-b border-white/[0.06] px-5 py-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Network className="h-4 w-4 text-brand-300" />
+            <Network className="h-4 w-4 text-blue-600" />
             <span>{graph.nodes.length} / {data.nodes.length} nodes</span>
-            <span className="text-slate-700">·</span>
+            <span className="text-slate-300">·</span>
             <span>{graph.edges.length} relationships</span>
           </div>
           <div className="flex items-center gap-3">
             {/* Search */}
             <label className="relative flex items-center">
-              <Search className="absolute left-3 h-3.5 w-3.5 text-slate-600" />
+              <Search className="absolute left-3 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Find RSA-2048…"
@@ -213,16 +213,16 @@ export function KnowledgeGraph() {
               />
               {search && (
                 <button
-                  className="absolute right-2 text-slate-600 hover:text-slate-400"
+                  className="absolute right-2 text-slate-400 hover:text-slate-600"
                   onClick={() => setSearch("")}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </label>
-            {/* Filter dropdown (still available for power users) */}
+            {/* Filter dropdown */}
             <label className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-600" />
+              <Filter className="h-4 w-4 text-slate-400" />
               <select
                 value={filter}
                 onChange={(event) => { setFilter(event.target.value); setSelected(null); }}
@@ -240,7 +240,7 @@ export function KnowledgeGraph() {
         </div>
 
         {graph.nodes.length ? (
-          <div className="h-[650px] bg-[radial-gradient(circle_at_center,rgba(34,211,238,.035),transparent_60%)]">
+          <div className="h-[650px]">
             <ReactFlow
               nodes={graph.nodes}
               edges={graph.edges}
@@ -251,13 +251,13 @@ export function KnowledgeGraph() {
               onNodeClick={(_, node) => setSelected((node.data as { raw: GraphNode }).raw)}
               proOptions={{ hideAttribution: true }}
             >
-              <Background color="#1e334b" gap={28} size={1} />
+              <Background color="#e2e8f0" gap={28} size={1} />
               <Controls className="graph-controls" />
               <MiniMap
                 nodeColor={(node) =>
-                  colors[(node.data as { raw?: GraphNode }).raw?.type ?? ""] ?? "#64748b"
+                  colors[(node.data as { raw?: GraphNode }).raw?.type ?? ""] ?? "#94a3b8"
                 }
-                maskColor="rgba(7,16,29,.78)"
+                maskColor="rgba(248,250,252,.80)"
                 className="graph-minimap"
               />
             </ReactFlow>
@@ -284,14 +284,14 @@ export function KnowledgeGraph() {
               <p className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: colors[selected.type] }}>
                 {NODE_TYPE_LABELS[selected.type] ?? selected.type}
               </p>
-              <h2 className="mt-1 font-semibold text-white">{selected.label}</h2>
+              <h2 className="mt-1 font-semibold text-slate-900">{selected.label}</h2>
               <p className="mt-1 font-mono text-xs text-slate-500">
                 {String(selected.properties.location ?? "No location reported")}
               </p>
             </div>
             <button
               onClick={() => setSelected(null)}
-              className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-white/5 hover:text-slate-300"
+              className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             >
               <X className="h-4 w-4" />
             </button>
@@ -300,7 +300,7 @@ export function KnowledgeGraph() {
           {/* Properties grid */}
           <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {/* Risk score */}
-            <div className="rounded-xl bg-white/[0.025] px-4 py-3">
+            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
               <p className="text-[10px] text-slate-500">Risk severity</p>
               <div className="mt-1.5">
                 {(() => {
@@ -315,18 +315,18 @@ export function KnowledgeGraph() {
 
             {/* PQC recommendation */}
             {Boolean(selected.properties.recommended_algorithm) && (
-              <div className="rounded-xl bg-brand-400/[0.06] border border-brand-400/15 px-4 py-3">
+              <div className="rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3">
                 <p className="text-[10px] text-slate-500">PQC replacement</p>
-                <p className="mt-1 text-xs font-semibold text-brand-300">
+                <p className="mt-1 text-xs font-semibold text-blue-700">
                   {String(selected.properties.recommended_algorithm)}
                 </p>
               </div>
             )}
 
             {/* Connection count */}
-            <div className="rounded-xl bg-white/[0.025] px-4 py-3">
+            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
               <p className="text-[10px] text-slate-500">Connections</p>
-              <p className="tabular-nums mt-1 text-sm font-semibold text-white">
+              <p className="tabular-nums mt-1 text-sm font-semibold text-slate-900">
                 {nodeDegree.get(selected.id) ?? 0} relationships
               </p>
             </div>
@@ -335,18 +335,18 @@ export function KnowledgeGraph() {
             {Object.entries(selected.properties)
               .filter(([key]) => !["location", "risk_severity", "recommended_algorithm"].includes(key))
               .map(([key, val]) => (
-                <div key={key} className="rounded-xl bg-white/[0.025] px-4 py-3">
+                <div key={key} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
                   <p className="text-[10px] capitalize text-slate-500">{key.replace(/_/g, " ")}</p>
-                  <p className="mt-1 truncate text-xs font-semibold text-slate-200">{String(val ?? "—")}</p>
+                  <p className="mt-1 truncate text-xs font-semibold text-slate-800">{String(val ?? "—")}</p>
                 </div>
               ))}
           </div>
 
           {/* View in asset explorer link */}
           <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-            <Info className="h-4 w-4 text-brand-300" />
+            <Info className="h-4 w-4 text-blue-600" />
             <span>Click another node to inspect it, or</span>
-            <button onClick={() => setSelected(null)} className="text-brand-300 hover:text-brand-200">
+            <button onClick={() => setSelected(null)} className="text-blue-600 hover:text-blue-700 font-medium">
               close panel
             </button>
           </div>

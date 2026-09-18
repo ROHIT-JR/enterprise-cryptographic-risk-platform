@@ -15,16 +15,16 @@ import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge }
 import { useAsync } from "../hooks/useAsync";
 import type { GraphNode } from "../types/api";
 
-// Animation frame colours
+// Animation frame colours — light theme
 const FRAME_COLORS = {
-  0: { bg: "#231522", border: "rgba(251,113,133,.45)", text: "#fecdd3", glow: "0 0 35px rgba(251,113,133,.13)" },   // focus - default
-  1: { bg: "#2d0f0f", border: "#ef4444",               text: "#fca5a5", glow: "0 0 40px rgba(239,68,68,.55)" },    // red - compromised
-  2: { bg: "#2d1a0a", border: "#f97316",               text: "#fdba74", glow: "0 0 30px rgba(249,115,22,.45)" },   // orange - degree-1
-  3: { bg: "#2a2000", border: "#eab308",               text: "#fde047", glow: "0 0 25px rgba(234,179,8,.35)" },    // amber - degree-2
-  4: { bg: "#1f2200", border: "#bef264",               text: "#d9f99d", glow: "0 0 18px rgba(190,242,100,.25)" },  // yellow - degree-3
+  0: { bg: "#fdf4ff", border: "rgba(168,85,247,.35)",  text: "#7e22ce", glow: "0 2px 10px rgba(168,85,247,.12)" },   // idle — purple tint
+  1: { bg: "#fef2f2", border: "#ef4444",               text: "#b91c1c", glow: "0 4px 16px rgba(239,68,68,.25)" },    // red — compromised
+  2: { bg: "#fff7ed", border: "#f97316",               text: "#c2410c", glow: "0 3px 12px rgba(249,115,22,.20)" },   // orange — degree-1
+  3: { bg: "#fefce8", border: "#eab308",               text: "#a16207", glow: "0 3px 10px rgba(234,179,8,.18)" },    // amber — degree-2
+  4: { bg: "#f7fee7", border: "#84cc16",               text: "#4d7c0f", glow: "0 2px 8px rgba(132,204,22,.15)" },    // lime — degree-3
 } as const;
 
-const DEP_DEFAULT = { bg: "#101f32", border: "rgba(34,211,238,.18)", text: "#cbd5e1", glow: "none" };
+const DEP_DEFAULT = { bg: "#f8fafc", border: "rgba(59,130,246,.25)", text: "#334155", glow: "none" };
 
 type AnimFrame = 0 | 1 | 2 | 3 | 4;
 
@@ -198,24 +198,23 @@ export function BlastRadius() {
       <section className="grid gap-4 md:grid-cols-3">
         <Card className="p-5">
           <p className="text-xs text-slate-500">High-impact asset</p>
-          <p className="mt-3 font-semibold text-white">{data.asset_name ?? "No analyzed asset"}</p>
+          <p className="mt-2 text-lg font-semibold text-slate-900">{data.asset_name ?? "No analyzed asset"}</p>
         </Card>
         <Card className="p-5">
           <p className="text-xs text-slate-500">Affected systems</p>
-          <p className="mt-3 text-3xl font-semibold text-rose-300">{data.dependent_systems}</p>
+          <p className="mt-2 text-3xl font-semibold text-red-600">{data.dependent_systems}</p>
         </Card>
         <Card className="p-5">
           <p className="text-xs text-slate-500">Centrality score</p>
-          <p className="mt-3 text-3xl font-semibold text-brand-300">{data.centrality_score.toFixed(2)}</p>
+          <p className="mt-2 text-3xl font-semibold text-blue-600">{data.centrality_score.toFixed(2)}</p>
         </Card>
       </section>
 
-      {/* Animation status bar */}
       {frame > 0 && (
-        <div className="animate-fade-in flex items-center gap-3 rounded-xl border border-white/[0.08] bg-ink-850 px-4 py-3 text-sm text-slate-300">
-          <span className={`h-2.5 w-2.5 rounded-full ${frame === 4 ? "bg-emerald-400" : "animate-ping bg-rose-400"}`} />
+        <div className="animate-fade-in flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-panel">
+          <span className={`h-2.5 w-2.5 rounded-full ${frame === 4 ? "bg-emerald-500" : "animate-ping bg-red-400"}`} />
           {frameLabel[frame]}
-          <span className="ml-auto text-xs text-slate-600">Frame {frame}/4</span>
+          <span className="ml-auto text-xs text-slate-400">Frame {frame}/4</span>
         </div>
       )}
 
@@ -223,8 +222,8 @@ export function BlastRadius() {
       <div className={`flex gap-5 ${showPanel ? "xl:flex-row" : ""}`}>
         <div className="min-w-0 flex-1">
           <Card className="overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-white/[0.06] px-5 py-4 text-xs text-slate-500">
-              <CircleDotDashed className="h-4 w-4 text-brand-300" />
+            <div className="flex items-center gap-2 border-b border-slate-150 px-5 py-4 text-xs text-slate-500">
+              <CircleDotDashed className="h-4 w-4 text-blue-600" />
               Crypto asset → applications → business services
             </div>
             {graph.nodes.length ? (
@@ -237,15 +236,15 @@ export function BlastRadius() {
                   maxZoom={1.6}
                   proOptions={{ hideAttribution: true }}
                 >
-                  <Background color="#1e334b" gap={28} size={1} />
+                  <Background color="#e2e8f0" gap={28} size={1} />
                   <Controls className="graph-controls" />
                   <MiniMap
                     nodeColor={(node) =>
                       node.id === data.asset_id
-                        ? frame > 0 ? "#ef4444" : "#fb7185"
-                        : "#22d3ee"
+                        ? frame > 0 ? "#ef4444" : "#a78bfa"
+                        : "#3b82f6"
                     }
-                    maskColor="rgba(7,16,29,.8)"
+                    maskColor="rgba(248,250,252,.80)"
                     className="graph-minimap"
                   />
                 </ReactFlow>
@@ -263,46 +262,46 @@ export function BlastRadius() {
         {showPanel && (
           <div className="animate-slide-in-right w-full xl:w-80 shrink-0">
             <Card className="overflow-hidden">
-              <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
+              <div className="flex items-center justify-between border-b border-slate-150 px-5 py-4">
                 <div className="flex items-center gap-2">
-                  <Network className="h-4 w-4 text-rose-400" />
-                  <p className="text-sm font-semibold text-white">Blast Radius Impact</p>
+                  <Network className="h-4 w-4 text-red-600" />
+                  <p className="text-sm font-semibold text-slate-900">Blast Radius Impact</p>
                 </div>
                 <button
                   onClick={() => { setShowPanel(false); setFrame(0); }}
-                  className="rounded-lg p-1 text-slate-500 hover:bg-white/5"
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="divide-y divide-white/[0.05] px-5">
+              <div className="divide-y divide-slate-100 px-5">
                 {[
-                  { label: "Direct (1°) systems", value: impact.direct, color: "text-rose-300" },
-                  { label: "Secondary (2°) risk", value: impact.secondary, color: "text-orange-300" },
-                  { label: "Tertiary (3°) risk", value: impact.tertiary, color: "text-amber-300" },
+                  { label: "Direct (1°) systems", value: impact.direct, color: "text-red-600" },
+                  { label: "Secondary (2°) risk", value: impact.secondary, color: "text-orange-600" },
+                  { label: "Tertiary (3°) risk", value: impact.tertiary, color: "text-amber-600" },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="flex items-center justify-between py-3 text-sm">
-                    <span className="text-slate-400">{label}</span>
+                    <span className="text-slate-600">{label}</span>
                     <span className={`tabular-nums font-bold ${color}`}>{value}</span>
                   </div>
                 ))}
-                <div className="flex items-center justify-between py-3 text-sm font-bold">
-                  <span className="text-white">Total blast radius</span>
-                  <span className="tabular-nums text-rose-300">{impact.total} systems</span>
+                <div className="flex items-center justify-between py-3 text-sm font-semibold">
+                  <span className="text-slate-900">Total blast radius</span>
+                  <span className="tabular-nums text-red-600">{impact.total} systems</span>
                 </div>
               </div>
               {impact.directNodes.length > 0 && (
                 <div className="px-5 pb-5">
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-600">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                     Directly affected
                   </p>
                   <div className="space-y-2">
                     {impact.directNodes.map((node) => (
                       <div
                         key={node.id}
-                        className="flex items-center justify-between rounded-lg bg-white/[0.025] px-3 py-2 text-xs"
+                        className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs"
                       >
-                        <span className="truncate text-slate-300">{node.label}</span>
+                        <span className="truncate font-medium text-slate-700">{node.label}</span>
                         <SeverityBadge
                           severity={
                             ((node.properties.risk_severity as string) ?? "medium") as
@@ -323,8 +322,8 @@ export function BlastRadius() {
       </div>
 
       {data.dependent_systems > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-rose-400/15 bg-rose-400/[0.06] px-4 py-3 text-sm text-rose-200">
-          <Network className="h-5 w-5" />
+        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/70 px-4 py-3 text-sm text-red-800">
+          <Network className="h-5 w-5 text-red-600" />
           Replacing this cryptographic asset affects {data.dependent_systems} systems and requires dependency-aware sequencing.
         </div>
       )}

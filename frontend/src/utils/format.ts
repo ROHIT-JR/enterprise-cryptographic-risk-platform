@@ -22,9 +22,9 @@ export function relativeTime(value: string | null): string {
 }
 
 export const severityStyles: Record<Severity, string> = {
-  critical: "border-rose-400/25 bg-rose-500/10 text-rose-300",
-  high: "border-orange-400/25 bg-orange-500/10 text-orange-300",
-  medium: "border-amber-400/25 bg-amber-500/10 text-amber-200",
-  low: "border-emerald-400/25 bg-emerald-500/10 text-emerald-300",
+  critical: "border-red-200    bg-red-50    text-red-700",
+  high:     "border-orange-200 bg-orange-50 text-orange-700",
+  medium:   "border-amber-200  bg-amber-50  text-amber-700",
+  low:      "border-green-200  bg-green-50  text-green-700",
 };
 

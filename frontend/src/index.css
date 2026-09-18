@@ -2,51 +2,54 @@
 @config "../tailwind.config.js";
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  background: #07101d;
+  background: #f8fafc;
 }
 
 * { box-sizing: border-box; }
-html { background: #07101d; }
-body { margin: 0; min-width: 320px; min-height: 100vh; }
+html { background: #f8fafc; }
+body { margin: 0; min-width: 320px; min-height: 100vh; color: #0f172a; }
 button, input, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
-::selection { background: rgba(34, 211, 238, .24); color: #fff; }
+::selection { background: rgba(59,130,246,.18); color: #1e3a8a; }
 
 @layer components {
   .field {
-    @apply w-full rounded-xl border border-white/[0.08] bg-black/15 px-3.5 py-2.5 text-sm text-slate-200 outline-none transition placeholder:text-slate-700 focus:border-brand-300/35 focus:ring-2 focus:ring-brand-400/10;
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10;
   }
 }
 
-::-webkit-scrollbar { width: 9px; height: 9px; }
-::-webkit-scrollbar-track { background: rgba(255,255,255,.015); }
-::-webkit-scrollbar-thumb { border: 2px solid #07101d; border-radius: 999px; background: #26394f; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { border: 2px solid #f1f5f9; border-radius: 999px; background: #cbd5e1; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-.graph-controls { overflow: hidden; border: 1px solid rgba(255,255,255,.08) !important; border-radius: 10px !important; box-shadow: none !important; }
-.graph-controls button { border-bottom-color: rgba(255,255,255,.06) !important; background: #102033 !important; fill: #94a3b8 !important; }
-.graph-controls button:hover { background: #14273d !important; }
-.graph-minimap { overflow: hidden; border: 1px solid rgba(255,255,255,.07); border-radius: 12px; background: #0b1626 !important; }
+/* ReactFlow overrides — light theme */
+.graph-controls { overflow: hidden; border: 1px solid #e2e8f0 !important; border-radius: 10px !important; box-shadow: 0 1px 3px rgba(0,0,0,.06) !important; }
+.graph-controls button { border-bottom-color: #f1f5f9 !important; background: #ffffff !important; fill: #64748b !important; }
+.graph-controls button:hover { background: #f8fafc !important; }
+.graph-minimap { overflow: hidden; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc !important; }
 .react-flow__attribution { display: none; }
+.react-flow__background { background: #f8fafc !important; }
 
-/* Tabular nums for stat cards */
+/* Tabular nums */
 .tabular-nums { font-variant-numeric: tabular-nums; }
 
 /* Blast radius propagation animations */
 @keyframes pulse-glow-red {
-  0%, 100% { box-shadow: 0 0 12px rgba(239,68,68,.4); }
-  50%       { box-shadow: 0 0 30px rgba(239,68,68,.8), 0 0 60px rgba(239,68,68,.3); }
+  0%, 100% { box-shadow: 0 0 8px rgba(239,68,68,.25); }
+  50%       { box-shadow: 0 0 20px rgba(239,68,68,.50); }
 }
 @keyframes pulse-glow-orange {
-  0%, 100% { box-shadow: 0 0 12px rgba(249,115,22,.4); }
-  50%       { box-shadow: 0 0 30px rgba(249,115,22,.8), 0 0 60px rgba(249,115,22,.3); }
+  0%, 100% { box-shadow: 0 0 8px rgba(249,115,22,.20); }
+  50%       { box-shadow: 0 0 18px rgba(249,115,22,.45); }
 }
 @keyframes pulse-glow-amber {
-  0%, 100% { box-shadow: 0 0 10px rgba(234,179,8,.3); }
-  50%       { box-shadow: 0 0 25px rgba(234,179,8,.7), 0 0 50px rgba(234,179,8,.2); }
+  0%, 100% { box-shadow: 0 0 6px rgba(234,179,8,.18); }
+  50%       { box-shadow: 0 0 14px rgba(234,179,8,.38); }
 }
 @keyframes edge-flow {
   0%   { stroke-dashoffset: 24; }
@@ -69,14 +72,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 /* HNDL timeline animations */
 @keyframes data-packet {
-  0%   { transform: translateX(0) scale(1); opacity: 0.8; }
-  80%  { transform: translateX(160px) scale(0.9); opacity: 0.6; }
+  0%   { transform: translateX(0) scale(1); opacity: 0.7; }
+  80%  { transform: translateX(160px) scale(0.9); opacity: 0.4; }
   100% { transform: translateX(180px) scale(0); opacity: 0; }
 }
 @keyframes decrypt-burst {
   0%   { transform: scale(0.8); opacity: 0; }
-  50%  { transform: scale(1.3); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.85; }
+  50%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
 }
 .animate-data-packet { animation: data-packet 2.5s ease-in-out infinite; }
 .animate-decrypt     { animation: decrypt-burst 2s ease-out infinite 1s; }

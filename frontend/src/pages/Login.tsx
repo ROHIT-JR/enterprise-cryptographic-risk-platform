@@ -31,18 +31,68 @@ export function Login() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-ink-950 px-5 text-slate-100">
-      <div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-ink-900/90 p-8 shadow-2xl">
-        <div className="mb-8 flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl border border-brand-300/30 bg-brand-400/10"><Radar className="h-5 w-5 text-brand-300" /></div><div><p className="font-extrabold tracking-[0.16em] text-white">ECDAT-X</p><p className="text-xs text-slate-500">Enterprise access</p></div></div>
-        <h1 className="text-2xl font-bold text-white">Sign in to your organization</h1>
-        <p className="mt-2 text-sm text-slate-500">Use your assigned administrator, analyst, auditor, or viewer account.</p>
-        <form className="mt-7 space-y-4" onSubmit={submit}>
-          <label className="block text-xs font-medium text-slate-400">Organization<input className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-brand-300/50" value={organization} onChange={(e) => setOrganization(e.target.value)} required /></label>
-          <label className="block text-xs font-medium text-slate-400">Username<input className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-brand-300/50" value={username} onChange={(e) => setUsername(e.target.value)} required /></label>
-          <label className="block text-xs font-medium text-slate-400">Password<input type="password" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-brand-300/50" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
-          {error && <p className="rounded-lg border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs text-red-300">{error}</p>}
-          <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-300 px-4 py-3 text-sm font-bold text-ink-950 transition hover:bg-brand-200 disabled:opacity-60"><LockKeyhole className="h-4 w-4" />{loading ? "Signing in…" : "Sign in securely"}</button>
-        </form>
+    <main className="grid min-h-screen place-items-center bg-slate-50 px-5">
+      <div className="w-full max-w-md">
+        {/* Brand */}
+        <div className="mb-8 flex items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-xl border border-blue-200 bg-blue-50">
+            <Radar className="h-4.5 w-4.5 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-[14px] font-extrabold tracking-[0.14em] text-slate-900">ECDAT-X</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">Enterprise access</p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-panel">
+          <h1 className="text-2xl font-semibold text-slate-900">Sign in to your organization</h1>
+          <p className="mt-2 text-sm text-slate-400">Use your administrator, analyst, auditor, or viewer account.</p>
+
+          <form className="mt-7 space-y-4" onSubmit={submit}>
+            <label className="block text-xs font-medium text-slate-600">
+              Organization
+              <input
+                className="field mt-2"
+                value={organization}
+                onChange={(e) => setOrganization(e.target.value)}
+                required
+              />
+            </label>
+            <label className="block text-xs font-medium text-slate-600">
+              Username
+              <input
+                className="field mt-2"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </label>
+            <label className="block text-xs font-medium text-slate-600">
+              Password
+              <input
+                type="password"
+                className="field mt-2"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </label>
+
+            {error && (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                {error}
+              </p>
+            )}
+
+            <button
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+            >
+              <LockKeyhole className="h-4 w-4" />
+              {loading ? "Signing in…" : "Sign in securely"}
+            </button>
+          </form>
+        </div>
       </div>
     </main>
   );
