@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from lifecycle_engine.engine import LifecycleEngine
 from lifecycle_engine.models import GovernanceStatus, LifecycleState, TransitionRequest
 

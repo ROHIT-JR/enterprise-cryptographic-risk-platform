@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import networkx as nx
 
@@ -30,7 +29,9 @@ class DependencyAwareOptimizer:
 
     def optimize(self, inputs: list[OptimizerInput]) -> OptimizationResult:
         if not inputs:
-            return OptimizationResult(waves={}, assets={}, optimizer_version=self.VERSION, configuration=self.weights)
+            return OptimizationResult(
+                waves={}, assets={}, optimizer_version=self.VERSION, configuration=self.weights
+            )
 
         inputs_by_id = {item.asset_id: item for item in inputs}
         
@@ -58,7 +59,11 @@ class DependencyAwareOptimizer:
 
         # 3. Propagate blockers to dependents (BFS over the condensed DAG)
         # In our DAG, dep_id -> consumer_id. Thus successors are consumers (dependents).
-        blocked_scc_nodes = [n for n in condensed.nodes() if blocked_assets.intersection(condensed.nodes[n]["members"])]
+        blocked_scc_nodes = [
+            n
+            for n in condensed.nodes()
+            if blocked_assets.intersection(condensed.nodes[n]["members"])
+        ]
         for b_scc in blocked_scc_nodes:
             for reachable_scc in nx.descendants(condensed, b_scc):
                 blocked_assets.update(condensed.nodes[reachable_scc]["members"])
@@ -86,10 +91,7 @@ class DependencyAwareOptimizer:
                 current_wave = None
             else:
                 preds = [p for p in condensed.predecessors(scc_node) if scc_wave_map[p] is not None]
-                if not preds:
-                    current_wave = 1
-                else:
-                    current_wave = 1 + max(scc_wave_map[p] for p in preds)
+                current_wave = 1 + max((scc_wave_map[p] for p in preds), default=0)
                 
             scc_wave_map[scc_node] = current_wave
             
@@ -114,7 +116,8 @@ class DependencyAwareOptimizer:
                     constraints.append("Compatibility blocked")
                     
                 # Identify if blocked by a dependency
-                # (if I am blocked but I don't have intrinsic blockers, I am blocked by dependency or SCC cycle)
+                # (if I am blocked but I don't have intrinsic blockers, I am blocked by
+                # dependency or SCC cycle)
                 if current_wave is None and not constraints:
                     # Check explicit dependencies
                     blocked_deps = [d for d in item.dependencies if d in blocked_assets]
@@ -125,7 +128,10 @@ class DependencyAwareOptimizer:
                 
                 rationale = list(item.legacy_reasons)
                 if is_cycle:
-                    rationale.append("These assets form a dependency cycle and should be migrated together or within the same coordinated maintenance window.")
+                    rationale.append(
+                        "These assets form a dependency cycle and should be migrated together "
+                        "or within the same coordinated maintenance window."
+                    )
                 if missing:
                     rationale.append(f"Missing factors for prioritization: {', '.join(missing)}.")
                 if current_wave is None:

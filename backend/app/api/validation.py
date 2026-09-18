@@ -1,7 +1,8 @@
 import json
 import os
-from typing import Dict, Any, List
-from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Any
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from backend.app.auth.dependencies import require_permissions
@@ -10,7 +11,7 @@ from backend.app.database import get_db
 
 router = APIRouter(prefix="/analytics/validation", tags=["Validation"])
 
-@router.get("", response_model=Dict[str, Any])
+@router.get("", response_model=dict[str, Any])
 def get_validation_results(
     size: int = Query(None, description="Filter by graph size"),
     scenario: str = Query(None, description="Filter by scenario (e.g. mosca, topsis)"),
@@ -29,7 +30,7 @@ def get_validation_results(
         return {"data": {}, "message": "No benchmarks executed.", "status": "empty"}
 
     try:
-        with open(baseline_file, "r") as fp:
+        with open(baseline_file) as fp:
             res = json.load(fp)
 
         # Optional: Filter logic if size or scenario are provided

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -81,8 +82,6 @@ def get_asset(
     return serialize_asset(asset)
 
 
-from pydantic import BaseModel
-
 class LifecycleTransitionBody(BaseModel):
     target_state: str | None = None
     target_governance_status: str | None = None
@@ -143,14 +142,18 @@ def transition_lifecycle(
         raise HTTPException(status_code=404, detail="Asset not found")
         
     from backend.app.services.lifecycle_service import LifecycleService
-    from lifecycle_engine import TransitionRequest, LifecycleState, GovernanceStatus
+    from lifecycle_engine import GovernanceStatus, LifecycleState, TransitionRequest
     
     svc = LifecycleService()
     try:
         t_state = LifecycleState(body.target_state.upper()) if body.target_state else None
-        t_gov = GovernanceStatus(body.target_governance_status.upper()) if body.target_governance_status else None
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid state or status value")
+        t_gov = (
+            GovernanceStatus(body.target_governance_status.upper())
+            if body.target_governance_status
+            else None
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid state or status value") from exc
 
     try:
         asset = svc.process_transition(
@@ -171,7 +174,7 @@ def transition_lifecycle(
         )
         db.commit()
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
         
     return {
         "lifecycle_state": asset.lifecycle_state,

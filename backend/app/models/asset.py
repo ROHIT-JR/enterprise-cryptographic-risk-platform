@@ -43,9 +43,15 @@ class Asset(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
     
     # Lifecycle Tracking
-    lifecycle_state: Mapped[str] = mapped_column(String(32), default="DISCOVERED", nullable=False, index=True)
-    governance_status: Mapped[str] = mapped_column(String(32), default="ACTIVE", nullable=False, index=True)
-    lifecycle_updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    lifecycle_state: Mapped[str] = mapped_column(
+        String(32), default="DISCOVERED", nullable=False, index=True
+    )
+    governance_status: Mapped[str] = mapped_column(
+        String(32), default="ACTIVE", nullable=False, index=True
+    )
+    lifecycle_updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
 
     project: Mapped["Project"] = relationship(back_populates="assets")
     scan: Mapped["Scan"] = relationship(back_populates="assets")

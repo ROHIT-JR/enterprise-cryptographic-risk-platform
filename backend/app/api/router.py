@@ -15,6 +15,7 @@ from backend.app.api import (
     risk,
     upload,
     users,
+    validation,
 )
 
 api_router = APIRouter()
@@ -32,5 +33,4 @@ api_router.include_router(users.router)
 api_router.include_router(audit.router)
 api_router.include_router(reports.router)
 api_router.include_router(enterprise.router)
-from backend.app.api import validation
 api_router.include_router(validation.router)

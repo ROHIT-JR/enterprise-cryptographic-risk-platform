@@ -1,3 +1,4 @@
+import re
 import types
 from unittest import mock
 
@@ -127,18 +128,19 @@ def _mock_intelligence_service_dependencies(svc: IntelligenceService) -> None:
 # -----------------------------------------------------------------------------
 # Defect 1: Docker backend dependency & pyproject consistency (NetworkX + NumPy + SciPy)
 # -----------------------------------------------------------------------------
-def test_networkx_and_scientific_dependencies_declared():
-    with open("backend/requirements.txt", encoding="utf-8") as f:
-        reqs = f.read()
-    assert "networkx==3.4.2" in reqs
-    assert "numpy==2.2.3" in reqs
-    assert "scipy==1.15.2" in reqs
+def _scientific_pins(text: str) -> dict[str, str]:
+    return dict(re.findall(r"(networkx|numpy|scipy)==([0-9][\w.]*)", text))
 
+
+def test_networkx_and_scientific_dependencies_declared():
+    # Pin *consistency* is what matters (Docker installs requirements.txt, the engines
+    # declare pyproject.toml); a specific version would break on every Dependabot bump.
+    with open("backend/requirements.txt", encoding="utf-8") as f:
+        requirements = _scientific_pins(f.read())
     with open("pyproject.toml", encoding="utf-8") as f:
-        pyproject = f.read()
-    assert "networkx==3.4.2" in pyproject
-    assert "numpy==2.2.3" in pyproject
-    assert "scipy==1.15.2" in pyproject
+        pyproject = _scientific_pins(f.read())
+    assert set(requirements) == {"networkx", "numpy", "scipy"}
+    assert requirements == pyproject
 
     with open("backend/Dockerfile", encoding="utf-8") as f:
         dockerfile = f.read()

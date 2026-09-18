@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
+
 
 class MoscaModel:
     """Mosca quantum‑readiness model.
@@ -44,7 +45,7 @@ class MoscaModel:
             return base * 1.05
         return float(base)
 
-    def evaluate(self, data_lifetime: int, migration_time: int) -> Dict[str, Any]:
+    def evaluate(self, data_lifetime: int, migration_time: int) -> dict[str, Any]:
         """Calculate Mosca risk.
 
         Returns a dictionary compatible with the Phase‑4 specification.

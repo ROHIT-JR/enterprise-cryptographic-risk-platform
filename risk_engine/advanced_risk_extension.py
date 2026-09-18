@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any
+
 
 class AdvancedRiskExtension:
     """Wraps the existing FinalRiskEngine output and enriches it.
@@ -13,7 +14,9 @@ class AdvancedRiskExtension:
     MODEL_NAME = "AdvancedRiskExtension"
     VERSION = "1.0.0"
 
-    def enhance(self, final_result: Dict[str, Any], mosca: Dict[str, Any], evidence: Dict[str, Any]) -> Dict[str, Any]:
+    def enhance(
+        self, final_result: dict[str, Any], mosca: dict[str, Any], evidence: dict[str, Any]
+    ) -> dict[str, Any]:
         """Combine the three pieces into a single enriched payload.
 
         Parameters
