@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
   security-events: write
+  # gitleaks lists a PR's commits; upload-sarif reads the workflow run.
+  pull-requests: read
+  actions: read
 
 jobs:
   dependencies:
@@ -45,7 +48,15 @@ jobs:
       - run: docker build -t ecdat-x-backend:ci --target production -f backend/Dockerfile .
       # Pinned to a full commit SHA (v0.36.0). The previous "0.32.0" tag does not exist, and
       # v0.31.0-v0.34.0 are affected by GHSA-9p44-j4g5-cfx5 (command injection; fixed in 0.34.1).
-      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+      - name: Trivy (readable findings in the job log)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ecdat-x-backend:ci
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+      - name: Trivy (SARIF + gate)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ecdat-x-backend:ci
           format: sarif
