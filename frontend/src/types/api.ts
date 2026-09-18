@@ -30,6 +30,8 @@ export interface DashboardData {
     high_assets: number;
     algorithms_found: number;
     projects_scanned: number;
+    quantum_exposure_percent?: number;
+    average_risk_score?: number;
   };
   risk_distribution: DistributionItem[];
   algorithm_distribution: DistributionItem[];

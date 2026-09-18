@@ -15,27 +15,58 @@ import {
   ShieldCheck,
   Sparkles,
   X,
+  Activity,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import type { UserRole } from "../types/api";
 
-const navigation = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
-  { to: "/operations", label: "Security operations", icon: Radar, roles: ["administrator", "security_analyst"] },
-  { to: "/admin", label: "Administration", icon: Building2, roles: ["administrator"] },
-  { to: "/audit", label: "Audit & reports", icon: ScrollText, roles: ["administrator", "auditor"] },
-  { to: "/upload", label: "Upload center", icon: ScanLine, roles: ["administrator", "security_analyst"] },
-  { to: "/assets", label: "Asset explorer", icon: Boxes, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
-  { to: "/graph", label: "Knowledge graph", icon: GitBranch, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
-  { to: "/risks", label: "Risk analysis", icon: ShieldCheck, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
-  { to: "/quantum-risk", label: "Quantum risk", icon: Atom, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
-  { to: "/intelligence", label: "Asset intelligence", icon: BrainCircuit, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
-  { to: "/blast-radius", label: "Blast radius", icon: CircleDotDashed, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
-  { to: "/migration", label: "Migration planner", icon: Route, roles: ["administrator", "security_analyst"] },
-  { to: "/pqc", label: "PQC recommendations", icon: Sparkles, roles: ["administrator", "security_analyst"] },
-  { to: "/validation", label: "Research validation", icon: BrainCircuit, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+type NavSection = {
+  label: string;
+  items: {
+    to: string;
+    label: string;
+    icon: React.ElementType;
+    roles: UserRole[];
+  }[];
+};
+
+const navSections: NavSection[] = [
+  {
+    label: "Discovery",
+    items: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+      { to: "/upload", label: "Upload Center", icon: ScanLine, roles: ["administrator", "security_analyst"] },
+      { to: "/assets", label: "Asset Explorer", icon: Boxes, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+      { to: "/graph", label: "Knowledge Graph", icon: GitBranch, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+    ],
+  },
+  {
+    label: "Intelligence",
+    items: [
+      { to: "/risks", label: "Risk Analysis", icon: ShieldCheck, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+      { to: "/quantum-risk", label: "Quantum Risk", icon: Atom, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+      { to: "/intelligence", label: "Asset Intelligence", icon: BrainCircuit, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+      { to: "/blast-radius", label: "Blast Radius", icon: CircleDotDashed, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+    ],
+  },
+  {
+    label: "Migration",
+    items: [
+      { to: "/migration", label: "Migration Planner", icon: Route, roles: ["administrator", "security_analyst"] },
+      { to: "/pqc", label: "PQC Recommendations", icon: Sparkles, roles: ["administrator", "security_analyst"] },
+    ],
+  },
+  {
+    label: "Enterprise",
+    items: [
+      { to: "/operations", label: "Security Operations", icon: Radar, roles: ["administrator", "security_analyst"] },
+      { to: "/admin", label: "Administration", icon: Building2, roles: ["administrator"] },
+      { to: "/audit", label: "Audit & Reports", icon: ScrollText, roles: ["administrator", "auditor"] },
+      { to: "/validation", label: "Research Validation", icon: Activity, roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+    ],
+  },
 ];
 
 function Brand() {
@@ -57,29 +88,42 @@ function SidebarContent({ close, role }: { close?: () => void; role: UserRole })
   return (
     <>
       <div className="border-b border-white/[0.07] px-6 py-6"><Brand /></div>
-      <div className="flex-1 overflow-y-auto px-3 py-6">
-        <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600">Workspace</p>
-        <nav className="space-y-1.5" aria-label="Primary navigation">
-          {navigation.filter((item) => item.roles.includes(role)).map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === "/"}
-              onClick={close}
-              className={({ isActive }) =>
-                `group flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition ${
-                  isActive
-                    ? "bg-brand-400/10 text-brand-300 ring-1 ring-inset ring-brand-300/15"
-                    : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100"
-                }`
-              }
-            >
-              <Icon className="h-[18px] w-[18px]" />
-              {label}
-            </NavLink>
-          ))}
+      <div className="flex-1 overflow-y-auto px-3 py-5">
+        <nav className="space-y-5" aria-label="Primary navigation">
+          {navSections.map((section) => {
+            const visibleItems = section.items.filter((item) => item.roles.includes(role));
+            if (visibleItems.length === 0) return null;
+            return (
+              <div key={section.label}>
+                <p className="mb-2 px-3 text-[9.5px] font-bold uppercase tracking-[0.22em] text-slate-600">
+                  {section.label}
+                </p>
+                <div className="space-y-0.5">
+                  {visibleItems.map(({ to, label, icon: Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end={to === "/"}
+                      onClick={close}
+                      className={({ isActive }) =>
+                        `group flex items-center gap-3 rounded-xl py-2.5 pr-3.5 text-sm font-medium transition ${
+                          isActive
+                            ? "border-l-2 border-brand-400 bg-brand-400/[0.08] pl-[14px] text-brand-300"
+                            : "pl-4 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100"
+                        }`
+                      }
+                    >
+                      <Icon className="h-[17px] w-[17px] shrink-0" />
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </nav>
       </div>
+      {/* System status footer */}
       <div className="m-4 rounded-xl border border-white/[0.06] bg-black/15 p-4">
         <div className="flex items-center gap-2 text-xs font-medium text-slate-300">
           <span className="relative flex h-2 w-2">
@@ -88,7 +132,7 @@ function SidebarContent({ close, role }: { close?: () => void; role: UserRole })
           </span>
           Discovery engine ready
         </div>
-        <p className="mt-2 text-[11px] leading-4 text-slate-600">Phase 3 · enterprise hardened</p>
+        <p className="mt-2 text-[10px] leading-4 text-slate-600">Phase 3 · enterprise hardened</p>
       </div>
     </>
   );
