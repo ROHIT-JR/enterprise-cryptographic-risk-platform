@@ -4,6 +4,18 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) conve
 
 ## [Unreleased]
 
+### Added
+
+- Branded PDF reports (reportlab): a one-page executive summary (risk gauge, key metrics, top 5 critical assets, Mosca status, recommendation) and a multi-page technical report (inventory, risk breakdown, dependency graph, migration roadmap, PQC matrix, CBOM summary).
+- `cbom-pdf` report format: a human-readable companion to the machine-readable CBOM JSON.
+- Dashboard "Generate Report" dialog with report and format selection.
+
+### Changed
+
+- CBOM output is now CycloneDX 1.6 (`bomFormat: CycloneDX`) and validates against the official schema; algorithm primitives use spec enums, risk scores are carried in component and metadata properties. Previously `bomFormat` was `ECDAT-CBOM`.
+- The enterprise CBOM is generated from the live inventory as a single BOM instead of wrapping stored per-scan documents.
+- Existing inventory / quantum-risk / migration PDFs render as full paginated tables instead of the previous 56-line text dump.
+
 ## [0.3.0] - 2026-08-29
 
 ### Added

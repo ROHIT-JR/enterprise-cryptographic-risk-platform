@@ -12,7 +12,7 @@ All `/api/v1` endpoints except registration, login, and token refresh require
 | Inventory | `GET /api/v1/assets`, `/graph`, `/dashboard` |
 | Intelligence | `GET /api/v1/intelligence/risk`, `/hndl`, `/blast-radius` |
 | Migration | `GET /api/v1/migration/recommendations`, `/roadmap` |
-| Reports | `GET /api/v1/reports/{inventory|quantum-risk|migration}?format=json|pdf|cbom` |
+| Reports | `GET /api/v1/reports/{executive-summary|technical|inventory|quantum-risk|migration}?format=json|pdf|cbom|cbom-pdf` |
 | Audit | `GET /api/v1/audit-logs` |
 | Monitoring | `GET /health`, `/health/full` |
 
