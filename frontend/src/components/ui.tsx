@@ -1,21 +1,33 @@
 import type { HTMLAttributes, ReactNode } from "react";
-import { AlertTriangle, LoaderCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import type { Severity } from "../types/api";
 import { severityStyles } from "../utils/format";
 
 export function Card({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`rounded-2xl border border-white/[0.07] bg-white/[0.035] shadow-panel backdrop-blur-sm ${className}`}
+      className={`rounded-md border border-zinc-200 bg-white shadow-subtle ${className}`}
       {...props}
     />
   );
 }
 
+export function CardHeader({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={`px-4 py-3 border-b border-zinc-100 flex items-center justify-between ${className}`} {...props} />;
+}
+
+export function CardTitle({ className = "", ...props }: HTMLAttributes<HTMLHeadingElement>) {
+  return <h3 className={`text-xs font-mono font-semibold uppercase tracking-wider text-zinc-900 ${className}`} {...props} />;
+}
+
+export function CardContent({ className = "", ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={`p-4 ${className}`} {...props} />;
+}
+
 export function SeverityBadge({ severity }: { severity: Severity }) {
   return (
     <span
-      className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${severityStyles[severity]}`}
+      className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wider border ${severityStyles[severity]}`}
     >
       {severity}
     </span>
@@ -25,12 +37,12 @@ export function SeverityBadge({ severity }: { severity: Severity }) {
 export function StatusBadge({ status }: { status: string }) {
   const style =
     status === "completed"
-      ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+      ? "border-emerald-300 bg-emerald-50 text-emerald-900"
       : status === "failed"
-        ? "border-rose-400/20 bg-rose-500/10 text-rose-300"
-        : "border-brand-400/20 bg-brand-500/10 text-brand-300";
+        ? "border-red-300 bg-red-50 text-red-900"
+        : "border-zinc-300 bg-zinc-50 text-zinc-900";
   return (
-    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${style}`}>
+    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wider border ${style}`}>
       {status}
     </span>
   );
@@ -48,35 +60,38 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+    <div className="flex flex-col gap-3 pb-2 md:flex-row md:items-end md:justify-between border-b border-zinc-200/80">
       <div>
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.24em] text-brand-300">{eyebrow}</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">{title}</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{description}</p>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-indigo-600" />
+          <p className="font-mono text-[10px] font-medium uppercase tracking-widest text-zinc-500">{eyebrow}</p>
+        </div>
+        <h1 className="text-xl font-bold tracking-tight text-zinc-950 font-sans">{title}</h1>
+        <p className="mt-1 text-xs text-zinc-500 leading-normal max-w-2xl">{description}</p>
       </div>
-      {action}
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
 
-export function LoadingState({ label = "Loading cryptographic intelligence" }: { label?: string }) {
+export function LoadingState({ label = "Loading cryptographic intelligence telemetry" }: { label?: string }) {
   return (
-    <div className="flex min-h-64 items-center justify-center gap-3 text-sm text-slate-400">
-      <LoaderCircle className="h-5 w-5 animate-spin text-brand-400" />
-      {label}
+    <div className="flex min-h-56 items-center justify-center gap-2 text-xs font-mono text-zinc-500">
+      <Loader2 className="h-4 w-4 animate-spin text-zinc-700" />
+      <span>{label}</span>
     </div>
   );
 }
 
 export function ErrorState({ message, retry }: { message: string; retry?: () => void }) {
   return (
-    <Card className="flex min-h-56 flex-col items-center justify-center p-8 text-center">
-      <span className="rounded-xl bg-rose-500/10 p-3 text-rose-300"><AlertTriangle className="h-6 w-6" /></span>
-      <h2 className="mt-4 font-semibold text-white">Unable to load this view</h2>
-      <p className="mt-2 max-w-md text-sm text-slate-400">{message}</p>
+    <Card className="flex min-h-48 flex-col items-center justify-center p-6 text-center border-red-200/80">
+      <AlertCircle className="h-5 w-5 text-red-600 mb-2" />
+      <h2 className="text-sm font-semibold text-zinc-950">Intake / Query Execution Failed</h2>
+      <p className="mt-1 max-w-md font-mono text-xs text-zinc-600">{message}</p>
       {retry && (
-        <button onClick={retry} className="mt-5 rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-white/5">
-          Try again
+        <button onClick={retry} className="btn-secondary mt-4">
+          Retry telemetry query
         </button>
       )}
     </Card>
@@ -85,11 +100,10 @@ export function ErrorState({ message, retry }: { message: string; retry?: () => 
 
 export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="flex min-h-52 flex-col items-center justify-center px-6 text-center">
-      <div className="h-2 w-2 rounded-full bg-brand-400 shadow-[0_0_20px_rgba(34,211,238,.8)]" />
-      <h3 className="mt-4 font-medium text-white">{title}</h3>
-      <p className="mt-2 max-w-sm text-sm text-slate-500">{body}</p>
+    <div className="flex min-h-44 flex-col items-center justify-center p-6 text-center">
+      <div className="h-1 w-6 bg-zinc-300 mb-2.5 rounded-full" />
+      <h3 className="text-xs font-medium text-zinc-800">{title}</h3>
+      <p className="mt-1 max-w-xs text-[11px] text-zinc-500 leading-normal">{body}</p>
     </div>
   );
 }
-

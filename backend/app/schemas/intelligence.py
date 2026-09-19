@@ -67,6 +67,14 @@ class HNDLResponse(BaseModel):
     items: list[IntelligenceItem]
 
 
+class BlastRadiusImpactSummary(BaseModel):
+    total_affected: int
+    by_degree: dict[str, int]
+    critical_systems: int
+    estimated_effort_hours: int
+    critical_path: list[str]
+
+
 class BlastRadiusResponse(BaseModel):
     asset_id: str | None
     asset_name: str | None
@@ -74,6 +82,7 @@ class BlastRadiusResponse(BaseModel):
     centrality_score: float
     nodes: list[GraphNodeResponse]
     edges: list[GraphEdgeResponse]
+    impact_summary: BlastRadiusImpactSummary
 
 
 class MigrationRecommendationResponse(BaseModel):

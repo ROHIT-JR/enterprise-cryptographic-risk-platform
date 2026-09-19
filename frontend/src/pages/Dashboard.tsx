@@ -1,97 +1,228 @@
-import { Activity, Boxes, KeyRound, ShieldAlert, TriangleAlert, Upload } from "lucide-react";
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Bar, BarChart, CartesianGrid } from "recharts";
+import { useMemo } from "react";
+import {
+  Activity,
+  Atom,
+  Boxes,
+  ChevronRight,
+  CircleDotDashed,
+  FileDown,
+  ScanLine,
+  ShieldAlert,
+} from "lucide-react";
+import {
+  Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip,
+  XAxis, YAxis, Bar, BarChart, CartesianGrid,
+} from "recharts";
 import { Link } from "react-router-dom";
-import { apiErrorMessage, dashboardApi } from "../api/client";
+import { apiErrorMessage, dashboardApi, enterpriseApi } from "../api/client";
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { formatNumber, relativeTime } from "../utils/format";
 
 const riskColors: Record<string, string> = {
-  critical: "#fb7185",
-  high: "#fb923c",
-  medium: "#facc15",
-  low: "#34d399",
+  critical: "#dc2626",
+  high:     "#ea580c",
+  medium:   "#d97706",
+  low:      "#059669",
 };
+
+const TOOLTIP_STYLE = {
+  background: "#18181b",
+  border: "1px solid #27272a",
+  borderRadius: 4,
+  color: "#fafafa",
+  fontSize: 11,
+  fontFamily: "monospace",
+};
+
+function QuickActionButton({
+  to,
+  icon: Icon,
+  label,
+  description,
+  onClick,
+}: {
+  to?: string;
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  onClick?: () => void;
+}) {
+  const inner = (
+    <Card className="group flex items-center gap-3 p-3.5 transition hover:border-zinc-400 hover:bg-zinc-50/50 cursor-pointer">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-zinc-200 bg-zinc-50 text-zinc-700">
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold text-zinc-950 font-sans">{label}</p>
+        <p className="mt-0.5 truncate font-mono text-[10px] text-zinc-500">{description}</p>
+      </div>
+      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-zinc-400 transition group-hover:text-zinc-800" />
+    </Card>
+  );
+  if (onClick) return <button className="text-left w-full" onClick={onClick}>{inner}</button>;
+  return to ? <Link to={to}>{inner}</Link> : inner;
+}
+
+async function downloadReport() {
+  try {
+    const blob = await enterpriseApi.report("inventory", "json");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ecdat-inventory-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (caught) {
+    console.error("CBOM Export failed:", caught);
+    window.alert("Failed to export CBOM. Ensure the enterprise reporting service is running and retry.");
+  }
+}
 
 export function Dashboard() {
   const { data, error, loading, reload } = useAsync(dashboardApi.get, []);
+
+  // Hooks must run unconditionally on every render, so this has to sit above
+  // the loading/error early returns below — otherwise the hook is skipped
+  // while loading and only starts firing once data arrives, which changes
+  // the hook count between renders and crashes React ("Rendered more hooks
+  // than during the previous render").
+  const computedRiskScore = useMemo(() => {
+    if (!data) return { value: 0, sub: "" };
+    if (data.metrics.average_risk_score != null) {
+      return {
+        value: Math.round(data.metrics.average_risk_score),
+        sub: `${formatNumber(data.metrics.algorithms_found)} primitives mapped`,
+      };
+    }
+    const total = data.risk_distribution.reduce((sum, item) => sum + item.value, 0);
+    if (total === 0) {
+      return { value: 0, sub: "No active vulnerabilities" };
+    }
+    const weights: Record<string, number> = { critical: 95, high: 70, medium: 45, low: 20 };
+    const weightedSum = data.risk_distribution.reduce((sum, item) => {
+      const w = weights[item.name.toLowerCase()] ?? 30;
+      return sum + w * item.value;
+    }, 0);
+    return {
+      value: Math.round(weightedSum / total),
+      sub: "Weighted distribution average",
+    };
+  }, [data]);
+
   if (loading) return <LoadingState />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
 
+  const hasQuantumExposure = data.metrics.quantum_exposure_percent != null;
+  const quantumMetric = hasQuantumExposure
+    ? {
+        label: "Quantum Exposure",
+        value: `${data.metrics.quantum_exposure_percent}%`,
+        sub: "Shor/Grover vulnerable algorithms",
+      }
+    : {
+        label: "Critical Asset Ratio",
+        value:
+          data.metrics.total_assets > 0
+            ? `${Math.round((data.metrics.critical_assets / data.metrics.total_assets) * 100)}%`
+            : "0%",
+        sub: "Critical findings / total inventory",
+      };
+
   const metrics = [
-    { label: "Total crypto assets", value: data.metrics.total_assets, icon: Boxes, accent: "text-brand-300", surface: "bg-brand-400/10" },
-    { label: "Critical assets", value: data.metrics.critical_assets, icon: ShieldAlert, accent: "text-rose-300", surface: "bg-rose-400/10" },
-    { label: "High-risk assets", value: data.metrics.high_assets, icon: TriangleAlert, accent: "text-orange-300", surface: "bg-orange-400/10" },
-    { label: "Algorithms found", value: data.metrics.algorithms_found, icon: KeyRound, accent: "text-violet-300", surface: "bg-violet-400/10" },
+    { label: "Total Assets Discovered", value: formatNumber(data.metrics.total_assets),   icon: Boxes,       sub: `${data.metrics.projects_scanned} projects normalized` },
+    { label: "Critical Findings",       value: formatNumber(data.metrics.critical_assets), icon: ShieldAlert, sub: "Immediate migration pressure", alert: true },
+    { label: quantumMetric.label,       value: quantumMetric.value,                       icon: Atom,        sub: quantumMetric.sub },
+    { label: "Overall Risk Score",       value: computedRiskScore.value,                   icon: Activity,    sub: computedRiskScore.sub },
   ];
+
   const riskTotal = data.risk_distribution.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <PageHeader
-        eyebrow="Security posture"
-        title="Cryptographic risk overview"
-        description="A live inventory of cryptographic dependencies, exposure, and migration pressure across your enterprise estate."
+        eyebrow="Posture Intelligence"
+        title="Cryptographic Risk Overview"
+        description="Real-time telemetry of discovered cryptographic dependencies, quantum exposure horizons, and migration pressure across enterprise estates."
         action={
-          <Link to="/upload" className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-400 px-4 py-2.5 text-sm font-bold text-ink-950 shadow-glow transition hover:bg-brand-300">
-            <Upload className="h-4 w-4" /> Start a scan
+          <Link to="/upload" className="btn-primary">
+            <ScanLine className="h-3.5 w-3.5" /> Start New Discovery Scan
           </Link>
         }
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(({ label, value, icon: Icon, accent, surface }) => (
-          <Card key={label} className="group relative overflow-hidden p-5 transition hover:-translate-y-0.5 hover:border-white/10">
+      {/* Hero stats */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(({ label, value, icon: Icon, sub, alert }) => (
+          <Card key={label} className="p-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-slate-500">{label}</p>
-                <p className="mt-3 text-3xl font-semibold tracking-tight text-white">{formatNumber(value)}</p>
+                <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{label}</p>
+                <p className={`tabular-nums font-mono mt-1 text-2xl font-bold tracking-tight ${alert ? "text-red-600" : "text-zinc-950"}`}>
+                  {value}
+                </p>
               </div>
-              <span className={`rounded-xl p-2.5 ${surface} ${accent}`}><Icon className="h-5 w-5" /></span>
+              <div className="flex h-7 w-7 items-center justify-center rounded border border-zinc-200 bg-zinc-50 text-zinc-700">
+                <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+              </div>
             </div>
-            <div className="mt-5 flex items-center gap-2 text-[11px] text-slate-600">
-              <Activity className="h-3.5 w-3.5 text-slate-500" /> Current discovery inventory
-            </div>
+            <p className="mt-3 font-mono text-[10px] text-zinc-500 border-t border-zinc-100 pt-2">{sub}</p>
           </Card>
         ))}
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[0.85fr_1.4fr]">
-        <Card className="p-5 md:p-6">
-          <div>
-            <p className="text-sm font-semibold text-white">Risk distribution</p>
-            <p className="mt-1 text-xs text-slate-500">Explainable severity across inventoried assets</p>
+      {/* Quick actions */}
+      <section>
+        <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+          Executive Workflows
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <QuickActionButton to="/upload"       icon={ScanLine}        label="Scan Target Repository"   description="Ingest source code, container or live TLS endpoint" />
+          <QuickActionButton to="/blast-radius" icon={CircleDotDashed} label="Blast Radius Simulation" description="Simulate systemic compromise propagation on topology" />
+          <QuickActionButton icon={FileDown}    label="Export CBOM Inventory"   description="Download machine-readable JSON CycloneDX artifact" onClick={() => void downloadReport()} />
+        </div>
+      </section>
+
+      {/* Charts */}
+      <section className="grid gap-4 xl:grid-cols-[0.9fr_1.3fr]">
+        <Card className="p-4">
+          <div className="border-b border-zinc-100 pb-2">
+            <p className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-950">Risk Severity Distribution</p>
+            <p className="text-[11px] text-zinc-500">Normalized six-factor risk scoring profile</p>
           </div>
           {riskTotal ? (
-            <div className="relative mt-4 h-72">
+            <div className="relative mt-3 h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={data.risk_distribution} dataKey="value" nameKey="name" innerRadius={72} outerRadius={102} paddingAngle={3} stroke="none">
-                    {data.risk_distribution.map((item) => <Cell key={item.name} fill={riskColors[item.name] ?? "#64748b"} />)}
+                  <Pie data={data.risk_distribution} dataKey="value" nameKey="name" innerRadius={65} outerRadius={92} paddingAngle={2} stroke="#ffffff" strokeWidth={1}>
+                    {data.risk_distribution.map((item) => <Cell key={item.name} fill={riskColors[item.name] ?? "#71717a"} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: "#101e31", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12 }} />
-                  <Legend iconType="circle" formatter={(value) => <span className="capitalize text-slate-400">{value}</span>} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Legend iconType="circle" formatter={(value) => <span className="capitalize font-mono text-zinc-600 text-[10px]">{value}</span>} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 text-center">
-                <p className="text-3xl font-semibold text-white">{riskTotal}</p><p className="text-[10px] uppercase tracking-widest text-slate-500">scored</p>
+                <p className="tabular-nums font-mono text-2xl font-bold text-zinc-950">{riskTotal}</p>
+                <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">Total Scored</p>
               </div>
             </div>
           ) : <EmptyState title="No scored assets" body="Run a scan to populate the risk model." />}
         </Card>
 
-        <Card className="p-5 md:p-6">
-          <p className="text-sm font-semibold text-white">Algorithm distribution</p>
-          <p className="mt-1 text-xs text-slate-500">Most prevalent cryptographic primitives</p>
+        <Card className="p-4">
+          <div className="border-b border-zinc-100 pb-2">
+            <p className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-950">Prevalent Algorithms & Primitives</p>
+            <p className="text-[11px] text-zinc-500">Asset volume aggregated by cryptographic scheme</p>
+          </div>
           {data.algorithm_distribution.length ? (
-            <div className="mt-6 h-72">
+            <div className="mt-4 h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.algorithm_distribution} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="rgba(148,163,184,.08)" />
-                  <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: "rgba(34,211,238,.04)" }} contentStyle={{ background: "#101e31", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12 }} />
-                  <Bar dataKey="value" name="Assets" fill="#22d3ee" radius={[6, 6, 0, 0]} maxBarSize={44} />
+                  <CartesianGrid vertical={false} stroke="#f4f4f5" />
+                  <XAxis dataKey="name" tick={{ fill: "#71717a", fontSize: 10, fontFamily: "monospace" }} axisLine={{ stroke: "#e4e4e7" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fill: "#71717a", fontSize: 10, fontFamily: "monospace" }} axisLine={{ stroke: "#e4e4e7" }} tickLine={false} />
+                  <Tooltip cursor={{ fill: "#f4f4f5" }} contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="value" name="Assets" fill="#4f46e5" radius={[2, 2, 0, 0]} maxBarSize={36} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -99,19 +230,32 @@ export function Dashboard() {
         </Card>
       </section>
 
+      {/* Recent scans */}
       <Card className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4 md:px-6">
-          <div><p className="text-sm font-semibold text-white">Recent scan activity</p><p className="mt-1 text-xs text-slate-500">Latest discovery jobs across all sources</p></div>
-          <Link to="/upload" className="text-xs font-semibold text-brand-300 hover:text-brand-200">View upload center</Link>
+        <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-4 py-3">
+          <div>
+            <p className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-950">Recent Discovery Pipelines</p>
+            <p className="text-[11px] text-zinc-500">Continuous cryptographic ingestion log</p>
+          </div>
+          <Link to="/upload" className="font-mono text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+            Pipeline Console →
+          </Link>
         </div>
         {data.recent_scans.length ? (
-          <div className="divide-y divide-white/[0.05]">
-            {data.recent_scans.map((scan) => (
-              <div key={scan.id} className="grid gap-3 px-5 py-4 text-sm transition hover:bg-white/[0.02] md:grid-cols-[1fr_180px_120px_120px] md:items-center md:px-6">
-                <div className="min-w-0"><p className="truncate font-medium text-slate-200">{scan.target}</p><p className="mt-1 text-xs capitalize text-slate-600">{scan.source_type} discovery</p></div>
-                <p className="text-xs text-slate-500">{(scan.summary.assets_discovered as number | undefined) ?? 0} assets found</p>
-                <StatusBadge status={scan.status} />
-                <p className="text-xs text-slate-600 md:text-right">{relativeTime(scan.completed_at ?? scan.created_at)}</p>
+          <div className="divide-y divide-zinc-100">
+            {data.recent_scans.slice(0, 5).map((scan) => (
+              <div key={scan.id} className="grid gap-2 px-4 py-2.5 text-xs transition hover:bg-zinc-50 md:grid-cols-[1fr_160px_110px_110px] md:items-center">
+                <div className="min-w-0">
+                  <p className="truncate font-mono font-semibold text-zinc-900">{scan.target}</p>
+                  <p className="font-mono text-[10px] uppercase text-zinc-400">{scan.source_type} scan</p>
+                </div>
+                <p className="font-mono text-[11px] text-zinc-600">
+                  <span className="font-semibold text-zinc-900">{(scan.summary.assets_discovered as number | undefined) ?? 0}</span> assets found
+                </p>
+                <div>
+                  <StatusBadge status={scan.status} />
+                </div>
+                <p className="font-mono text-[10px] text-zinc-400 md:text-right">{relativeTime(scan.completed_at ?? scan.created_at)}</p>
               </div>
             ))}
           </div>
