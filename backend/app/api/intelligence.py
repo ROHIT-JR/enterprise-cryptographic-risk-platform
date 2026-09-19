@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from neo4j.exceptions import Neo4jError, ServiceUnavailable
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,10 +10,19 @@ from sqlalchemy.orm import Session
 from backend.app.auth.dependencies import get_current_user, require_permissions
 from backend.app.auth.permissions import Permission
 from backend.app.database import get_db
-from backend.app.models import Asset, BusinessContext, Project, RiskAnalysis, User
+from backend.app.models import (
+    Asset,
+    AssetRelationship,
+    BusinessContext,
+    Project,
+    RiskAnalysis,
+    RiskFinding,
+    User,
+)
 from backend.app.schemas.common import DistributionItem
 from backend.app.schemas.graph import GraphEdgeResponse, GraphNodeResponse
 from backend.app.schemas.intelligence import (
+    BlastRadiusImpactSummary,
     BlastRadiusResponse,
     BusinessContextResponse,
     BusinessContextUpdate,
@@ -127,7 +136,15 @@ def get_blast_radius(
     project_id: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
+    depth: int = Query(
+        default=1,
+        ge=1,
+        le=3,
+        description="Blast radius hops to traverse beyond the direct (degree-1) dependents.",
+    ),
 ) -> BlastRadiusResponse:
+    if not isinstance(depth, int):
+        depth = 1
     statement = select(RiskAnalysis, Asset).join(Asset, RiskAnalysis.asset_id == Asset.id)
     if isinstance(user, User):
         statement = statement.where(RiskAnalysis.organization_id == user.organization_id)
@@ -150,6 +167,13 @@ def get_blast_radius(
             centrality_score=0,
             nodes=[],
             edges=[],
+            impact_summary=BlastRadiusImpactSummary(
+                total_affected=0,
+                by_degree={},
+                critical_systems=0,
+                estimated_effort_hours=0,
+                critical_path=[],
+            ),
         )
     analysis, asset = analysis_row
     dependent_ids = list(analysis.factors.get("dependent_ids", []))
@@ -178,9 +202,75 @@ def get_blast_radius(
         )
         if org_id:
             dep_query = dep_query.where(Asset.organization_id == org_id)
-        dependents = list(db.scalars(dep_query))
+        direct_dependents = list(db.scalars(dep_query))
     else:
-        dependents = []
+        direct_dependents = []
+
+    degree_by_id: dict[str, int] = {dependent.id: 1 for dependent in direct_dependents}
+    parent_by_id: dict[str, str] = {dependent.id: asset.id for dependent in direct_dependents}
+    assets_by_id: dict[str, Asset] = {dependent.id: dependent for dependent in direct_dependents}
+
+    if depth > 1 and direct_dependents:
+        # Undirected adjacency across the project, matching the Neo4j blast-radius
+        # traversal semantics: a degree-N hop means "reachable within N relationship
+        # edges", regardless of which side of USES/CONTAINS/DEPENDS_ON/PROTECTS the
+        # asset sits on.
+        rel_rows = db.execute(
+            select(AssetRelationship.source_asset_id, AssetRelationship.target_asset_id).where(
+                AssetRelationship.project_id == asset.project_id
+            )
+        ).all()
+        adjacency: dict[str, set[str]] = defaultdict(set)
+        for source_id, target_id in rel_rows:
+            adjacency[source_id].add(target_id)
+            adjacency[target_id].add(source_id)
+
+        visited = {asset.id, *degree_by_id}
+        current_frontier = list(degree_by_id)
+        for level in range(2, depth + 1):
+            next_frontier: list[str] = []
+            for node_id in current_frontier:
+                for neighbor_id in adjacency.get(node_id, ()):
+                    if neighbor_id in visited:
+                        continue
+                    visited.add(neighbor_id)
+                    degree_by_id[neighbor_id] = level
+                    parent_by_id[neighbor_id] = node_id
+                    next_frontier.append(neighbor_id)
+            if not next_frontier:
+                break
+            extra_query = select(Asset).where(
+                Asset.id.in_(next_frontier), Asset.project_id == asset.project_id
+            )
+            if org_id:
+                extra_query = extra_query.where(Asset.organization_id == org_id)
+            for extra_asset in db.scalars(extra_query):
+                assets_by_id[extra_asset.id] = extra_asset
+            current_frontier = next_frontier
+
+    dependents = [assets_by_id[node_id] for node_id in degree_by_id if node_id in assets_by_id]
+
+    severity_by_id = (
+        {
+            row.asset_id: row.severity
+            for row in db.scalars(
+                select(RiskFinding).where(RiskFinding.asset_id.in_(degree_by_id.keys()))
+            )
+        }
+        if degree_by_id
+        else {}
+    )
+    criticality_by_id = (
+        {
+            row.asset_id: row.criticality
+            for row in db.scalars(
+                select(BusinessContext).where(BusinessContext.asset_id.in_(degree_by_id.keys()))
+            )
+        }
+        if degree_by_id
+        else {}
+    )
+
     nodes = [
         GraphNodeResponse(
             id=asset.id,
@@ -189,27 +279,58 @@ def get_blast_radius(
             properties={
                 "risk_score": analysis.final_score,
                 "centrality_score": analysis.centrality_score,
+                "degree": 0,
             },
         ),
         *[
             GraphNodeResponse(
                 id=dependent.id,
                 label=dependent.name,
-                type="application",
-                properties={"location": dependent.location},
+                type=dependent.asset_type,
+                properties={
+                    "location": dependent.location,
+                    "degree": degree_by_id.get(dependent.id, 1),
+                    "severity": severity_by_id.get(dependent.id),
+                    "criticality": criticality_by_id.get(dependent.id),
+                },
             )
             for dependent in dependents
         ],
     ]
     edges = [
         GraphEdgeResponse(
-            id=f"{asset.id}:AFFECTS:{dependent.id}",
-            source=asset.id,
+            id=f"{parent_by_id.get(dependent.id, asset.id)}:AFFECTS:{dependent.id}",
+            source=parent_by_id.get(dependent.id, asset.id),
             target=dependent.id,
             type="AFFECTS",
+            properties={"degree": degree_by_id.get(dependent.id, 1)},
         )
         for dependent in dependents
     ]
+
+    by_degree = Counter(degree_by_id.values())
+    critical_systems = sum(
+        1
+        for node_id in degree_by_id
+        if severity_by_id.get(node_id) in {"critical", "high"}
+        or criticality_by_id.get(node_id) in {"critical", "high"}
+    )
+    # Heuristic: roughly 6 engineering hours to re-point trust, retest, and redeploy
+    # each affected system once the shared cryptographic asset migrates.
+    estimated_effort_hours = len(dependents) * 6
+    critical_path: list[str] = []
+    if degree_by_id:
+        farthest_id = max(degree_by_id, key=lambda node_id: degree_by_id[node_id])
+        chain: list[str] = []
+        cursor: str | None = farthest_id
+        while cursor is not None:
+            node_asset = asset if cursor == asset.id else assets_by_id.get(cursor)
+            if node_asset is None:
+                break
+            chain.append(node_asset.name)
+            cursor = parent_by_id.get(cursor)
+        critical_path = list(reversed(chain))
+
     return BlastRadiusResponse(
         asset_id=asset.id,
         asset_name=asset.name,
@@ -217,6 +338,13 @@ def get_blast_radius(
         centrality_score=analysis.centrality_score,
         nodes=nodes,
         edges=edges,
+        impact_summary=BlastRadiusImpactSummary(
+            total_affected=len(dependents),
+            by_degree={str(level): count for level, count in sorted(by_degree.items())},
+            critical_systems=critical_systems,
+            estimated_effort_hours=estimated_effort_hours,
+            critical_path=critical_path,
+        ),
     )
 
 

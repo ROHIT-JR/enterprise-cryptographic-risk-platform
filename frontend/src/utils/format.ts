@@ -22,9 +22,16 @@ export function relativeTime(value: string | null): string {
 }
 
 export const severityStyles: Record<Severity, string> = {
-  critical: "border-rose-400/25 bg-rose-500/10 text-rose-300",
-  high: "border-orange-400/25 bg-orange-500/10 text-orange-300",
-  medium: "border-amber-400/25 bg-amber-500/10 text-amber-200",
-  low: "border-emerald-400/25 bg-emerald-500/10 text-emerald-300",
+  critical: "border-red-300    bg-red-50/90    text-red-900",
+  high:     "border-orange-300 bg-orange-50/90 text-orange-950",
+  medium:   "border-amber-300  bg-amber-50/90  text-amber-950",
+  low:      "border-emerald-300 bg-emerald-50/90 text-emerald-950",
+};
+
+export const severityHexColors: Record<Severity, string> = {
+  critical: "#dc2626",
+  high:     "#ea580c",
+  medium:   "#d97706",
+  low:      "#16a34a",
 };
 

@@ -29,8 +29,8 @@ function Slider({
   return (
     <label className="block">
       <div className="mb-2 flex items-center justify-between text-xs">
-        <span className="font-medium text-slate-400">{label}</span>
-        <span className="font-mono text-brand-300">
+        <span className="font-medium text-slate-500">{label}</span>
+        <span className="font-mono text-indigo-600">
           {value}
           {suffix}
         </span>
@@ -42,7 +42,7 @@ function Slider({
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="w-full accent-brand-400"
+        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-indigo-600"
       />
     </label>
   );
@@ -75,8 +75,8 @@ export function MoscaControls({
             onClick={() => onQuantumArrivalYearChange(preset.year)}
             className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
               quantumArrivalYear === preset.year
-                ? "border-brand-300/40 bg-brand-400/10 text-brand-200"
-                : "border-white/[0.08] bg-white/[0.02] text-slate-400 hover:border-white/20"
+                ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
             }`}
           >
             {preset.label} ({preset.year})

@@ -1,8 +1,8 @@
-import pytest
 import os
-import json
+
 from benchmarks.datasets.generator import generate_topology
-from benchmarks.framework import run_benchmark, save_result
+from benchmarks.framework import run_benchmark
+
 
 def test_deterministic_generator():
     ds1 = generate_topology(seed=42, num_assets=100, topology_type="scale_free")

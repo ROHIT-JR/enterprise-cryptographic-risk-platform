@@ -1,7 +1,6 @@
-from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -37,6 +36,8 @@ class CryptoLifecycleEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     migration_wave: Mapped[int | None] = mapped_column(Integer, index=True)
     confidence: Mapped[float | None] = mapped_column(Float)
     engine_version: Mapped[str | None] = mapped_column(String(32))
-    metadata_json: Mapped[dict[str, Any]] = mapped_column("metadata", JSON, default=dict, nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, default=dict, nullable=False
+    )
 
     asset: Mapped["Asset"] = relationship(back_populates="lifecycle_events")

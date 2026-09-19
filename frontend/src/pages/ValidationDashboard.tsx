@@ -1,121 +1,147 @@
-import { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent, LoadingState } from "../components/ui";
-import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { AlertCircle, Clock } from "lucide-react";
+import { useState } from "react";
+import { apiErrorMessage, validationApi } from "../api/client";
+import { MigrationVerification } from "../components/MigrationVerification";
+import { Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { useAsync } from "../hooks/useAsync";
+import type { ValidationBaseline } from "../types/api";
 
-export function ValidationDashboard() {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+type Tab = "migrations" | "scalability";
 
-  useEffect(() => {
-    fetch("/api/v1/analytics/validation", {
-      headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error("Failed to fetch validation data");
-        return res.json();
-      })
-      .then(json => {
-        if (json.status === "empty") {
-          setData(null);
-        } else {
-          setData(json.data);
-        }
-      })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+const TABS: { id: Tab; label: string }[] = [
+  { id: "migrations", label: "Migration verification" },
+  { id: "scalability", label: "Graph analytics scalability" },
+];
 
-  if (loading) return <LoadingState />;
-  if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
+function MigrationVerificationPanel() {
+  const { data, error, loading, reload } = useAsync(() => validationApi.migrations(), []);
+  if (loading) return <LoadingState label="Verifying migration plans" />;
+  if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
+  return <MigrationVerification report={data} />;
+}
 
-  if (!data || !data.experiments) {
+function ScalabilityPanel() {
+  const { data, error, loading, reload } = useAsync(() => validationApi.baseline(), []);
+  if (loading) return <LoadingState label="Loading benchmark results" />;
+  if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
+  if (data.status === "error") return <ErrorState message={data.message} retry={() => void reload()} />;
+
+  const baseline = data.data as Partial<ValidationBaseline>;
+  if (data.status === "empty" || !baseline.experiments) {
     return (
-      <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4 text-emerald-400">Research & Validation</h1>
-        <Card>
-          <CardContent className="pt-6 text-center text-slate-400">
-            No benchmarks executed yet. Run the benchmark runner to populate research artifacts.
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <EmptyState
+          title="No benchmarks executed yet"
+          body="Run the benchmark runner to populate the research artifacts."
+        />
+      </Card>
     );
   }
 
-  const experiments = data.experiments || [];
-
+  const experiments = [...baseline.experiments].sort((a, b) => a.nodes - b.nodes);
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex justify-between items-end border-b border-slate-800 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-emerald-400">Research & Validation</h1>
-          <p className="text-sm text-slate-400 mt-2">
-            Selected ECDAT-X benchmark scenarios were successfully executed on synthetic graphs up to 10,000 nodes.
+    <Card>
+      <CardHeader>
+        <CardTitle>Graph Analytics Scalability</CardTitle>
+        <div className="text-right font-mono text-[11px] text-zinc-500">
+          <p>Version: {baseline.benchmark_version}</p>
+          {baseline.timestamp && <p>Generated: {new Date(baseline.timestamp).toLocaleString()}</p>}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-3 text-xs text-zinc-500">
+          Selected ECDAT-X benchmark scenarios executed on synthetic graphs up to 10,000 nodes.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500">
+              <tr>
+                <th className="p-3">Topology</th>
+                <th className="p-3">Nodes</th>
+                <th className="p-3">Edges</th>
+                <th className="p-3">Total run (ms)</th>
+                <th className="p-3">Betweenness centrality</th>
+                <th className="p-3">Topological sort (ms)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-200">
+              {experiments.map((experiment) => {
+                const betweenness = experiment.stages.betweenness_centrality;
+                return (
+                  <tr key={`${experiment.topology}-${experiment.nodes}`} className="transition hover:bg-zinc-50/80">
+                    <td className="p-3 font-semibold capitalize text-zinc-900">{experiment.topology}</td>
+                    <td className="p-3 font-mono text-zinc-700">{experiment.graph_nodes}</td>
+                    <td className="p-3 font-mono text-zinc-700">{experiment.graph_edges}</td>
+                    <td className="p-3 font-mono font-bold text-emerald-700">{experiment.total_duration_ms}</td>
+                    <td className="p-3">
+                      {betweenness?.status === "skipped" ? (
+                        <span
+                          className="flex items-center gap-1 font-mono text-xs font-semibold text-amber-700"
+                          title={betweenness.reason}
+                        >
+                          <AlertCircle className="h-3.5 w-3.5" aria-hidden /> SKIPPED
+                        </span>
+                      ) : betweenness?.status === "measured" ? (
+                        <span className="flex items-center gap-1 font-mono text-xs font-semibold text-emerald-700">
+                          <Clock className="h-3.5 w-3.5" aria-hidden /> {betweenness.duration_ms} ms
+                        </span>
+                      ) : (
+                        <span className="font-mono text-zinc-400">N/A</span>
+                      )}
+                    </td>
+                    <td className="p-3 font-mono text-zinc-700">
+                      {experiment.stages.topological_sort?.duration_ms ?? "N/A"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 rounded border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-600">
+          <p>
+            <strong>Environment:</strong> Python {baseline.environment?.python}, Platform: {baseline.environment?.platform}, CPU:{" "}
+            {baseline.environment?.cpu}
+          </p>
+          <p className="mt-2 text-amber-800">
+            * Exact betweenness centrality is intentionally skipped above the configured threshold because of its computational
+            cost.
           </p>
         </div>
-        <div className="text-right text-xs text-slate-500">
-          <p>Version: {data.benchmark_version}</p>
-          <p>Generated: {new Date(data.timestamp).toLocaleString()}</p>
-        </div>
-      </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="col-span-1 md:col-span-2">
-          <CardHeader>
-            <CardTitle>Graph Analytics Scalability</CardTitle>
-          </CardHeader>
-          <CardContent>
-             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-slate-800 text-slate-300">
-                  <tr>
-                    <th className="p-3 rounded-tl">Topology</th>
-                    <th className="p-3">Nodes</th>
-                    <th className="p-3">Edges</th>
-                    <th className="p-3">Total Run (ms)</th>
-                    <th className="p-3">Betweenness Centrality</th>
-                    <th className="p-3 rounded-tr">Topological Sort (ms)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {experiments.sort((a: any, b: any) => a.nodes - b.nodes).map((exp: any, i: number) => {
-                    const bw = exp.stages?.betweenness_centrality;
-                    return (
-                      <tr key={i} className="border-b border-slate-800/50 hover:bg-slate-800/30">
-                        <td className="p-3 capitalize">{exp.topology}</td>
-                        <td className="p-3">{exp.graph_nodes}</td>
-                        <td className="p-3">{exp.graph_edges}</td>
-                        <td className="p-3 font-mono text-emerald-400">{exp.total_duration_ms}</td>
-                        <td className="p-3">
-                          {bw?.status === "skipped" ? (
-                             <div className="flex items-center text-amber-500 gap-1 text-xs" title={bw.reason}>
-                               <AlertCircle className="w-4 h-4" /> SKIPPED
-                             </div>
-                          ) : bw?.status === "measured" ? (
-                             <div className="flex items-center text-emerald-500 gap-1 text-xs">
-                               <Clock className="w-4 h-4" /> {bw.duration_ms} ms
-                             </div>
-                          ) : (
-                             <span className="text-slate-600">N/A</span>
-                          )}
-                        </td>
-                        <td className="p-3 text-slate-300">
-                          {exp.stages?.topological_sort?.duration_ms ?? "N/A"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-             </div>
-             <div className="mt-4 p-4 bg-slate-900/50 rounded-lg text-xs text-slate-400 border border-slate-800">
-                <p><strong>Environment:</strong> Python {data.environment?.python}, Platform: {data.environment?.platform}, CPU: {data.environment?.cpu}</p>
-                <p className="mt-2 text-amber-500/80">
-                   * Note: Exact betweenness centrality was intentionally excluded above the configured threshold because of its computational cost.
-                </p>
-             </div>
-          </CardContent>
-        </Card>
+export function ValidationDashboard() {
+  const [tab, setTab] = useState<Tab>("migrations");
+  return (
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Research"
+        title="Research & Validation"
+        description="Migrations are verified, not just planned: each PQC recommendation is checked for compatibility, performance, size, backward compatibility and rollback, with a hybrid path to PQC-only."
+      />
+      <div role="tablist" aria-label="Validation sections" className="flex gap-1 border-b border-zinc-200">
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            role="tab"
+            type="button"
+            id={`validation-tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls={`validation-panel-${id}`}
+            onClick={() => setTab(id)}
+            className={`-mb-px border-b-2 px-3 py-2 text-xs font-medium transition ${
+              tab === id ? "border-indigo-600 text-zinc-950" : "border-transparent text-zinc-500 hover:text-zinc-800"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel" id={`validation-panel-${tab}`} aria-labelledby={`validation-tab-${tab}`}>
+        {tab === "migrations" ? <MigrationVerificationPanel /> : <ScalabilityPanel />}
       </div>
     </div>
   );

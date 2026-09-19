@@ -1,15 +1,16 @@
-import pytest
-from sqlalchemy.orm import Session
-from sqlalchemy import select
-from fastapi import HTTPException
+import contextlib
 
-from backend.app.api.assets import transition_lifecycle, LifecycleTransitionBody, get_lifecycle
+import pytest
+from fastapi import HTTPException
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from backend.app.api.assets import LifecycleTransitionBody, get_lifecycle, transition_lifecycle
 from backend.app.database import SessionLocal
 from backend.app.models.asset import Asset
 from backend.app.models.identity import User
-from backend.app.models.lifecycle import CryptoLifecycleEvent
 from backend.app.seed import seed_securebank_demo
-from backend.app.auth.service import AuthenticationService
+
 
 @pytest.fixture
 def db_session(clean_database):
@@ -22,8 +23,10 @@ def get_user(db, username):
 
 def test_api_tenant_isolation(db_session: Session):
     admin_user = get_user(db_session, "securebank-admin")
-    
-    asset = db_session.scalar(select(Asset).where(Asset.organization_id == admin_user.organization_id))
+
+    asset = db_session.scalar(
+        select(Asset).where(Asset.organization_id == admin_user.organization_id)
+    )
     if not asset:
         pytest.skip("No assets")
     asset_id = asset.id
@@ -33,7 +36,13 @@ def test_api_tenant_isolation(db_session: Session):
     org = Organization(name="OtherOrg Isolation Test")
     db_session.add(org)
     db_session.flush()
-    other_user = User(organization_id=org.id, username="other_admin", email="o@t.c", password_hash="hash", role="administrator")
+    other_user = User(
+        organization_id=org.id,
+        username="other_admin",
+        email="o@t.c",
+        password_hash="hash",
+        role="administrator",
+    )
     db_session.add(other_user)
     db_session.flush()
     
@@ -49,8 +58,10 @@ def test_api_tenant_isolation(db_session: Session):
 def test_viewer_cannot_transition(db_session: Session):
     viewer_user = get_user(db_session, "security-auditor")
     admin_user = get_user(db_session, "securebank-admin")
-    
-    asset = db_session.scalar(select(Asset).where(Asset.organization_id == admin_user.organization_id))
+
+    asset = db_session.scalar(
+        select(Asset).where(Asset.organization_id == admin_user.organization_id)
+    )
     asset_id = asset.id
     
     with pytest.raises(HTTPException) as exc:
@@ -64,7 +75,9 @@ def test_viewer_cannot_transition(db_session: Session):
 
 def test_lifecycle_history_is_immutable(db_session: Session):
     analyst_user = get_user(db_session, "security-analyst")
-    asset = db_session.scalar(select(Asset).where(Asset.organization_id == analyst_user.organization_id))
+    asset = db_session.scalar(
+        select(Asset).where(Asset.organization_id == analyst_user.organization_id)
+    )
     asset_id = asset.id
     
     # Check history endpoint
@@ -72,13 +85,14 @@ def test_lifecycle_history_is_immutable(db_session: Session):
     assert "lifecycle_state" in res
     assert "history" in res
     
-    # Transition to DEFERRED (allowed for analysts doing normal operational transitions assuming current state is DISCOVERED, wait, DEFERRED is governance status)
-    try:
+    # Depending on the asset's current state the transition may be rejected; this test only
+    # needs the call to run without an unexpected failure.
+    with contextlib.suppress(HTTPException):
         transition_lifecycle(
             asset_id=asset_id,
-            body=LifecycleTransitionBody(target_governance_status="DEFERRED", reason="Test history"),
+            body=LifecycleTransitionBody(
+                target_governance_status="DEFERRED", reason="Test history"
+            ),
             db=db_session,
-            user=analyst_user
+            user=analyst_user,
         )
-    except HTTPException:
-        pass # Depending on current state, might be rejected. We just care that it executes without catastrophic failure.

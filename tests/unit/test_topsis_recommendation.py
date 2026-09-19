@@ -1,13 +1,10 @@
-import pytest
 from pydantic import BaseModel
 
 from migration_engine.crypto_function_classifier import (
     DIGITAL_SIGNATURE,
-    DUAL_PUBLIC_KEY,
     HASH_CRYPTO,
     KEY_ESTABLISHMENT,
     SYMMETRIC_CRYPTO,
-    UNKNOWN_FUNCTION,
     classify_crypto_function,
 )
 from migration_engine.pqc_knowledge_base import PQCKnowledgeBase

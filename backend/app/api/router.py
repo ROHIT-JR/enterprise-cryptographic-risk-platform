@@ -3,18 +3,21 @@ from fastapi import APIRouter
 from backend.app.api import (
     assets,
     audit,
+    benchmarks,
     dashboard,
     enterprise,
     graph,
     health,
     intelligence,
     migration,
+    mosca,
     organizations,
     projects,
     reports,
     risk,
     upload,
     users,
+    validation,
 )
 
 api_router = APIRouter()
@@ -32,5 +35,6 @@ api_router.include_router(users.router)
 api_router.include_router(audit.router)
 api_router.include_router(reports.router)
 api_router.include_router(enterprise.router)
-from backend.app.api import validation
 api_router.include_router(validation.router)
+api_router.include_router(benchmarks.router)
+api_router.include_router(mosca.router)

@@ -1,8 +1,6 @@
-import json
 from datetime import UTC, datetime
-from typing import Any
-from fastapi import HTTPException
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -10,13 +8,8 @@ from backend.app.models.asset import Asset
 from backend.app.models.identity import User
 from backend.app.models.lifecycle import CryptoLifecycleEvent
 from backend.app.services.audit_service import record_audit
+from lifecycle_engine import LifecycleEngine, TransitionRequest
 
-from lifecycle_engine import (
-    LifecycleEngine,
-    LifecycleState,
-    GovernanceStatus,
-    TransitionRequest
-)
 
 class LifecycleService:
     def process_transition(
@@ -42,10 +35,14 @@ class LifecycleService:
         # Basic RBAC verification if actor exists
         if actor:
             if actor.role in ["viewer", "auditor"] and not request.is_automated:
-                raise HTTPException(status_code=403, detail="Role not authorized to transition lifecycle state")
-            
+                raise HTTPException(
+                    status_code=403, detail="Role not authorized to transition lifecycle state"
+                )
+
             if request.force_override and actor.role != "administrator":
-                raise HTTPException(status_code=403, detail="Only administrators can force transition overrides")
+                raise HTTPException(
+                    status_code=403, detail="Only administrators can force transition overrides"
+                )
 
         if request.force_override and not request.reason:
             raise ValueError("Admin override requires an explicit reason")

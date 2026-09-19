@@ -35,26 +35,61 @@ export function RiskAnalysis() {
     <div className="space-y-8">
       <PageHeader eyebrow="Explainable analysis" title="Cryptographic risk" description="Every score is decomposed into transparent algorithm, dependency, and criticality factors—no black-box prediction." />
       <div className="flex flex-wrap gap-2">
-        {severityOrder.map((item) => <button key={item} onClick={() => setSeverity(item)} className={`rounded-full border px-4 py-2 text-xs font-bold capitalize transition ${severity === item ? "border-brand-300/30 bg-brand-400/10 text-brand-200" : "border-white/[0.07] bg-white/[0.025] text-slate-500 hover:text-slate-200"}`}>{item}</button>)}
+        {severityOrder.map((item) => (
+          <button
+            key={item}
+            onClick={() => setSeverity(item)}
+            className={`rounded border px-3 py-1.5 font-mono text-xs font-semibold capitalize transition ${
+              severity === item
+                ? "border-indigo-600 bg-indigo-50 text-indigo-700 shadow-xs"
+                : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900"
+            }`}
+          >
+            {item}
+          </button>
+        ))}
       </div>
 
       {data.items.length ? (
         <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
           <Card className="max-h-[720px] overflow-y-auto">
-            <div className="sticky top-0 z-10 border-b border-white/[0.06] bg-ink-900/95 px-5 py-4 backdrop-blur"><p className="text-sm font-semibold text-white">Ranked exposure</p><p className="mt-1 text-xs text-slate-500">{data.total} scored assets</p></div>
-            <div className="divide-y divide-white/[0.05]">
+            <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 px-5 py-4 backdrop-blur">
+              <p className="text-sm font-bold text-zinc-950">Ranked exposure</p>
+              <p className="mt-0.5 font-mono text-xs text-zinc-500">{data.total} scored assets</p>
+            </div>
+            <div className="divide-y divide-zinc-100">
               {data.items.map((risk) => (
-                <button key={risk.id} onClick={() => setSelected(risk)} className={`flex w-full items-center gap-4 px-5 py-4 text-left transition ${selected?.id === risk.id ? "bg-brand-400/[0.065]" : "hover:bg-white/[0.025]"}`}>
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/[0.07] bg-black/15 font-mono text-sm font-bold text-white">{Math.round(risk.score)}</div>
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-200">{risk.asset_name}</p><p className="mt-1 truncate text-[11px] text-slate-600">{risk.project_name} · {risk.asset_type}</p></div>
-                  <SeverityBadge severity={risk.severity} /><ChevronRight className="h-4 w-4 text-slate-700" />
+                <button
+                  key={risk.id}
+                  onClick={() => setSelected(risk)}
+                  className={`flex w-full items-center gap-4 px-5 py-4 text-left transition ${
+                    selected?.id === risk.id
+                      ? "bg-indigo-50/70 border-l-2 border-indigo-600 pl-[18px]"
+                      : "hover:bg-zinc-50"
+                  }`}
+                >
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded border border-zinc-200 bg-zinc-50 font-mono text-xs font-bold text-zinc-950">
+                    {Math.round(risk.score)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-zinc-900">{risk.asset_name}</p>
+                    <p className="mt-0.5 truncate font-mono text-[11px] text-zinc-500">
+                      {risk.project_name} · {risk.asset_type}
+                    </p>
+                  </div>
+                  <SeverityBadge severity={risk.severity} />
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
                 </button>
               ))}
             </div>
           </Card>
           {selected && <RiskDetails finding={selected} />}
         </div>
-      ) : <Card><EmptyState title="No matching risk findings" body="Choose another severity or complete a discovery scan." /></Card>}
+      ) : (
+        <Card>
+          <EmptyState title="No matching risk findings" body="Choose another severity or complete a discovery scan." />
+        </Card>
+      )}
     </div>
   );
 }
@@ -62,23 +97,100 @@ export function RiskAnalysis() {
 function RiskDetails({ finding }: { finding: RiskFinding }) {
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-white/[0.06] bg-gradient-to-br from-white/[0.035] to-transparent p-6 md:p-8">
+      <div className="border-b border-zinc-200 bg-zinc-50/60 p-6 md:p-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center">
           <ScoreGauge score={finding.score} severity={finding.severity} />
-          <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-3"><SeverityBadge severity={finding.severity} /><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-600">{finding.asset_type}</span></div><h2 className="mt-4 text-2xl font-semibold text-white">{finding.asset_name}</h2><p className="mt-2 text-sm text-slate-500">{finding.project_name}</p><p className="mt-3 break-all font-mono text-xs text-slate-600">{finding.location}</p></div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <SeverityBadge severity={finding.severity} />
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                {finding.asset_type}
+              </span>
+            </div>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{finding.asset_name}</h2>
+            <p className="mt-1 text-sm text-zinc-500">{finding.project_name}</p>
+            <p className="mt-2 break-all font-mono text-xs text-zinc-600 bg-white px-2.5 py-1 rounded border border-zinc-200 inline-block">
+              {finding.location}
+            </p>
+          </div>
         </div>
       </div>
-      <div className="space-y-8 p-6 md:p-8">
-        <section><div className="flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-brand-300" /><h3 className="text-sm font-semibold text-white">Risk explanation</h3></div><div className="mt-4 grid gap-3">{finding.reasons.map((reason, index) => <div key={`${reason}-${index}`} className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-black/10 p-4"><AlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" /><p className="text-sm leading-6 text-slate-300">{reason}</p></div>)}</div></section>
-        <section><div className="flex items-center gap-2"><Gauge className="h-4 w-4 text-brand-300" /><h3 className="text-sm font-semibold text-white">Score composition</h3></div><div className="mt-4 space-y-4">{finding.factors.map((factor) => <div key={factor.rule_id}><div className="mb-2 flex items-center justify-between gap-4 text-xs"><div><span className="font-semibold capitalize text-slate-300">{factor.category.replaceAll("_", " ")}</span><span className="ml-2 font-mono text-[10px] text-slate-700">{factor.rule_id}</span></div><span className="font-mono font-bold text-white">+{factor.points}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/[0.05]"><div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-brand-300" style={{ width: `${Math.min(factor.points, 100)}%` }} /></div><p className="mt-2 text-xs text-slate-600">{factor.explanation}</p></div>)}</div></section>
-        <section className="rounded-xl border border-emerald-400/10 bg-emerald-500/[0.04] p-4"><div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" /><div><p className="text-sm font-semibold text-emerald-200">Analyst next step</p><p className="mt-1 text-xs leading-5 text-slate-500">Validate the evidence, identify business owners, and prioritize quantum-vulnerable assets with the highest dependency impact.</p></div></div></section>
+      <div className="space-y-6 p-6 md:p-8">
+        <section>
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-indigo-600" />
+            <h3 className="text-sm font-bold text-zinc-950">Risk explanation</h3>
+          </div>
+          <div className="mt-3 grid gap-2.5">
+            {finding.reasons.map((reason, index) => (
+              <div
+                key={`${reason}-${index}`}
+                className="flex items-start gap-3 rounded border border-zinc-200 bg-zinc-50/50 p-3.5"
+              >
+                <AlertOctagon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                <p className="text-sm leading-relaxed text-zinc-800">{reason}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section>
+          <div className="flex items-center gap-2">
+            <Gauge className="h-4 w-4 text-indigo-600" />
+            <h3 className="text-sm font-bold text-zinc-950">Score composition</h3>
+          </div>
+          <div className="mt-3 space-y-3.5">
+            {finding.factors.map((factor) => (
+              <div key={factor.rule_id} className="rounded border border-zinc-200 bg-zinc-50/30 p-3">
+                <div className="mb-2 flex items-center justify-between gap-4 text-xs">
+                  <div>
+                    <span className="font-semibold capitalize text-zinc-900">
+                      {factor.category.replaceAll("_", " ")}
+                    </span>
+                    <span className="ml-2 font-mono text-[10px] text-zinc-500">{factor.rule_id}</span>
+                  </div>
+                  <span className="font-mono font-bold text-indigo-700">+{factor.points}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded bg-zinc-200">
+                  <div
+                    className="h-full rounded bg-indigo-600 transition-all"
+                    style={{ width: `${Math.min(factor.points, 100)}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-600">{factor.explanation}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="rounded border border-emerald-200 bg-emerald-50/60 p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+            <div>
+              <p className="text-sm font-bold text-emerald-950">Analyst next step</p>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-700">
+                Validate the evidence, identify business owners, and prioritize quantum-vulnerable assets with the highest dependency impact.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </Card>
   );
 }
 
 function ScoreGauge({ score, severity }: { score: number; severity: Severity }) {
-  const color = severity === "critical" ? "#fb7185" : severity === "high" ? "#fb923c" : severity === "medium" ? "#facc15" : "#34d399";
-  return <div className="relative grid h-32 w-32 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(${color} ${score * 3.6}deg, rgba(255,255,255,.06) 0deg)` }}><div className="grid h-[106px] w-[106px] place-items-center rounded-full bg-ink-900 text-center"><div><p className="text-3xl font-semibold text-white">{Math.round(score)}</p><p className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-600">risk score</p></div></div></div>;
+  const color = severity === "critical" ? "#dc2626" : severity === "high" ? "#ea580c" : severity === "medium" ? "#d97706" : "#16a34a";
+  return (
+    <div
+      className="relative grid h-32 w-32 shrink-0 place-items-center rounded-full"
+      style={{ background: `conic-gradient(${color} ${score * 3.6}deg, #e4e4e7 0deg)` }}
+    >
+      <div className="grid h-[106px] w-[106px] place-items-center rounded-full bg-white text-center shadow-xs border border-zinc-100">
+        <div>
+          <p className="text-3xl font-bold tracking-tight text-zinc-950">{Math.round(score)}</p>
+          <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-zinc-500">risk score</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 

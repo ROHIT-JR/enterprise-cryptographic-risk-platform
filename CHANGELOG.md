@@ -4,6 +4,37 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) conve
 
 ## [Unreleased]
 
+### Added
+
+- Branded PDF reports (reportlab): a one-page executive summary (risk gauge, key metrics, top 5 critical assets, Mosca status, recommendation) and a multi-page technical report (inventory, risk breakdown, dependency graph, migration roadmap, PQC matrix, CBOM summary).
+- `cbom-pdf` report format: a human-readable companion to the machine-readable CBOM JSON.
+- Dashboard "Generate Report" dialog with report and format selection.
+- PQC performance benchmarking dashboard (`/benchmarks`): key generation and operation time,
+  key/ciphertext/signature size table, multi-dimensional radar comparison, and a TLS migration
+  impact calculator. Reference data in `config/pqc_benchmarks.json` (sizes from FIPS 203/204);
+  optional live measurement of this host via `POST /api/v1/benchmarks/run`.
+- Migration verification on the Research & Validation page: a five-item checklist per migration
+  task (compatibility, performance, key size, backward compatibility, rollback), a hybrid
+  migration path (add PQC alongside the classical algorithm, test 30 days, then cut over), and test
+  results with pass/fail indicators. Backed by `GET /api/v1/analytics/validation/migrations` and
+  `migration_engine/verification.py`; limits live in `config/migration_verification.json`.
+- Reference benchmark data for ML-KEM-512 and SLH-DSA-SHA2-128f, the algorithms the recommender
+  actually selects.
+
+### Changed
+
+- CBOM output is now CycloneDX 1.6 (`bomFormat: CycloneDX`) and validates against the official schema; algorithm primitives use spec enums, risk scores are carried in component and metadata properties. Previously `bomFormat` was `ECDAT-CBOM`.
+- The enterprise CBOM is generated from the live inventory as a single BOM instead of wrapping stored per-scan documents.
+- Existing inventory / quantum-risk / migration PDFs render as full paginated tables instead of the previous 56-line text dump.
+
+### Fixed
+
+- The Research & Validation page failed for every signed-in user (it read a token from
+  `localStorage` that the app never sets). It now uses the shared API client.
+- The production image now ships `config/` and `benchmarks/`. `config/` was missing, so edits to
+  `config/quantum_timeline.json` were silently ignored in containers (the Mosca model fell back to
+  identical built-in defaults); the benchmark endpoints need both directories.
+
 ## [0.3.0] - 2026-08-29
 
 ### Added
