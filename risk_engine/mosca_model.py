@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import json
 from pathlib import Path
 from typing import Dict, Any
@@ -62,5 +63,33 @@ class MoscaModel:
             "deadline_risk": deadline_risk,
             "formula": formula,
             "explanation": explanation,
+        }
 
-}
+    def simulate(
+        self,
+        data_lifetime: float,
+        migration_time: float,
+        quantum_arrival_year: int | None = None,
+        current_year: int | None = None,
+    ) -> Dict[str, Any]:
+        """Evaluate the Mosca inequality against real calendar years.
+
+        Used by the interactive Mosca timeline (dashboard "what-if" sliders),
+        where X + Y (years of required protection) is compared against Z
+        (years remaining until the estimated quantum arrival year).
+        """
+        year_now = current_year if current_year is not None else datetime.date.today().year
+        arrival_year = quantum_arrival_year if quantum_arrival_year is not None else self.quantum_year
+        years_until_quantum = max(arrival_year - year_now, 1)
+        lhs = data_lifetime + migration_time
+        verdict = "critical" if lhs > years_until_quantum else "safe"
+        return {
+            "data_lifetime": data_lifetime,
+            "migration_time": migration_time,
+            "current_year": year_now,
+            "quantum_arrival_year": arrival_year,
+            "years_until_quantum": years_until_quantum,
+            "lhs": lhs,
+            "verdict": verdict,
+            "formula": f"{data_lifetime} + {migration_time} > {years_until_quantum}",
+        }

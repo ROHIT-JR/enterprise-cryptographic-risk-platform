@@ -194,6 +194,32 @@ export interface MigrationRoadmap {
   }>;
 }
 
+export type MoscaVerdict = "critical" | "plan" | "safe";
+
+export interface MoscaAssetResult {
+  asset_id: string;
+  asset_name: string;
+  algorithm: string | null;
+  data_lifetime_years: number;
+  migration_time_years: number;
+  lhs: number;
+  verdict: MoscaVerdict;
+}
+
+export interface MoscaSimulateResponse {
+  organization_status: MoscaVerdict;
+  quantum_arrival_year: number;
+  current_year: number;
+  years_until_quantum: number;
+  critical_count: number;
+  plan_count: number;
+  safe_count: number;
+  total_assets: number;
+  most_urgent_asset: string | null;
+  formula: string;
+  items: MoscaAssetResult[];
+}
+
 export type UserRole = "administrator" | "security_analyst" | "auditor" | "viewer";
 
 export interface AuthUser {

@@ -8,6 +8,7 @@ import type {
   IntelligenceRiskData,
   MigrationRecommendation,
   MigrationRoadmap,
+  MoscaSimulateResponse,
   RiskPage,
   Scan,
   AuthUser,
@@ -123,6 +124,15 @@ export const migrationApi = {
     (await api.get<MigrationRecommendation[]>("/migration/recommendations")).data,
   roadmap: async () =>
     (await api.get<MigrationRoadmap>("/migration/roadmap")).data,
+};
+
+export const moscaApi = {
+  simulate: async (quantumArrivalYear: number) =>
+    (
+      await api.post<MoscaSimulateResponse>("/mosca/simulate", {
+        quantum_arrival_year: quantumArrivalYear,
+      })
+    ).data,
 };
 
 export const authApi = {

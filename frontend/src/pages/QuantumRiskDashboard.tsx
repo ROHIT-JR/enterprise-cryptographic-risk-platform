@@ -2,6 +2,7 @@ import { Activity, Atom, DatabaseZap, ShieldAlert } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { intelligenceApi, apiErrorMessage } from "../api/client";
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge } from "../components/ui";
+import { MoscaSection } from "../components/mosca/MoscaSection";
 import { useAsync } from "../hooks/useAsync";
 
 const colors: Record<string, string> = { critical: "#fb7185", high: "#fb923c", medium: "#facc15", low: "#34d399", secure: "#22d3ee", unknown: "#64748b" };
@@ -19,6 +20,7 @@ export function QuantumRiskDashboard() {
   return (
     <div className="space-y-8">
       <PageHeader eyebrow="Phase 2 intelligence" title="Quantum risk dashboard" description="Prioritize cryptographic exposure using quantum vulnerability, HNDL, blast radius, business impact, migration complexity, and evidence confidence." />
+      <MoscaSection />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(({ label, value, icon: Icon, color, bg }) => <Card key={label} className="p-5"><div className="flex items-start justify-between"><div><p className="text-xs text-slate-500">{label}</p><p className="mt-3 text-3xl font-semibold text-white">{value}</p></div><span className={`rounded-xl p-2.5 ${bg} ${color}`}><Icon className="h-5 w-5" /></span></div></Card>)}
       </section>
