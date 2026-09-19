@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from backend.app.api import (
     assets,
     audit,
+    benchmarks,
     dashboard,
     enterprise,
     graph,
@@ -34,3 +35,4 @@ api_router.include_router(audit.router)
 api_router.include_router(reports.router)
 api_router.include_router(enterprise.router)
 api_router.include_router(validation.router)
+api_router.include_router(benchmarks.router)

@@ -16,6 +16,9 @@ import type {
   AuditLog,
   EnterpriseOverview,
   FullHealth,
+  BenchmarkCatalogue,
+  MigrationImpact,
+  MigrationImpactQuery,
 } from "../types/api";
 
 const apiOrigin = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
@@ -176,6 +179,14 @@ export const enterpriseApi = {
         responseType: "blob",
       })
     ).data,
+};
+
+export const benchmarksApi = {
+  pqc: async () => (await api.get<BenchmarkCatalogue>("/benchmarks/pqc")).data,
+  run: async (iterations: number) =>
+    (await api.post<BenchmarkCatalogue>("/benchmarks/run", { iterations, include_pqc: true })).data,
+  migrationImpact: async (query: MigrationImpactQuery) =>
+    (await api.get<MigrationImpact>("/benchmarks/migration-impact", { params: query })).data,
 };
 
 export function apiErrorMessage(error: unknown): string {

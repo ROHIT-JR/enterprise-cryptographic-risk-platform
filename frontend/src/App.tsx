@@ -15,6 +15,7 @@ const AssetIntelligence = lazy(() => import("./pages/AssetIntelligence").then((m
 const BlastRadius = lazy(() => import("./pages/BlastRadius").then((module) => ({ default: module.BlastRadius })));
 const MigrationPlanner = lazy(() => import("./pages/MigrationPlanner").then((module) => ({ default: module.MigrationPlanner })));
 const PQCRecommendations = lazy(() => import("./pages/PQCRecommendations").then((module) => ({ default: module.PQCRecommendations })));
+const PQCBenchmarks = lazy(() => import("./pages/PQCBenchmarks").then((module) => ({ default: module.PQCBenchmarks })));
 const Login = lazy(() => import("./pages/Login").then((module) => ({ default: module.Login })));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then((module) => ({ default: module.AdminDashboard })));
 const SecurityOperations = lazy(() => import("./pages/SecurityOperations").then((module) => ({ default: module.SecurityOperations })));
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="blast-radius" element={<BlastRadius />} />
             <Route path="migration" element={<MigrationPlanner />} />
             <Route path="pqc" element={<PQCRecommendations />} />
+            <Route path="benchmarks" element={<PQCBenchmarks />} />
             <Route path="admin" element={<AdminDashboard />} />
             <Route path="operations" element={<SecurityOperations />} />
             <Route path="audit" element={<AuditorView />} />

@@ -16,6 +16,7 @@ import {
   Sparkles,
   X,
   Activity,
+  Gauge,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
@@ -56,6 +57,7 @@ const navSections: NavSection[] = [
     items: [
       { to: "/migration", label: "Migration Planner",    icon: Route,    roles: ["administrator", "security_analyst"] },
       { to: "/pqc",       label: "PQC Recommendations",  icon: Sparkles, roles: ["administrator", "security_analyst"] },
+      { to: "/benchmarks", label: "PQC Benchmarks",      icon: Gauge,    roles: ["administrator", "security_analyst", "auditor", "viewer"] },
     ],
   },
   {
