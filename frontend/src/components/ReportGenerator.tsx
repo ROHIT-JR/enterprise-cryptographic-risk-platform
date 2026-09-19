@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Download,
   FileCheck2,
+  Landmark,
   Loader2,
   Route,
   ScrollText,
@@ -96,6 +97,14 @@ export const REPORT_OPTIONS: ReportOption[] = [
     label: "Migration plan",
     description: "Wave-ordered PQC migration plan with recommended algorithms and complexity.",
     icon: Route,
+    choices: PDF_OR_JSON,
+  },
+  {
+    key: "nqm-compliance",
+    type: "nqm-compliance",
+    label: "India NQM compliance",
+    description: "Phase-by-phase alignment with India's National Quantum Mission, plus your sector profile.",
+    icon: Landmark,
     choices: PDF_OR_JSON,
   },
 ];

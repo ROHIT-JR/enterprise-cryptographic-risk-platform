@@ -1154,6 +1154,76 @@ def _generic_story(report: dict[str, Any]) -> list[Any]:
     ]
 
 
+_PHASE_STATUS_COLOR = {
+    "complete": (SEVERITY_COLOR["low"], SEVERITY_TINT["low"]),
+    "in-progress": (SEVERITY_COLOR["medium"], SEVERITY_TINT["medium"]),
+    "not-started": (NEUTRAL, PANEL),
+}
+
+
+def _nqm_story(report: dict[str, Any]) -> list[Any]:
+    sector = report["sector"]
+    current_phase = report["current_phase"]
+    overall_color, overall_tint = (
+        SEVERITY_COLOR["low"] if report["overall_progress"] >= 95 else ACCENT,
+        SEVERITY_TINT["low"] if report["overall_progress"] >= 95 else PANEL,
+    )
+    story: list[Any] = [
+        Paragraph("INDIA NQM COMPLIANCE", EYEBROW),
+        Paragraph("National Quantum Mission Compliance Report", H1),
+        _meta_block(report),
+        Spacer(1, 8),
+        _callout(
+            f"Overall progress: {report['overall_progress']}% · Currently in Phase {current_phase}",
+            report["source"],
+            overall_color,
+            overall_tint,
+        ),
+        Spacer(1, 10),
+    ]
+    for phase in report["phases"]:
+        color, tint = _PHASE_STATUS_COLOR[phase["status"]]
+        headline = (
+            f"Phase {phase['id']} ({phase['years']}): {phase['name']} "
+            f"— {phase['progress']}% {phase['status']}"
+        )
+        story.append(_callout(headline, phase["description"], color, tint))
+        rows = [
+            [
+                Paragraph("✓" if item["complete"] else "○", CELL),
+                Paragraph(_text(item["label"]), CELL),
+                Paragraph(f"{item['progress']}%", CELL_MUTED),
+                Paragraph(_text(item["evidence"]), CELL_MUTED),
+            ]
+            for item in phase["requirements"]
+        ]
+        story.append(
+            _data_table(
+                ["", "REQUIREMENT", "PROGRESS", "EVIDENCE"],
+                rows,
+                [16, CONTENT_WIDTH * 0.34, 50, CONTENT_WIDTH * 0.66 - 66],
+                repeat=False,
+            )
+        )
+        story.append(Spacer(1, 8))
+    story.append(Paragraph(f"Sector profile: {sector['name']}", H2))
+    sector_row = [
+        Paragraph(_text(sector["regulator"]), CELL),
+        Paragraph(_text(sector["recommended_baseline"]), CELL),
+    ]
+    story.append(
+        _data_table(
+            ["REGULATOR", "RECOMMENDED BASELINE"],
+            [sector_row],
+            [CONTENT_WIDTH * 0.35, CONTENT_WIDTH * 0.65],
+            repeat=False,
+        )
+    )
+    story.append(Spacer(1, 4))
+    story.append(Paragraph(_text(sector["guidance"]), SMALL))
+    return story
+
+
 def render_pdf(report: dict[str, Any]) -> bytes:
     """Render any report dict produced by ``ReportService`` into a branded PDF."""
     kind = report["report_type"]
@@ -1167,5 +1237,8 @@ def render_pdf(report: dict[str, Any]) -> bytes:
     if kind == "cbom":
         doc, buffer = _document("Cryptography Bill of Materials", org)
         return _build(doc, buffer, _cbom_story(report))
+    if kind == "nqm-compliance":
+        doc, buffer = _document("India NQM Compliance Report", org)
+        return _build(doc, buffer, _nqm_story(report))
     doc, buffer = _document("Enterprise Security Report", org)
     return _build(doc, buffer, _generic_story(report))

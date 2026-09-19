@@ -6,6 +6,7 @@ import {
   CircleDotDashed,
   GitBranch,
   LayoutDashboard,
+  Landmark,
   Menu,
   LogOut,
   ScrollText,
@@ -67,6 +68,7 @@ const navSections: NavSection[] = [
       { to: "/admin",      label: "Administration",      icon: Building2,   roles: ["administrator"] },
       { to: "/audit",      label: "Audit & Reports",     icon: ScrollText,  roles: ["administrator", "auditor"] },
       { to: "/validation", label: "Research Validation", icon: Activity,    roles: ["administrator", "security_analyst", "auditor", "viewer"] },
+      { to: "/compliance", label: "NQM Compliance",      icon: Landmark,    roles: ["administrator", "security_analyst", "auditor", "viewer"] },
     ],
   },
 ];
