@@ -65,6 +65,9 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
+      # Needs "Code scanning" enabled in the repo settings (private repos: GitHub Code Security).
+      # Until then the upload is skipped without failing; the Trivy step above is the real gate.
       - uses: github/codeql-action/upload-sarif@v3
         if: always()
+        continue-on-error: true
         with: {sarif_file: trivy-results.sarif}

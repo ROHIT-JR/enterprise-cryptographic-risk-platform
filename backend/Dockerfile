@@ -44,5 +44,9 @@ CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "
 
 FROM base AS production
 
+# Packaging tools are not needed at runtime; their vendored dependencies (e.g. msgpack,
+# setuptools' bundled copies) otherwise show up as image vulnerabilities.
+RUN python -m pip uninstall -y pip setuptools
+
 USER ecdat
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers"]
