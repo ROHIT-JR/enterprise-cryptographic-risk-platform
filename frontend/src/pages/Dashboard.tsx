@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Activity,
   Atom,
@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CircleDotDashed,
   FileDown,
+  FileText,
   ScanLine,
   ShieldAlert,
 } from "lucide-react";
@@ -14,7 +15,8 @@ import {
   XAxis, YAxis, Bar, BarChart, CartesianGrid,
 } from "recharts";
 import { Link } from "react-router-dom";
-import { apiErrorMessage, dashboardApi, enterpriseApi } from "../api/client";
+import { apiErrorMessage, dashboardApi } from "../api/client";
+import { ReportGenerator } from "../components/ReportGenerator";
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { formatNumber, relativeTime } from "../utils/format";
@@ -64,23 +66,15 @@ function QuickActionButton({
   return to ? <Link to={to}>{inner}</Link> : inner;
 }
 
-async function downloadReport() {
-  try {
-    const blob = await enterpriseApi.report("inventory", "json");
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `ecdat-inventory-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch (caught) {
-    console.error("CBOM Export failed:", caught);
-    window.alert("Failed to export CBOM. Ensure the enterprise reporting service is running and retry.");
-  }
-}
-
 export function Dashboard() {
   const { data, error, loading, reload } = useAsync(dashboardApi.get, []);
+  // State hooks stay above the loading/error early returns below (Rules of Hooks).
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportKey, setReportKey] = useState("executive-summary");
+  const openReports = (key: string) => {
+    setReportKey(key);
+    setReportOpen(true);
+  };
 
   // Hooks must run unconditionally on every render, so this has to sit above
   // the loading/error early returns below — otherwise the hook is skipped
@@ -145,9 +139,14 @@ export function Dashboard() {
         title="Cryptographic Risk Overview"
         description="Real-time telemetry of discovered cryptographic dependencies, quantum exposure horizons, and migration pressure across enterprise estates."
         action={
-          <Link to="/upload" className="btn-primary">
-            <ScanLine className="h-3.5 w-3.5" /> Start New Discovery Scan
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className="btn-secondary" onClick={() => openReports("executive-summary")}>
+              <FileText className="h-3.5 w-3.5" /> Generate Report
+            </button>
+            <Link to="/upload" className="btn-primary">
+              <ScanLine className="h-3.5 w-3.5" /> Start New Discovery Scan
+            </Link>
+          </div>
         }
       />
 
@@ -179,7 +178,7 @@ export function Dashboard() {
         <div className="grid gap-3 sm:grid-cols-3">
           <QuickActionButton to="/upload"       icon={ScanLine}        label="Scan Target Repository"   description="Ingest source code, container or live TLS endpoint" />
           <QuickActionButton to="/blast-radius" icon={CircleDotDashed} label="Blast Radius Simulation" description="Simulate systemic compromise propagation on topology" />
-          <QuickActionButton icon={FileDown}    label="Export CBOM Inventory"   description="Download machine-readable JSON CycloneDX artifact" onClick={() => void downloadReport()} />
+          <QuickActionButton icon={FileDown}    label="Export CBOM Inventory"   description="CycloneDX 1.6 CBOM as JSON and PDF" onClick={() => openReports("cbom")} />
         </div>
       </section>
 
@@ -261,6 +260,8 @@ export function Dashboard() {
           </div>
         ) : <EmptyState title="No scan activity" body="Upload a repository or provide an infrastructure target to begin." />}
       </Card>
+
+      <ReportGenerator open={reportOpen} onClose={() => setReportOpen(false)} initialKey={reportKey} />
     </div>
   );
 }

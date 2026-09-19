@@ -20,7 +20,8 @@ security CI, and a public scanner extension contract. Discovery and intelligence
 - JWT access tokens, rotating refresh tokens, and salted scrypt password hashing
 - Administrator, security analyst, auditor, and viewer permissions
 - Organization isolation for projects, scans, assets, risks, and migration plans
-- Audit history and cryptographic inventory, quantum-risk, migration, PDF, JSON, and CBOM exports
+- Audit history, plus branded PDF/JSON exports: one-page executive summary, multi-page technical
+  report, inventory, quantum-risk, migration, and CycloneDX 1.6 CBOM
 - Admin, security-operations, and auditor dashboard experiences
 - Stable scanner plugin interface and Python entry-point discovery
 - Full component health, API/proxy rate limits, hardened headers, and exact-origin CORS
@@ -37,7 +38,7 @@ security CI, and a public scanner extension contract. Discovery and intelligence
 - Container package/OpenSSL inspection with an isolated runtime probe
 - TLS protocol, cipher, certificate, and public-key collection with SSRF controls
 - PostgreSQL cryptographic inventory and scan history
-- CycloneDX-inspired ECDAT-CBOM JSON
+- CycloneDX 1.6 CBOM (JSON, plus a human-readable PDF companion) with per-component risk scores
 - Neo4j topology with a PostgreSQL graph fallback
 - Deterministic algorithm + dependency + criticality risk scoring
 - React dashboard, upload center, asset explorer, React Flow graph, and risk analysis

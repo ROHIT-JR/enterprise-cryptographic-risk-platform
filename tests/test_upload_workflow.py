@@ -77,6 +77,7 @@ def test_repository_upload_to_cbom_risk_and_assets(tmp_path: Path, monkeypatch):
         risk = get_risk_summary(project.id, 10, db)
 
         assert cbom.scan_id == scan_id
-        assert cbom.document["bomFormat"] == "ECDAT-CBOM"
+        assert cbom.document["bomFormat"] == "CycloneDX"
+        assert cbom.document["specVersion"] == "1.6"
         assert risk.total == len(assets)
         assert risk.highest_risks[0].score >= risk.highest_risks[-1].score
