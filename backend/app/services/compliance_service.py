@@ -8,9 +8,10 @@ reports) — nothing here is asserted or hardcoded per organization.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from functools import cache
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -26,10 +27,9 @@ from backend.app.models import (
 from backend.app.services.migration_verification_service import build_verification_report
 from lifecycle_engine.models import LifecycleState
 
-NQM_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent.parent / "config" / "nqm_compliance.json"
-SECTOR_CONFIG_PATH = (
-    Path(__file__).resolve().parent.parent.parent.parent / "config" / "sector_profiles.json"
-)
+_CONFIG_ROOT = Path(__file__).resolve().parent.parent.parent.parent / "config"
+NQM_CONFIG_PATH = _CONFIG_ROOT / "nqm_compliance.json"
+SECTOR_CONFIG_PATH = _CONFIG_ROOT / "sector_profiles.json"
 
 CRYPTO_TYPES = ("algorithm", "library", "certificate", "protocol", "configuration")
 NIST_PQC_PREFIXES = ("ML-KEM", "ML-DSA", "SLH-DSA", "FN-DSA")
@@ -94,7 +94,9 @@ class _Context:
             )
         ) if self.crypto_assets else []
         self.migration_plans = list(
-            db.scalars(select(MigrationPlan).where(MigrationPlan.organization_id == organization_id))
+            db.scalars(
+                select(MigrationPlan).where(MigrationPlan.organization_id == organization_id)
+            )
         )
         self.completed_scans = db.scalar(
             select(Scan).where(
@@ -137,7 +139,10 @@ def assets_assessed_ratio(ctx: _Context) -> tuple[float, str]:
 
 def has_hndl_findings(ctx: _Context) -> tuple[float, str]:
     count = sum(1 for risk, _ in ctx.risk_rows if risk.hndl_risk in {"critical", "high"})
-    return (1.0 if count > 0 else 0.0, f"{count} assets flagged for harvest-now-decrypt-later exposure")
+    return (
+        1.0 if count > 0 else 0.0,
+        f"{count} assets flagged for harvest-now-decrypt-later exposure",
+    )
 
 
 def business_context_ratio(ctx: _Context) -> tuple[float, str]:
@@ -169,7 +174,9 @@ def nist_algorithm_ratio(ctx: _Context) -> tuple[float, str]:
 
 def wave1_in_progress(ctx: _Context) -> tuple[float, str]:
     asset_by_id = {asset.id: asset for asset in ctx.crypto_assets}
-    wave1 = [plan for plan in ctx.migration_plans if plan.wave == 1 and plan.asset_id in asset_by_id]
+    wave1 = [
+        plan for plan in ctx.migration_plans if plan.wave == 1 and plan.asset_id in asset_by_id
+    ]
     if not wave1:
         return (0.0, "No Wave 1 trust-anchor assets identified yet")
     advanced = sum(
@@ -183,10 +190,11 @@ def has_verified_migrations(ctx: _Context) -> tuple[float, str]:
     if summary.total == 0:
         return (0.0, "No migration plans to verify yet")
     resolved = summary.verified + summary.conditional
-    return (
-        _ratio(resolved, summary.total),
-        f"{summary.verified} verified, {summary.conditional} conditional of {summary.total} plans checked",
+    evidence = (
+        f"{summary.verified} verified, {summary.conditional} conditional "
+        f"of {summary.total} plans checked"
     )
+    return (_ratio(resolved, summary.total), evidence)
 
 
 def hndl_prioritized(ctx: _Context) -> tuple[float, str]:
@@ -218,7 +226,8 @@ def replaced_ratio(ctx: _Context) -> tuple[float, str]:
         for asset in vulnerable
         if asset_by_id[asset.id].lifecycle_state == LifecycleState.REPLACED.value
     )
-    return (_ratio(replaced, len(vulnerable)), f"{replaced}/{len(vulnerable)} quantum-vulnerable assets replaced")
+    evidence = f"{replaced}/{len(vulnerable)} quantum-vulnerable assets replaced"
+    return (_ratio(replaced, len(vulnerable)), evidence)
 
 
 def verified_ratio(ctx: _Context) -> tuple[float, str]:
@@ -234,7 +243,8 @@ def verified_ratio(ctx: _Context) -> tuple[float, str]:
 def compatibility_reviewed_ratio(ctx: _Context) -> tuple[float, str]:
     total = len(ctx.business_contexts)
     reviewed = sum(1 for context in ctx.business_contexts if context.compatibility != "unknown")
-    return (_ratio(reviewed, total), f"{reviewed}/{total} assets have a reviewed compatibility posture")
+    evidence = f"{reviewed}/{total} assets have a reviewed compatibility posture"
+    return (_ratio(reviewed, total), evidence)
 
 
 CHECKS: dict[str, Callable[[_Context], tuple[float, str]]] = {
@@ -295,8 +305,12 @@ def build_compliance_report(db: Session, organization_id: str) -> dict[str, Any]
             }
         )
 
-    current_phase = next((phase["id"] for phase in phases if phase["status"] != "complete"), phases[-1]["id"])
-    overall_progress = round(sum(phase["progress"] for phase in phases) / len(phases)) if phases else 0
+    current_phase = next(
+        (phase["id"] for phase in phases if phase["status"] != "complete"), phases[-1]["id"]
+    )
+    overall_progress = (
+        round(sum(phase["progress"] for phase in phases) / len(phases)) if phases else 0
+    )
 
     return {
         "source": config["source"],

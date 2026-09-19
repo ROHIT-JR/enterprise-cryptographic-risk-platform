@@ -1183,14 +1183,11 @@ def _nqm_story(report: dict[str, Any]) -> list[Any]:
     ]
     for phase in report["phases"]:
         color, tint = _PHASE_STATUS_COLOR[phase["status"]]
-        story.append(
-            _callout(
-                f"Phase {phase['id']} ({phase['years']}): {phase['name']} — {phase['progress']}% {phase['status']}",
-                phase["description"],
-                color,
-                tint,
-            )
+        headline = (
+            f"Phase {phase['id']} ({phase['years']}): {phase['name']} "
+            f"— {phase['progress']}% {phase['status']}"
         )
+        story.append(_callout(headline, phase["description"], color, tint))
         rows = [
             [
                 Paragraph("✓" if item["complete"] else "○", CELL),
@@ -1210,10 +1207,14 @@ def _nqm_story(report: dict[str, Any]) -> list[Any]:
         )
         story.append(Spacer(1, 8))
     story.append(Paragraph(f"Sector profile: {sector['name']}", H2))
+    sector_row = [
+        Paragraph(_text(sector["regulator"]), CELL),
+        Paragraph(_text(sector["recommended_baseline"]), CELL),
+    ]
     story.append(
         _data_table(
             ["REGULATOR", "RECOMMENDED BASELINE"],
-            [[Paragraph(_text(sector["regulator"]), CELL), Paragraph(_text(sector["recommended_baseline"]), CELL)]],
+            [sector_row],
             [CONTENT_WIDTH * 0.35, CONTENT_WIDTH * 0.65],
             repeat=False,
         )
