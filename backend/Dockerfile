@@ -5,7 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PYTHONPATH=/app
 
+# `upgrade` pulls in Debian security fixes published since the base image was built.
 RUN apt-get update \
+    && apt-get upgrade -y \
     && apt-get install --no-install-recommends -y ca-certificates docker.io \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 ecdat \
@@ -14,7 +16,7 @@ RUN apt-get update \
 WORKDIR /app
 
 COPY backend/requirements.txt /tmp/requirements.txt
-RUN python -m pip install --upgrade pip \
+RUN python -m pip install --upgrade pip setuptools \
     && python -m pip install -r /tmp/requirements.txt
 
 COPY backend /app/backend
@@ -41,6 +43,10 @@ USER ecdat
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 FROM base AS production
+
+# Packaging tools are not needed at runtime; their vendored dependencies (e.g. msgpack,
+# setuptools' bundled copies) otherwise show up as image vulnerabilities.
+RUN python -m pip uninstall -y pip setuptools
 
 USER ecdat
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--proxy-headers"]

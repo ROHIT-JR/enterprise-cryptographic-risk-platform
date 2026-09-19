@@ -19,7 +19,6 @@ from pydantic import BaseModel, Field
 
 from migration_engine.crypto_function_classifier import (
     DIGITAL_SIGNATURE,
-    DUAL_PUBLIC_KEY,
     HASH_CRYPTO,
     KEY_ESTABLISHMENT,
     SYMMETRIC_CRYPTO,
@@ -28,10 +27,11 @@ from migration_engine.crypto_function_classifier import (
 )
 from migration_engine.pqc_knowledge_base import PQCCandidate, PQCKnowledgeBase
 from migration_engine.topsis_engine import (
-    CRITERIA_ORDER,
     TOPSISSolution,
-    solve as topsis_solve,
     validate_weights,
+)
+from migration_engine.topsis_engine import (
+    solve as topsis_solve,
 )
 
 logger = logging.getLogger(__name__)
@@ -139,9 +139,11 @@ class TOPSISRecommendationEngine:
             top = solution.rankings[0]
             primary_names.append(top.name)
             topsis_details[f"{func}_ideal"] = solution.ideal
-            
-            hybrid_strats.append(_HYBRID_TEMPLATES.get(func, "Hybrid transition").format(alg=top.name))
-            
+
+            hybrid_strats.append(
+                _HYBRID_TEMPLATES.get(func, "Hybrid transition").format(alg=top.name)
+            )
+
             ranked = [
                 RankedCandidate(
                     algorithm=r.name,
@@ -197,7 +199,9 @@ class TOPSISRecommendationEngine:
             constraints=constraints,
         )
 
-    def _run_topsis(self, candidates: list[PQCCandidate], weights: dict[str, float]) -> TOPSISSolution:
+    def _run_topsis(
+        self, candidates: list[PQCCandidate], weights: dict[str, float]
+    ) -> TOPSISSolution:
         names = [c.name for c in candidates]
         matrix: list[list[float]] = []
         for c in candidates:
@@ -213,12 +217,20 @@ class TOPSISRecommendationEngine:
         return topsis_solve(names, matrix, weights=weights)
 
     @staticmethod
-    def _no_replacement(value: Any, funcs: list[str], confidence: float, constraints: list[str]) -> TOPSISRecommendation:
+    def _no_replacement(
+        value: Any, funcs: list[str], confidence: float, constraints: list[str]
+    ) -> TOPSISRecommendation:
         func_str = funcs[0]
         if func_str == SYMMETRIC_CRYPTO:
-            reason = "Symmetric algorithms require key length verification, but no direct asymmetric PQC replacement is required."
+            reason = (
+                "Symmetric algorithms require key length verification, "
+                "but no direct asymmetric PQC replacement is required."
+            )
         elif func_str == HASH_CRYPTO:
-            reason = "Hash algorithms require digest size verification, but no direct PQC migration recommendation is required."
+            reason = (
+                "Hash algorithms require digest size verification, "
+                "but no direct PQC migration recommendation is required."
+            )
         else:
             reason = "No suitable PQC candidates available or algorithm is not quantum-vulnerable."
             

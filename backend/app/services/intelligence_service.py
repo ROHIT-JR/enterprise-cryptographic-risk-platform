@@ -19,8 +19,8 @@ from backend.app.models import (
 )
 from backend.app.services.audit_service import record_audit
 from backend.app.services.lifecycle_service import LifecycleService
-from lifecycle_engine import TransitionRequest, LifecycleState, GovernanceStatus
 from graph_analysis.networkx_layer import NetworkXGraphLayer
+from lifecycle_engine import GovernanceStatus, LifecycleState, TransitionRequest
 from migration_engine import (
     MigrationRoadmapEngine,
     PQCRecommendationEngine,
@@ -485,24 +485,30 @@ class IntelligenceService:
             business_score = risk_model.business_score if risk_model else None
             
             # Map blast radius using the NetworkX Graph's output
-            blast_radius = min(100.0, float(graph.dependent_systems * 10))  # Approximation based on deps, usually properly set in NetworkX
-            
-            optimizer_inputs.append(OptimizerInput(
-                asset_id=asset_id,
-                asset_name=asset.name,
-                asset_type=asset.asset_type,
-                quantum_score=quantum_score,
-                hndl_score=hndl_score,
-                blast_radius=blast_radius,
-                business_criticality=business_score,
-                migration_complexity=complexity.migration_complexity_score if hasattr(complexity, "migration_complexity_score") else 50.0,
-                recommended_algorithm=recommendation["recommended_algorithm"],
-                dependencies=dep_map[asset_id],
-                vendor_ready=True,
-                compatibility_blocked=False,
-                legacy_reasons=complexity.reasons,
-                recommendation_metadata=recommendation
-            ))
+            blast_radius = min(
+                100.0, float(graph.dependent_systems * 10)
+            )  # Approximation based on deps, usually properly set in NetworkX
+
+            optimizer_inputs.append(
+                OptimizerInput(
+                    asset_id=asset_id,
+                    asset_name=asset.name,
+                    asset_type=asset.asset_type,
+                    quantum_score=quantum_score,
+                    hndl_score=hndl_score,
+                    blast_radius=blast_radius,
+                    business_criticality=business_score,
+                    migration_complexity=complexity.migration_complexity_score
+                    if hasattr(complexity, "migration_complexity_score")
+                    else 50.0,
+                    recommended_algorithm=recommendation["recommended_algorithm"],
+                    dependencies=dep_map[asset_id],
+                    vendor_ready=True,
+                    compatibility_blocked=False,
+                    legacy_reasons=complexity.reasons,
+                    recommendation_metadata=recommendation,
+                )
+            )
             
             computed_plans[asset_id] = {
                 "recommendation": recommendation,
@@ -522,7 +528,9 @@ class IntelligenceService:
             try:
                 optimized_result = self.optimizer.optimize(optimizer_inputs)
             except Exception as e:
-                logger.warning("DependencyAwareOptimizer failed: %s. Falling back to baseline roadmap.", e)
+                logger.warning(
+                    "DependencyAwareOptimizer failed: %s. Falling back to baseline roadmap.", e
+                )
 
         # 3. Apply results
         if optimized_result and optimized_result.assets:
@@ -591,20 +599,43 @@ class IntelligenceService:
             has_assessment = asset_id in risk_by_id
             if asset.lifecycle_state == "DISCOVERED" and has_assessment:
                 self.lifecycle.process_transition(
-                    db, asset_id, project.organization_id, project.id, 
-                    TransitionRequest(target_state=LifecycleState.ASSESSED, source="Intelligence Pipeline", is_automated=True)
+                    db,
+                    asset_id,
+                    project.organization_id,
+                    project.id,
+                    TransitionRequest(
+                        target_state=LifecycleState.ASSESSED,
+                        source="Intelligence Pipeline",
+                        is_automated=True,
+                    ),
                 )
                 
             # Step 2: ASSESSED -> RECOMMENDED
-            # Evidence: Must have a specific PQC recommendation that is not empty/none or 'Keep existing cryptography'.
+            # Evidence: must have a specific PQC recommendation that is not empty/none
+            # or 'Keep existing cryptography'.
             recommendation_dict = computed_plans.get(asset_id, {}).get("recommendation", {})
-            recommendation_val = recommendation_dict.get("recommended_algorithm", "") if isinstance(recommendation_dict, dict) else ""
-            has_recommendation = bool(recommendation_val and recommendation_val.strip() and "keep existing" not in recommendation_val.lower())
-            
+            recommendation_val = (
+                recommendation_dict.get("recommended_algorithm", "")
+                if isinstance(recommendation_dict, dict)
+                else ""
+            )
+            has_recommendation = bool(
+                recommendation_val
+                and recommendation_val.strip()
+                and "keep existing" not in recommendation_val.lower()
+            )
+
             if asset.lifecycle_state == "ASSESSED" and has_recommendation:
                 self.lifecycle.process_transition(
-                    db, asset_id, project.organization_id, project.id, 
-                    TransitionRequest(target_state=LifecycleState.RECOMMENDED, source="Intelligence Pipeline", is_automated=True)
+                    db,
+                    asset_id,
+                    project.organization_id,
+                    project.id,
+                    TransitionRequest(
+                        target_state=LifecycleState.RECOMMENDED,
+                        source="Intelligence Pipeline",
+                        is_automated=True,
+                    ),
                 )
                 
             # Step 3: RECOMMENDED -> MIGRATION_PLANNED / BLOCKED

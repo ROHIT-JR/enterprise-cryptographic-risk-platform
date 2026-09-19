@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import List, Dict, Tuple
 
 class EvidenceFusionEngine:
     """Dempster‑Shafer evidence fusion with conflict handling.
@@ -12,7 +11,7 @@ class EvidenceFusionEngine:
     CONFLICT_THRESHOLD = 0.7  # above this we fall back to a simple Bayesian average
 
     @staticmethod
-    def _combine_two(m1: Dict[str, float], m2: Dict[str, float]) -> Tuple[Dict[str, float], float]:
+    def _combine_two(m1: dict[str, float], m2: dict[str, float]) -> tuple[dict[str, float], float]:
         """Combine two mass functions using Dempster's rule.
 
         Returns the combined mass dictionary and the conflict coefficient K.
@@ -44,7 +43,7 @@ class EvidenceFusionEngine:
             combined[key] = combined[key] / factor
         return combined, K
 
-    def fuse(self, sources: List[Dict[str, float]]) -> Dict[str, object]:
+    def fuse(self, sources: list[dict[str, float]]) -> dict[str, object]:
         """Fuse a list of source mass dictionaries.
 
         Returns a dict with keys:

@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "networkx==3.4.2",
     "numpy==2.2.3",
-    "scipy==1.15.2",
+    "scipy==1.18.1",
 ]
 
 [tool.pytest.ini_options]
@@ -26,3 +26,5 @@ ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+# Alembic revisions are generated; wrapping their op.* calls by hand is churn.
+"backend/migrations/versions/*" = ["E501"]

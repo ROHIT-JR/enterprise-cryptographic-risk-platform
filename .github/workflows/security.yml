@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
   security-events: write
+  # gitleaks lists a PR's commits; upload-sarif reads the workflow run.
+  pull-requests: read
+  actions: read
 
 jobs:
   dependencies:
@@ -34,19 +37,37 @@ jobs:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
       - uses: gitleaks/gitleaks-action@v2
+        env:
+          # Required to scan pull requests. Personal (non-organization) accounts need no license.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   containers:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t ecdat-x-backend:ci --target production -f backend/Dockerfile .
-      - uses: aquasecurity/trivy-action@0.32.0
+      # Pinned to a full commit SHA (v0.36.0). The previous "0.32.0" tag does not exist, and
+      # v0.31.0-v0.34.0 are affected by GHSA-9p44-j4g5-cfx5 (command injection; fixed in 0.34.1).
+      - name: Trivy (readable findings in the job log)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ecdat-x-backend:ci
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+      - name: Trivy (SARIF + gate)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ecdat-x-backend:ci
           format: sarif
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
+          ignore-unfixed: true
           exit-code: "1"
+      # Needs "Code scanning" enabled in the repo settings (private repos: GitHub Code Security).
+      # Until then the upload is skipped without failing; the Trivy step above is the real gate.
       - uses: github/codeql-action/upload-sarif@v3
         if: always()
+        continue-on-error: true
         with: {sarif_file: trivy-results.sarif}

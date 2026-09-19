@@ -57,7 +57,10 @@ def test_registration_login_refresh_and_password_hashing():
         assert replay.value.status_code == 401
 
         parts = logged_in.access_token.split(".")
-        tampered = ".".join([parts[0], parts[1], parts[2][:-1] + "x"])
+        # Alter the *first* signature char: the last base64url char of a 32-byte HMAC carries
+        # only 4 significant bits, so replacing it can leave the decoded signature unchanged.
+        flipped = "A" if parts[2][0] != "A" else "B"
+        tampered = ".".join([parts[0], parts[1], flipped + parts[2][1:]])
         with pytest.raises(TokenError):
             decode_token(tampered)
 
