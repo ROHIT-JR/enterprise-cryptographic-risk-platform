@@ -72,7 +72,7 @@ class MoscaModel:
         migration_time: float,
         quantum_arrival_year: int | None = None,
         current_year: int | None = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Evaluate the Mosca inequality against real calendar years.
 
         Used by the interactive Mosca timeline (dashboard "what-if" sliders),
@@ -80,7 +80,9 @@ class MoscaModel:
         (years remaining until the estimated quantum arrival year).
         """
         year_now = current_year if current_year is not None else datetime.date.today().year
-        arrival_year = quantum_arrival_year if quantum_arrival_year is not None else self.quantum_year
+        arrival_year = (
+            quantum_arrival_year if quantum_arrival_year is not None else self.quantum_year
+        )
         years_until_quantum = max(arrival_year - year_now, 1)
         lhs = data_lifetime + migration_time
         verdict = "critical" if lhs > years_until_quantum else "safe"
