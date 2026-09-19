@@ -8,6 +8,9 @@ from sqlalchemy.orm import Session
 from backend.app.auth.dependencies import require_permissions
 from backend.app.auth.permissions import Permission
 from backend.app.database import get_db
+from backend.app.models import User
+from backend.app.services.migration_verification_service import build_verification_report
+from migration_engine.verification import MigrationVerificationReport
 
 router = APIRouter(prefix="/analytics/validation", tags=["Validation"])
 
@@ -40,3 +43,17 @@ def get_validation_results(
         return {"data": res, "message": "Benchmark results fetched.", "status": "success"}
     except Exception as e:
         return {"data": {}, "message": str(e), "status": "error"}
+
+
+@router.get("/migrations", response_model=MigrationVerificationReport)
+def get_migration_verification(
+    project_id: str | None = Query(None, description="Limit to one project"),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_permissions(Permission.VIEW_DASHBOARD)),
+) -> MigrationVerificationReport:
+    """Verification checklist, hybrid path and test results for each PQC migration task.
+
+    Everything is derived from the organisation's stored migration plans, the NIST knowledge
+    base and the benchmark reference data. Nothing is executed on request.
+    """
+    return build_verification_report(db, user.organization_id, project_id)

@@ -14,6 +14,7 @@ All `/api/v1` endpoints except registration, login, and token refresh require
 | Migration | `GET /api/v1/migration/recommendations`, `/roadmap` |
 | Reports | `GET /api/v1/reports/{executive-summary|technical|inventory|quantum-risk|migration}?format=json|pdf|cbom|cbom-pdf` |
 | PQC benchmarks | `GET /api/v1/benchmarks/pqc`, `/migration-impact`; `POST /api/v1/benchmarks/run` (administrator, analyst) |
+| Migration verification | `GET /api/v1/analytics/validation/migrations` |
 | Audit | `GET /api/v1/audit-logs` |
 | Monitoring | `GET /health`, `/health/full` |
 
@@ -27,8 +28,8 @@ Successful refresh revokes the submitted refresh token and returns a new pair.
 
 ## PQC benchmarks
 
-`GET /benchmarks/pqc` returns reference timings and sizes for ML-KEM-768/1024, ML-DSA-65/87,
-RSA-2048/4096, ECDSA-P256 and ECDH-P256 (`config/pqc_benchmarks.json`), 0-100 radar scores, the
+`GET /benchmarks/pqc` returns reference timings and sizes for ML-KEM-512/768/1024, ML-DSA-65/87,
+SLH-DSA-SHA2-128f, RSA-2048/4096, ECDSA-P256 and ECDH-P256 (`config/pqc_benchmarks.json`), 0-100 radar scores, the
 source of each figure, and the latest live run if there has been one. Sizes come from FIPS 203/204.
 Timings marked `estimate` are order-of-magnitude figures rather than citations.
 
@@ -44,3 +45,23 @@ certificate chain size, whether the server flight exceeds a 14.6 KB initial cong
 whether each part is quantum-safe. Key-exchange arguments may be KEMs (`ECDH-P256`, `ML-KEM-768`)
 or RSA used as legacy key transport (`RSA-2048`, TLS 1.2 style); authentication arguments must be
 signature schemes. Invalid names return `422`.
+
+## Migration verification
+
+`GET /analytics/validation/migrations[?project_id=]` verifies every migration plan the caller's
+organisation owns. Each item carries:
+
+- `checks` — five checks (`algorithm_compatibility`, `performance_threshold`, `key_size`,
+  `backward_compatibility`, `rollback_plan`), each `pass`, `warn`, `fail` or `pending` with its
+  evidence and basis (`computed`, `policy` or `generated`);
+- `overall` — `verified` (all pass), `conditional` (warnings only), `pending` (evidence missing) or
+  `blocked` (a check failed);
+- `hybrid_steps` — add PQC alongside the classical algorithm, test the hybrid for 30 days, then
+  remove the classical algorithm, with durations and exit criteria;
+- `rollback_plan`, and `test_results` whose `basis` is `benchmark`, `model` or `simulated`.
+
+Status is computed from the plan's recommendation metadata, the NIST knowledge base and the
+benchmark reference data, against the limits in `config/migration_verification.json`. Results with
+`basis: "simulated"` are illustrative placeholders and never affect `overall`. Application and
+library upgrades (`PQC-capable hybrid integration`) stay `pending`: they inherit their algorithms
+from the dependencies they migrate behind. Requires the `view_dashboard` permission.

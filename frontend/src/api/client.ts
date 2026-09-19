@@ -19,6 +19,8 @@ import type {
   BenchmarkCatalogue,
   MigrationImpact,
   MigrationImpactQuery,
+  MigrationVerificationReport,
+  ValidationEnvelope,
 } from "../types/api";
 
 const apiOrigin = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
@@ -187,6 +189,16 @@ export const benchmarksApi = {
     (await api.post<BenchmarkCatalogue>("/benchmarks/run", { iterations, include_pqc: true })).data,
   migrationImpact: async (query: MigrationImpactQuery) =>
     (await api.get<MigrationImpact>("/benchmarks/migration-impact", { params: query })).data,
+};
+
+export const validationApi = {
+  migrations: async (projectId?: string) =>
+    (
+      await api.get<MigrationVerificationReport>("/analytics/validation/migrations", {
+        params: { project_id: projectId },
+      })
+    ).data,
+  baseline: async () => (await api.get<ValidationEnvelope>("/analytics/validation")).data,
 };
 
 export function apiErrorMessage(error: unknown): string {

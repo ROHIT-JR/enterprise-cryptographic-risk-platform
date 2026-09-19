@@ -362,3 +362,90 @@ export interface MigrationImpactQuery {
   auth_to: string;
   chain_certs: number;
 }
+
+export type VerificationCheckStatus = "pass" | "warn" | "fail" | "pending";
+export type VerificationOverall = "verified" | "conditional" | "pending" | "blocked";
+
+export interface VerificationCheck {
+  id: string;
+  title: string;
+  status: VerificationCheckStatus;
+  basis: "computed" | "policy" | "generated";
+  evidence: string[];
+}
+
+export interface HybridStep {
+  step: number;
+  title: string;
+  description: string;
+  duration_days: number;
+  exit_criteria: string;
+}
+
+export interface VerificationTestResult {
+  id: string;
+  name: string;
+  measured: string;
+  threshold: string;
+  status: "pass" | "fail" | "pending";
+  basis: "benchmark" | "model" | "simulated";
+  detail: string;
+}
+
+export interface MigrationVerification {
+  asset_id: string;
+  asset_name: string;
+  asset_type: string;
+  wave: number;
+  current_algorithm: string;
+  recommended_algorithm: string;
+  target_kind: "algorithm" | "integration";
+  targets: string[];
+  overall: VerificationOverall;
+  checks: VerificationCheck[];
+  hybrid_steps: HybridStep[];
+  rollback_plan: string[];
+  test_results: VerificationTestResult[];
+}
+
+export interface MigrationVerificationReport {
+  thresholds: Record<string, number>;
+  hybrid_schedule_days: Record<string, number>;
+  summary: {
+    total: number;
+    verified: number;
+    conditional: number;
+    pending: number;
+    blocked: number;
+    checks: Record<string, Record<VerificationCheckStatus, number>>;
+  };
+  items: MigrationVerification[];
+}
+
+export interface ValidationStage {
+  status: "measured" | "skipped";
+  duration_ms?: number;
+  reason?: string;
+}
+
+export interface ValidationExperiment {
+  nodes: number;
+  topology: string;
+  graph_nodes: number;
+  graph_edges: number;
+  total_duration_ms: number;
+  stages: Record<string, ValidationStage | undefined>;
+}
+
+export interface ValidationBaseline {
+  benchmark_version: string;
+  timestamp: string;
+  environment?: { python?: string; platform?: string; cpu?: string };
+  experiments: ValidationExperiment[];
+}
+
+export interface ValidationEnvelope {
+  status: "success" | "empty" | "error";
+  message: string;
+  data: Partial<ValidationBaseline>;
+}
