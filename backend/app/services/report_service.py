@@ -19,10 +19,13 @@ from backend.app.models import (
     RiskAnalysis,
     Scan,
 )
+from backend.app.services.compliance_service import build_compliance_report
 from cbom_engine import CBOMGenerator
 from risk_engine.mosca_model import MoscaModel
 
-ReportType = Literal["inventory", "quantum-risk", "migration", "executive-summary", "technical"]
+ReportType = Literal[
+    "inventory", "quantum-risk", "migration", "executive-summary", "technical", "nqm-compliance"
+]
 
 CRYPTO_ASSET_TYPES = {"algorithm", "certificate", "protocol"}
 CRYPTO_TYPES = ("algorithm", "library", "certificate", "protocol", "configuration")
@@ -62,6 +65,8 @@ class ReportService:
             return self.executive_summary(db, organization_id=organization_id, analyst=analyst)
         if report_type == "technical":
             return self.technical_report(db, organization_id=organization_id, analyst=analyst)
+        if report_type == "nqm-compliance":
+            return self.nqm_compliance_report(db, organization_id=organization_id, analyst=analyst)
         projects = list(
             db.scalars(select(Project).where(Project.organization_id == organization_id))
         )
@@ -594,6 +599,23 @@ class ReportService:
         return sorted(
             matrix, key=lambda item: (item["wave"] is None, item["wave"], -item["assets"])
         )
+
+    # -------------------------------------------------------------- NQM report
+
+    def nqm_compliance_report(
+        self, db: Session, *, organization_id: str, analyst: str | None = None
+    ) -> dict[str, Any]:
+        """India NQM phase alignment, in the same envelope shape as other reports."""
+        compliance = build_compliance_report(db, organization_id)
+        return {
+            "report_type": "nqm-compliance",
+            "organization_id": organization_id,
+            "organization_name": compliance["organization_name"],
+            "analyst": analyst,
+            "generated_at": datetime.now(UTC).isoformat(),
+            "scan_date": self._latest_scan_date(db, organization_id),
+            **compliance,
+        }
 
     # ---------------------------------------------------------------- helpers
 

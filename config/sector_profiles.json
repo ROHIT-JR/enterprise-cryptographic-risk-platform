@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "profiles": [
+    {
+      "id": "bfsi",
+      "name": "Banking, Financial Services & Insurance",
+      "match_industries": ["financial services", "banking", "bfsi", "insurance", "fintech"],
+      "regulator": "Reserve Bank of India (RBI)",
+      "guidance": "RBI's cybersecurity framework and UPI/NPCI infrastructure guidelines call for strong cryptographic controls on payment and settlement systems.",
+      "priority_assets": [
+        "Payment switches and UPI/NPCI gateways",
+        "Core banking certificates",
+        "HSM-backed signing keys"
+      ],
+      "recommended_baseline": "ML-KEM-768 for key exchange, ML-DSA-65 for signatures on customer-facing and settlement systems."
+    },
+    {
+      "id": "defense-gov",
+      "name": "Defense & Government",
+      "match_industries": ["defense", "government", "public sector", "aerospace"],
+      "regulator": "Ministry of Electronics and Information Technology (MeitY)",
+      "guidance": "MeitY guidelines and Critical Information Infrastructure (CII) designation require the highest-assurance cryptographic controls.",
+      "priority_assets": [
+        "Classified communication channels",
+        "Identity and authentication systems",
+        "CII-designated services"
+      ],
+      "recommended_baseline": "ML-KEM-1024 for key exchange, ML-DSA-87 or SLH-DSA for signatures on CII-designated systems."
+    },
+    {
+      "id": "telecom",
+      "name": "Telecom",
+      "match_industries": ["telecom", "telecommunications", "isp"],
+      "regulator": "Telecom Regulatory Authority of India (TRAI) / Department of Telecommunications (DoT)",
+      "guidance": "TRAI/DoT frameworks and 5G core security requirements call for quantum-safe key management ahead of network densification.",
+      "priority_assets": [
+        "5G core signaling",
+        "SIM/eSIM provisioning",
+        "Network element certificates"
+      ],
+      "recommended_baseline": "ML-KEM-768 for key exchange, ML-DSA-65 for network element authentication."
+    },
+    {
+      "id": "healthcare",
+      "name": "Healthcare",
+      "match_industries": ["healthcare", "health", "hospital", "pharma"],
+      "regulator": "Ayushman Bharat Digital Mission (ABDM)",
+      "guidance": "ABDM/ABHA digital health record standards require long-term confidentiality of patient data, which is especially exposed to harvest-now-decrypt-later attacks.",
+      "priority_assets": [
+        "ABHA identity records",
+        "Electronic health record stores",
+        "Health information exchange links"
+      ],
+      "recommended_baseline": "ML-KEM-768 for key exchange; prioritise HNDL-critical patient data records for early migration."
+    }
+  ],
+  "default": {
+    "id": "general",
+    "name": "General Enterprise",
+    "match_industries": [],
+    "regulator": "No sector-specific regulator matched",
+    "guidance": "Follow NIST SP 800-208 and CNSA 2.0 general migration guidance until a sector-specific profile applies.",
+    "priority_assets": [
+      "Trust anchors and root certificates",
+      "Customer-facing TLS endpoints"
+    ],
+    "recommended_baseline": "ML-KEM-768 for key exchange, ML-DSA-65 for signatures."
+  }
+}

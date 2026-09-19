@@ -4,6 +4,7 @@ from backend.app.api import (
     assets,
     audit,
     benchmarks,
+    compliance,
     dashboard,
     enterprise,
     graph,
@@ -36,3 +37,4 @@ api_router.include_router(reports.router)
 api_router.include_router(enterprise.router)
 api_router.include_router(validation.router)
 api_router.include_router(benchmarks.router)
+api_router.include_router(compliance.router)

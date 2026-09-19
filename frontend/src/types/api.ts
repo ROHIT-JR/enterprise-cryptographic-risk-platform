@@ -196,6 +196,44 @@ export interface MigrationRoadmap {
   }>;
 }
 
+export interface NQMRequirement {
+  id: string;
+  label: string;
+  complete: boolean;
+  progress: number;
+  evidence: string;
+}
+
+export interface NQMPhase {
+  id: number;
+  name: string;
+  years: string;
+  description: string;
+  progress: number;
+  status: "complete" | "in-progress" | "not-started";
+  requirements: NQMRequirement[];
+}
+
+export interface SectorProfile {
+  id: string;
+  name: string;
+  match_industries: string[];
+  regulator: string;
+  guidance: string;
+  priority_assets: string[];
+  recommended_baseline: string;
+}
+
+export interface NQMComplianceReport {
+  source: string;
+  organization_id: string;
+  organization_name: string;
+  current_phase: number;
+  overall_progress: number;
+  phases: NQMPhase[];
+  sector: SectorProfile;
+}
+
 export type UserRole = "administrator" | "security_analyst" | "auditor" | "viewer";
 
 export interface AuthUser {

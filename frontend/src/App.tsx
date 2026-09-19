@@ -21,6 +21,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then((module)
 const SecurityOperations = lazy(() => import("./pages/SecurityOperations").then((module) => ({ default: module.SecurityOperations })));
 const AuditorView = lazy(() => import("./pages/AuditorView").then((module) => ({ default: module.AuditorView })));
 const ValidationDashboard = lazy(() => import("./pages/ValidationDashboard").then((module) => ({ default: module.ValidationDashboard })));
+const ComplianceDashboard = lazy(() => import("./pages/ComplianceDashboard").then((module) => ({ default: module.ComplianceDashboard })));
 const NotFound = lazy(() => import("./pages/NotFound").then((module) => ({ default: module.NotFound })));
 
 export default function App() {
@@ -47,6 +48,7 @@ export default function App() {
             <Route path="operations" element={<SecurityOperations />} />
             <Route path="audit" element={<AuditorView />} />
             <Route path="validation" element={<ValidationDashboard />} />
+            <Route path="compliance" element={<ComplianceDashboard />} />
             <Route path="*" element={<NotFound />} />
               </Route>
             </Route>

@@ -8,6 +8,7 @@ import type {
   IntelligenceRiskData,
   MigrationRecommendation,
   MigrationRoadmap,
+  NQMComplianceReport,
   RiskPage,
   Scan,
   AuthUser,
@@ -37,7 +38,8 @@ export type ReportType =
   | "technical"
   | "inventory"
   | "quantum-risk"
-  | "migration";
+  | "migration"
+  | "nqm-compliance";
 
 /** `cbom` is the CycloneDX 1.6 JSON; `cbom-pdf` is its human-readable companion. */
 export type ReportFormat = "json" | "pdf" | "cbom" | "cbom-pdf";
@@ -149,6 +151,10 @@ export const migrationApi = {
     (await api.get<MigrationRecommendation[]>("/migration/recommendations")).data,
   roadmap: async () =>
     (await api.get<MigrationRoadmap>("/migration/roadmap")).data,
+};
+
+export const complianceApi = {
+  nqm: async () => (await api.get<NQMComplianceReport>("/compliance/nqm")).data,
 };
 
 export const authApi = {
