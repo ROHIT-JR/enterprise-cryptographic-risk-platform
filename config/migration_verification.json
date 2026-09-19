@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "description": "Policy used to verify PQC migration recommendations. These are engineering budgets chosen for a typical TLS deployment, not NIST requirements; tune them per environment. Timing limits are per operation: 10 ms keeps a handshake's cryptographic work well inside typical connection-setup budgets.",
+  "thresholds": {
+    "max_keygen_us": 10000,
+    "max_operation_us": 10000,
+    "max_wire_bytes": 4096,
+    "max_added_handshake_ms": 50,
+    "assumed_rtt_ms": 40,
+    "chain_certs": 2
+  },
+  "hybrid_schedule_days": {
+    "deploy": 14,
+    "soak": 30,
+    "cutover": 7
+  }
+}

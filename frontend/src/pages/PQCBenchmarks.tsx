@@ -29,10 +29,12 @@ import type {
 } from "../types/api";
 
 const ALGORITHM_COLORS: Record<string, string> = {
+  "ML-KEM-512": "#6366f1",
   "ML-KEM-768": "#4f46e5",
   "ML-KEM-1024": "#7c3aed",
   "ML-DSA-65": "#0891b2",
   "ML-DSA-87": "#0d9488",
+  "SLH-DSA-SHA2-128f": "#16a34a",
   "RSA-2048": "#dc2626",
   "RSA-4096": "#ea580c",
   "ECDSA-P256": "#ca8a04",
@@ -100,6 +102,7 @@ function LogAxis({ max }: { max: number }) {
 const SOURCE_LABELS: Record<string, { label: string; style: string }> = {
   estimate: { label: "estimate", style: "border-amber-300 bg-amber-50 text-amber-900" },
   "derived-liboqs-ratio": { label: "derived", style: "border-sky-300 bg-sky-50 text-sky-900" },
+  "measured-liboqs-scaled": { label: "scaled", style: "border-sky-300 bg-sky-50 text-sky-900" },
 };
 const DEFAULT_SOURCE_LABEL = { label: "reference", style: "border-zinc-300 bg-zinc-50 text-zinc-700" };
 

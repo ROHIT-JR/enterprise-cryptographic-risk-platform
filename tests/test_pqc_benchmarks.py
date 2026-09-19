@@ -88,6 +88,21 @@ def test_reference_sizes_match_fips_203_and_204(reference):
     )
 
 
+def test_reference_sizes_for_ml_kem_512_and_slh_dsa_match_fips(reference):
+    a = reference["algorithms"]
+    assert (
+        a["ML-KEM-512"]["pk_bytes"],
+        a["ML-KEM-512"]["sk_bytes"],
+        a["ML-KEM-512"]["ct_bytes"],
+    ) == (
+        800,
+        1632,
+        768,
+    )
+    slh = a["SLH-DSA-SHA2-128f"]
+    assert (slh["pk_bytes"], slh["sk_bytes"], slh["sig_bytes"]) == (32, 64, 17088)  # FIPS 205
+
+
 def test_reference_covers_issue_algorithms_with_complete_fields(reference):
     algorithms = reference["algorithms"]
     assert {
@@ -225,7 +240,14 @@ def test_live_run_measures_classical_and_reports_pqc_as_skipped(reference, monke
         assert all(value > 0 for value in timings.values()), name
     # RSA private-key operations are far slower than verification
     assert result["measured"]["RSA-2048"]["sign_us"] > result["measured"]["RSA-2048"]["verify_us"]
-    assert set(result["skipped"]) == {"ML-KEM-768", "ML-KEM-1024", "ML-DSA-65", "ML-DSA-87"}
+    assert set(result["skipped"]) == {
+        "ML-KEM-512",
+        "ML-KEM-768",
+        "ML-KEM-1024",
+        "ML-DSA-65",
+        "ML-DSA-87",
+        "SLH-DSA-SHA2-128f",
+    }
     assert all("not installed" in reason for reason in result["skipped"].values())
     assert result["environment"]["oqs_available"] is False
 
@@ -276,7 +298,12 @@ def test_live_run_uses_liboqs_when_available(reference, monkeypatch):
     assert {"ML-KEM-768", "ML-KEM-1024", "ML-DSA-65"} <= set(result["measured"])
     assert set(result["measured"]["ML-KEM-768"]) == {"keygen_us", "encaps_us", "decaps_us"}
     assert set(result["measured"]["ML-DSA-65"]) == {"keygen_us", "sign_us", "verify_us"}
-    assert result["skipped"] == {"ML-DSA-87": "not enabled in this liboqs build"}
+    not_built = "not enabled in this liboqs build"
+    assert result["skipped"] == {
+        "ML-KEM-512": not_built,
+        "ML-DSA-87": not_built,
+        "SLH-DSA-SHA2-128f": not_built,
+    }
     assert result["environment"]["oqs_available"] is True
 
 
@@ -307,7 +334,7 @@ def test_api_serves_reference_data_runs_benchmark_and_audits_it(monkeypatch):
     body = before.json()
     assert body["latest_run"] is None
     names = [row["name"] for row in body["algorithms"]]
-    assert names[:2] == ["ML-KEM-768", "ML-KEM-1024"]
+    assert names[:3] == ["ML-KEM-512", "ML-KEM-768", "ML-KEM-1024"]
     assert all(row["measured_us"] is None for row in body["algorithms"])
     assert body["sources"]["FIPS-203"]
 
