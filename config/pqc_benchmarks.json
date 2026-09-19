@@ -5,8 +5,10 @@
   "sources": {
     "FIPS-203": "NIST FIPS 203, Module-Lattice-Based Key-Encapsulation Mechanism Standard (ML-KEM), August 2024. Key and ciphertext sizes.",
     "FIPS-204": "NIST FIPS 204, Module-Lattice-Based Digital Signature Standard (ML-DSA), August 2024. Key and signature sizes.",
+    "FIPS-205": "NIST FIPS 205, Stateless Hash-Based Digital Signature Standard (SLH-DSA), August 2024. Key and signature sizes.",
     "issue-17-reference": "Timing figures supplied in project issue #17, attributed there to NIST PQC round 3/4 reference benchmarks (CRYSTALS-Kyber / CRYSTALS-Dilithium, x86-64 AVX2 class hardware). Indicative, not re-measured.",
-    "derived-liboqs-ratio": "ML-DSA-65 figures from issue #17 scaled by the ML-DSA-87 / ML-DSA-65 ratios measured with liboqs 0.16.0 (x86-64 Linux, 20 iterations): keygen x1.34, sign x1.50, verify x1.80. Keeps the issue's hardware baseline while using measured relative cost.",
+    "derived-liboqs-ratio": "Figures scaled from a same-family algorithm in issue #17 by ratios measured with liboqs 0.16.0 (x86-64 Linux, same run): ML-DSA-87 from ML-DSA-65 (keygen x1.34, sign x1.50, verify x1.80); ML-KEM-512 from ML-KEM-768 (keygen x0.69, encaps x0.72, decaps x0.71). Keeps the issue's hardware baseline while using measured relative cost.",
+    "measured-liboqs-scaled": "SLH-DSA-SHA2-128f measured with liboqs 0.16.0 (x86-64 Linux, 30 iterations) and scaled to the issue's hardware baseline by the factor (about 3.0x) that maps liboqs's ML-DSA-65 figures from the same run onto the issue's. Order-of-magnitude only: signing is roughly 20-60 ms even before scaling.",
     "estimate": "Order-of-magnitude estimate for OpenSSL-class implementations on comparable x86-64 hardware. Not a citation. Cross-checked against live runs on Windows and Linux (WSL2) hosts, where measured values differed by up to ~3x between environments; run a live benchmark for numbers on your own hardware.",
     "SP-800-57": "NIST SP 800-57 Part 1, security strengths of classical algorithms."
   },
@@ -17,6 +19,23 @@
     "default_chain_certs": 2
   },
   "algorithms": {
+    "ML-KEM-512": {
+      "family": "ML-KEM",
+      "kind": "kem",
+      "standard": "FIPS 203",
+      "standard_year": 2024,
+      "nist_category": 1,
+      "classical_security_bits": null,
+      "quantum_safe": true,
+      "keygen_us": 20,
+      "encaps_us": 26,
+      "decaps_us": 28,
+      "pk_bytes": 800,
+      "sk_bytes": 1632,
+      "ct_bytes": 768,
+      "timing_source": "derived-liboqs-ratio",
+      "size_source": "FIPS-203"
+    },
     "ML-KEM-768": {
       "family": "ML-KEM",
       "kind": "kem",
@@ -84,6 +103,23 @@
       "sig_bytes": 4627,
       "timing_source": "derived-liboqs-ratio",
       "size_source": "FIPS-204"
+    },
+    "SLH-DSA-SHA2-128f": {
+      "family": "SLH-DSA",
+      "kind": "signature",
+      "standard": "FIPS 205",
+      "standard_year": 2024,
+      "nist_category": 1,
+      "classical_security_bits": null,
+      "quantum_safe": true,
+      "keygen_us": 2460,
+      "sign_us": 55700,
+      "verify_us": 3150,
+      "pk_bytes": 32,
+      "sk_bytes": 64,
+      "sig_bytes": 17088,
+      "timing_source": "measured-liboqs-scaled",
+      "size_source": "FIPS-205"
     },
     "RSA-2048": {
       "family": "RSA",

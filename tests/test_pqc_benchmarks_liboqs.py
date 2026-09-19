@@ -20,7 +20,7 @@ from backend.app.main import app  # noqa: E402
 from backend.app.schemas.auth import RegisterRequest  # noqa: E402
 from benchmarks import pqc_benchmarks  # noqa: E402
 
-PQC = ("ML-KEM-768", "ML-KEM-1024", "ML-DSA-65", "ML-DSA-87")
+PQC = ("ML-KEM-512", "ML-KEM-768", "ML-KEM-1024", "ML-DSA-65", "ML-DSA-87", "SLH-DSA-SHA2-128f")
 
 
 @pytest.fixture(scope="module")

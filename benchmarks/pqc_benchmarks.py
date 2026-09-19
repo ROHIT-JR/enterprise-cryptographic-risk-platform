@@ -39,10 +39,16 @@ QUANTUM_SCORE_PER_CATEGORY = 20
 MATURITY_POINTS_PER_YEAR = 4
 
 OQS_ALIASES = {
+    "ML-KEM-512": ("ML-KEM-512", "Kyber512"),
     "ML-KEM-768": ("ML-KEM-768", "Kyber768"),
     "ML-KEM-1024": ("ML-KEM-1024", "Kyber1024"),
     "ML-DSA-65": ("ML-DSA-65", "Dilithium3"),
     "ML-DSA-87": ("ML-DSA-87", "Dilithium5"),
+    "SLH-DSA-SHA2-128f": (
+        "SLH-DSA-SHA2-128f",
+        "SLH_DSA_PURE_SHA2_128F",
+        "SPHINCS+-SHA2-128f-simple",
+    ),
 }
 _MESSAGE = b"ECDAT-X benchmark message" * 4
 
