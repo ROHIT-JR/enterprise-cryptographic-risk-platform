@@ -9,6 +9,7 @@ import type {
   MigrationRecommendation,
   MigrationRoadmap,
   MoscaSimulateResponse,
+  NQMComplianceReport,
   RiskPage,
   Scan,
   AuthUser,
@@ -38,7 +39,8 @@ export type ReportType =
   | "technical"
   | "inventory"
   | "quantum-risk"
-  | "migration";
+  | "migration"
+  | "nqm-compliance";
 
 /** `cbom` is the CycloneDX 1.6 JSON; `cbom-pdf` is its human-readable companion. */
 export type ReportFormat = "json" | "pdf" | "cbom" | "cbom-pdf";
@@ -159,6 +161,10 @@ export const moscaApi = {
         quantum_arrival_year: quantumArrivalYear,
       })
     ).data,
+};
+
+export const complianceApi = {
+  nqm: async () => (await api.get<NQMComplianceReport>("/compliance/nqm")).data,
 };
 
 export const authApi = {

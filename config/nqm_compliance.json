@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "source": "Illustrative alignment with India's National Quantum Mission (NQM) and the DST post-quantum migration roadmap. Not an official government compliance framework.",
+  "phases": [
+    {
+      "id": 1,
+      "name": "Cryptographic Inventory & Assessment",
+      "years": "2024-2026",
+      "description": "Establish visibility: discover, inventory and quantum risk-assess cryptographic usage across the estate.",
+      "requirements": [
+        {
+          "id": "p1-scan",
+          "label": "Complete a cryptographic discovery scan",
+          "check": "has_completed_scan"
+        },
+        {
+          "id": "p1-inventory",
+          "label": "Build a cryptographic asset inventory",
+          "check": "has_assets"
+        },
+        {
+          "id": "p1-assess",
+          "label": "Assess quantum vulnerability of discovered assets",
+          "check": "assets_assessed_ratio"
+        },
+        {
+          "id": "p1-hndl",
+          "label": "Identify harvest-now-decrypt-later exposure",
+          "check": "has_hndl_findings"
+        },
+        {
+          "id": "p1-criticality",
+          "label": "Classify assets by business criticality",
+          "check": "business_context_ratio"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "CII Migration",
+      "years": "2026-2029",
+      "description": "Migrate Critical Information Infrastructure: trust anchors and shared services move first, validated before cutover.",
+      "requirements": [
+        {
+          "id": "p2-roadmap",
+          "label": "Generate a dependency-aware migration roadmap",
+          "check": "has_roadmap"
+        },
+        {
+          "id": "p2-nist",
+          "label": "Select NIST-standardized replacements (ML-KEM / ML-DSA / SLH-DSA)",
+          "check": "nist_algorithm_ratio"
+        },
+        {
+          "id": "p2-wave1",
+          "label": "Begin migrating Wave 1 trust-anchor assets",
+          "check": "wave1_in_progress"
+        },
+        {
+          "id": "p2-verify",
+          "label": "Validate migrations before cutover",
+          "check": "has_verified_migrations"
+        },
+        {
+          "id": "p2-hndl-priority",
+          "label": "Protect harvest-now-decrypt-later data first",
+          "check": "hndl_prioritized"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Enterprise-wide PQC Adoption",
+      "years": "2029-2033",
+      "description": "Complete the transition: every quantum-vulnerable asset replaced and continuously verified.",
+      "requirements": [
+        {
+          "id": "p3-replaced",
+          "label": "Replace all quantum-vulnerable assets",
+          "check": "replaced_ratio"
+        },
+        {
+          "id": "p3-verified",
+          "label": "Continuously verify PQC migrations",
+          "check": "verified_ratio"
+        },
+        {
+          "id": "p3-sector",
+          "label": "Validate sector-specific compliance posture",
+          "check": "compatibility_reviewed_ratio"
+        }
+      ]
+    }
+  ]
+}
