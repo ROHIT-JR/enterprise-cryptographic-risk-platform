@@ -34,6 +34,12 @@ from backend.app.schemas.intelligence import (
 from backend.app.services.audit_service import record_audit
 from backend.app.services.intelligence_service import IntelligenceService
 from backend.app.services.neo4j_service import create_graph_store
+from risk_engine.crypto_agility import (
+    AgilityAssetEvidence,
+    CryptoAgilityAssessment,
+    CryptoAgilityEngine,
+    CryptoAgilityInput,
+)
 
 router = APIRouter(prefix="/intelligence", tags=["phase-2 intelligence"])
 
@@ -385,3 +391,39 @@ def assign_business_context(
     )
     db.commit()
     return BusinessContextResponse(asset_id=asset_id, **payload.model_dump())
+
+
+@router.get("/agility", response_model=CryptoAgilityAssessment)
+def get_crypto_agility_score(
+    project_id: str | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> CryptoAgilityAssessment:
+    """Crypto-Agility Score: how easily this organization can swap algorithms.
+
+    Computed from the same evidence lines and file locations the scanners
+    already captured for algorithm, library, and protocol assets.
+    """
+    organization_id = user.organization_id if isinstance(user, User) else None
+    statement = select(Asset)
+    if organization_id:
+        statement = statement.where(Asset.organization_id == organization_id)
+    if project_id:
+        statement = statement.where(Asset.project_id == project_id)
+    assets = list(db.scalars(statement))
+
+    algorithm_assets = [
+        AgilityAssetEvidence(evidence=asset.evidence, location=asset.location)
+        for asset in assets
+        if asset.asset_type == "algorithm"
+    ]
+    library_names = [asset.name for asset in assets if asset.asset_type == "library"]
+    protocol_names = [asset.name for asset in assets if asset.asset_type == "protocol"]
+
+    return CryptoAgilityEngine().assess(
+        CryptoAgilityInput(
+            algorithm_assets=algorithm_assets,
+            library_names=library_names,
+            protocol_names=protocol_names,
+        )
+    )
