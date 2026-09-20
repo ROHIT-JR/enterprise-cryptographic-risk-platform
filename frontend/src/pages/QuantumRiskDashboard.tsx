@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 import { intelligenceApi, apiErrorMessage } from "../api/client";
+import { MoscaSection } from "../components/mosca/MoscaSection";
 import {
   Card,
   EmptyState,
@@ -221,6 +222,8 @@ export function QuantumRiskDashboard() {
         title="Quantum risk dashboard"
         description="Prioritize cryptographic exposure using quantum vulnerability, HNDL, blast radius, business impact, migration complexity, and evidence confidence."
       />
+
+      <MoscaSection />
 
       {/* Metrics row */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -11,6 +11,7 @@ from backend.app.api import (
     health,
     intelligence,
     migration,
+    mosca,
     organizations,
     projects,
     reports,
@@ -37,4 +38,5 @@ api_router.include_router(reports.router)
 api_router.include_router(enterprise.router)
 api_router.include_router(validation.router)
 api_router.include_router(benchmarks.router)
+api_router.include_router(mosca.router)
 api_router.include_router(compliance.router)
