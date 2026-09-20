@@ -1,6 +1,7 @@
 import axios from "axios";
 import type {
   AssetPage,
+  CryptoAgilityAssessment,
   Criticality,
   DashboardData,
   GraphData,
@@ -144,6 +145,8 @@ export const intelligenceApi = {
         params: { asset_id: assetId, depth: 3 },
       })
     ).data,
+  agility: async () =>
+    (await api.get<CryptoAgilityAssessment>("/intelligence/agility")).data,
 };
 
 export const migrationApi = {

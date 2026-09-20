@@ -234,6 +234,24 @@ export interface NQMComplianceReport {
   sector: SectorProfile;
 }
 
+export type CryptoAgilityBand = "crypto-rigid" | "crypto-aware" | "crypto-ready" | "crypto-agile";
+
+export interface AgilityFactorResult {
+  factor: string;
+  label: string;
+  weight: number;
+  score: number;
+  explanation: string;
+}
+
+export interface CryptoAgilityAssessment {
+  score: number;
+  band: CryptoAgilityBand;
+  description: string;
+  factors: AgilityFactorResult[];
+  recommendations: string[];
+}
+
 export type UserRole = "administrator" | "security_analyst" | "auditor" | "viewer";
 
 export interface AuthUser {

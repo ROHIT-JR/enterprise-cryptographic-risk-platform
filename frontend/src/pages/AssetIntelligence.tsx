@@ -2,6 +2,102 @@ import { CheckCircle2, Fingerprint, Network, ShieldAlert } from "lucide-react";
 import { intelligenceApi, apiErrorMessage } from "../api/client";
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
+import type { CryptoAgilityBand } from "../types/api";
+
+const BAND_STYLE: Record<CryptoAgilityBand, { text: string; bg: string; border: string; bar: string }> = {
+  "crypto-rigid": { text: "text-red-700", bg: "bg-red-50", border: "border-red-200", bar: "bg-red-500" },
+  "crypto-aware": { text: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200", bar: "bg-amber-500" },
+  "crypto-ready": { text: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200", bar: "bg-indigo-500" },
+  "crypto-agile": { text: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", bar: "bg-emerald-500" },
+};
+
+const BAND_LABEL: Record<CryptoAgilityBand, string> = {
+  "crypto-rigid": "Crypto-Rigid",
+  "crypto-aware": "Crypto-Aware",
+  "crypto-ready": "Crypto-Ready",
+  "crypto-agile": "Crypto-Agile",
+};
+
+function bandForScore(score: number): CryptoAgilityBand {
+  if (score <= 30) return "crypto-rigid";
+  if (score <= 60) return "crypto-aware";
+  if (score <= 80) return "crypto-ready";
+  return "crypto-agile";
+}
+
+function CryptoAgilityCard() {
+  const { data, error, loading } = useAsync(intelligenceApi.agility, []);
+  if (loading) {
+    return (
+      <Card className="p-5">
+        <LoadingState label="Computing crypto-agility score" />
+      </Card>
+    );
+  }
+  // Non-blocking: this is a supplementary metric, so a failure here shouldn't
+  // take down the rest of the asset intelligence page.
+  if (error || !data) return null;
+
+  const style = BAND_STYLE[data.band];
+  return (
+    <Card className="overflow-hidden">
+      <div className="flex flex-col gap-4 border-b border-zinc-100 p-5 md:flex-row md:items-center md:justify-between md:p-6">
+        <div>
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">
+            Novel metric · Research contribution
+          </p>
+          <h2 className="mt-1 text-lg font-bold tracking-tight text-zinc-950">Crypto-Agility Score</h2>
+          <p className="mt-1 max-w-xl text-xs text-zinc-500">
+            How easily this organization can swap cryptographic algorithms without breaking systems.
+          </p>
+        </div>
+        <div className={`flex items-center gap-4 rounded-lg border px-5 py-3 ${style.border} ${style.bg}`}>
+          <p className={`text-4xl font-bold tabular-nums ${style.text}`}>{data.score}</p>
+          <div>
+            <p className={`font-mono text-xs font-bold uppercase tracking-wider ${style.text}`}>
+              {BAND_LABEL[data.band]}
+            </p>
+            <p className="mt-0.5 max-w-[16rem] text-[11px] text-zinc-500">{data.description}</p>
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-5 p-5 md:grid-cols-2 md:p-6">
+        <div className="space-y-3">
+          {data.factors.map((factor) => (
+            <div key={factor.factor}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-zinc-700">
+                  {factor.label} <span className="text-zinc-400">({Math.round(factor.weight * 100)}%)</span>
+                </span>
+                <span className="font-mono font-semibold text-zinc-800">{factor.score}</span>
+              </div>
+              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
+                <div
+                  className={`h-full rounded-full ${BAND_STYLE[bandForScore(factor.score)].bar}`}
+                  style={{ width: `${factor.score}%` }}
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-zinc-500">{factor.explanation}</p>
+            </div>
+          ))}
+        </div>
+        <div className="rounded border border-zinc-100 bg-zinc-50 p-4">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+            Recommendations to improve agility
+          </p>
+          <ul className="mt-2.5 space-y-2 text-xs text-zinc-700">
+            {data.recommendations.map((tip) => (
+              <li key={tip} className="flex items-start gap-2">
+                <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-indigo-500" />
+                {tip}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export function AssetIntelligence() {
   const { data, error, loading, reload } = useAsync(intelligenceApi.risk, []);
@@ -14,6 +110,7 @@ export function AssetIntelligence() {
         title="Asset intelligence"
         description="Every score remains traceable to discovery channels, business context, and graph-derived impact."
       />
+      <CryptoAgilityCard />
       {data.items.length ? (
         <div className="grid gap-5 xl:grid-cols-2">
           {data.items.map((item) => (
