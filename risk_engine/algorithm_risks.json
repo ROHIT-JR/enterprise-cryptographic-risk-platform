@@ -12,5 +12,9 @@
   "3DES": {"classification": "high", "score": 75, "quantum_vulnerable": false, "reason": "3DES has 112-bit effective security. Deprecated by NIST."},
   "SHA-1": {"classification": "medium", "score": 55, "quantum_vulnerable": false, "reason": "SHA-1 has known collision attacks (SHAttered)."},
   "ML-KEM": {"classification": "secure", "score": 0, "quantum_vulnerable": false, "reason": "ML-KEM is standardized for post-quantum key encapsulation."},
-  "ML-DSA": {"classification": "secure", "score": 0, "quantum_vulnerable": false, "reason": "ML-DSA is standardized for post-quantum digital signatures."}
+  "ML-DSA": {"classification": "secure", "score": 0, "quantum_vulnerable": false, "reason": "ML-DSA is standardized for post-quantum digital signatures."},
+  "SHA-384": {"classification": "low", "score": 15, "quantum_vulnerable": false, "reason": "Adequate security margin against known quantum attacks."},
+  "SHA-512": {"classification": "low", "score": 10, "quantum_vulnerable": false, "reason": "Strong security margin against known quantum attacks."},
+  "SHA-3": {"classification": "low", "score": 5, "quantum_vulnerable": false, "reason": "Quantum-resistant with a strong security margin."},
+  "HMAC": {"classification": "low", "score": 15, "quantum_vulnerable": false, "reason": "Security depends on the underlying hash function."}
 }
