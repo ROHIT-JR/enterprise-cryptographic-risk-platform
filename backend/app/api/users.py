@@ -10,7 +10,7 @@ from backend.app.models import User
 from backend.app.schemas.auth import UserCreate, UserResponse
 from backend.app.services.audit_service import record_audit
 
-router = APIRouter(prefix="/users", tags=["user management"])
+router = APIRouter(prefix="/users", tags=["Enterprise"])
 
 
 @router.get("", response_model=list[UserResponse])
@@ -18,6 +18,7 @@ def list_users(
     administrator: User = Depends(require_permissions(Permission.MANAGE_USERS)),
     db: Session = Depends(get_db),
 ) -> list[User]:
+    """List the users in the caller's organization. Administrators only."""
     return list(
         db.scalars(
             select(User)
@@ -33,6 +34,11 @@ def create_user(
     administrator: User = Depends(require_permissions(Permission.MANAGE_USERS)),
     db: Session = Depends(get_db),
 ) -> User:
+    """Add a user to the caller's organization with one of the four roles.
+
+    Administrators only. Roles are `administrator`, `security_analyst`, `auditor` and `viewer`; see
+    the tag description for what each may do.
+    """
     duplicate = db.scalar(
         select(User).where(
             User.organization_id == administrator.organization_id,

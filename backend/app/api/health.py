@@ -9,8 +9,8 @@ from backend.app.schemas.enterprise import FullHealthResponse
 from backend.app.services.neo4j_service import create_graph_store
 from scanners import build_default_registry
 
-router = APIRouter(prefix="/health", tags=["health"])
-public_router = APIRouter(tags=["health"])
+router = APIRouter(prefix="/health", tags=["Platform"])
+public_router = APIRouter(tags=["Platform"])
 
 
 def _probe_connections(db: Session) -> tuple[dict[str, bool], list[str]]:
@@ -40,11 +40,16 @@ def _probe_connections(db: Session) -> tuple[dict[str, bool], list[str]]:
 
 @router.get("/live")
 def live() -> dict[str, str]:
+    """Liveness probe: returns `ok` as soon as the process is serving requests."""
     return {"status": "ok"}
 
 
 @public_router.get("/health")
 def connection_health(response: Response, db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Report whether PostgreSQL and Neo4j are reachable.
+
+    Returns `503` when either is down. Unauthenticated, so container orchestrators can probe it.
+    """
     components, errors = _probe_connections(db)
     healthy = all(components.values())
     if not healthy:
@@ -62,6 +67,11 @@ def connection_health(response: Response, db: Session = Depends(get_db)) -> dict
 
 @public_router.get("/health/full", response_model=FullHealthResponse)
 def full_health(response: Response, db: Session = Depends(get_db)) -> FullHealthResponse:
+    """Report backend, database, graph and scanner-engine health together.
+
+    Returns `503` when the database is unreachable or no scanner plugin can be loaded. Neo4j being
+    down is reported but not fatal: the platform falls back to PostgreSQL.
+    """
     components, _ = _probe_connections(db)
     try:
         scanners = build_default_registry().available()
@@ -82,6 +92,11 @@ def full_health(response: Response, db: Session = Depends(get_db)) -> FullHealth
 
 @router.get("/ready")
 def ready(response: Response, db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Readiness probe for load balancers and orchestrators.
+
+    `ready` when the database is reachable, `degraded` when it is but Neo4j is not, and `not-ready`
+    (with `503`) when the database is down.
+    """
     components, errors = _probe_connections(db)
     if not components["database"]:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE

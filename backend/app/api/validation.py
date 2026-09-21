@@ -12,7 +12,7 @@ from backend.app.models import User
 from backend.app.services.migration_verification_service import build_verification_report
 from migration_engine.verification import MigrationVerificationReport
 
-router = APIRouter(prefix="/analytics/validation", tags=["Validation"])
+router = APIRouter(prefix="/analytics/validation", tags=["Research & Validation"])
 
 @router.get("", response_model=dict[str, Any])
 def get_validation_results(

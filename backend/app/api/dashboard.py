@@ -8,13 +8,18 @@ from backend.app.models import Asset, RiskFinding, Scan, User
 from backend.app.schemas.common import DistributionItem
 from backend.app.schemas.dashboard import DashboardMetrics, DashboardResponse
 
-router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["Intelligence"])
 
 
 @router.get("", response_model=DashboardResponse)
 def dashboard(
     db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> DashboardResponse:
+    """Return headline metrics for the analyst dashboard.
+
+    Covers asset and risk counts, the severity and algorithm distributions, and the most recent
+    scans, all scoped to the caller's organization.
+    """
     crypto_types = ("algorithm", "library", "certificate", "protocol", "configuration")
     organization_id = user.organization_id if isinstance(user, User) else None
     asset_org = [Asset.organization_id == organization_id] if organization_id else []

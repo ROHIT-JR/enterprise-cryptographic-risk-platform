@@ -41,7 +41,7 @@ from risk_engine.crypto_agility import (
     CryptoAgilityInput,
 )
 
-router = APIRouter(prefix="/intelligence", tags=["phase-2 intelligence"])
+router = APIRouter(prefix="/intelligence", tags=["Intelligence"])
 
 
 def _item(analysis: RiskAnalysis, asset: Asset, project: Project) -> IntelligenceItem:
@@ -92,6 +92,12 @@ def get_intelligence_risk(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> IntelligenceRiskResponse:
+    """Return the full quantum risk analysis for every analyzed asset.
+
+    Each item combines the quantum vulnerability, harvest-now-decrypt-later exposure, graph
+    centrality, business criticality and migration complexity into a final score, with the
+    explanations and factor contributions behind it.
+    """
     organization_id = user.organization_id if isinstance(user, User) else None
     rows = _rows(db, project_id, organization_id)
     items = [_item(analysis, asset, project) for analysis, asset, project in rows]
@@ -127,6 +133,11 @@ def get_hndl_analysis(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> HNDLResponse:
+    """Return assets exposed to harvest-now-decrypt-later attacks.
+
+    Only assets with a non-zero HNDL score are included: data captured today that stays sensitive
+    long enough for a future quantum computer to decrypt it.
+    """
     organization_id = user.organization_id if isinstance(user, User) else None
     items = [
         _item(analysis, asset, project)
@@ -149,6 +160,12 @@ def get_blast_radius(
         description="Blast radius hops to traverse beyond the direct (degree-1) dependents.",
     ),
 ) -> BlastRadiusResponse:
+    """Return the dependency blast radius of the highest-impact asset.
+
+    Names an asset with `asset_id`, or leave it out to pick the most connected asset in scope.
+    `depth` controls how many hops beyond the direct dependents are traversed. The response
+    includes an impact summary with affected counts by degree and an estimated effort.
+    """
     if not isinstance(depth, int):
         depth = 1
     statement = select(RiskAnalysis, Asset).join(Asset, RiskAnalysis.asset_id == Asset.id)
@@ -365,6 +382,11 @@ def assign_business_context(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> BusinessContextResponse:
+    """Set the business context of an asset: criticality, data sensitivity and exposure.
+
+    This is an analyst judgement that feeds the business component of the risk score, so changing
+    it re-weights that asset's intelligence ranking.
+    """
     asset = db.get(Asset, asset_id)
     if not asset or (
         isinstance(user, User) and asset.organization_id != user.organization_id

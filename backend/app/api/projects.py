@@ -9,13 +9,14 @@ from backend.app.models import Project, User
 from backend.app.schemas.project import ProjectCreate, ProjectResponse
 from backend.app.services.tenant_service import resolve_organization_id
 
-router = APIRouter(prefix="/projects", tags=["projects"])
+router = APIRouter(prefix="/projects", tags=["Discovery"])
 
 
 @router.get("", response_model=list[ProjectResponse])
 def list_projects(
     db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> list[Project]:
+    """List this organization's projects, most recently updated first."""
     statement = select(Project)
     if isinstance(user, User):
         statement = statement.where(Project.organization_id == user.organization_id)
@@ -33,6 +34,7 @@ def create_project(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Project:
+    """Create a project. Its business criticality feeds asset risk scoring."""
     organization_id = resolve_organization_id(db, user)
     existing = db.scalar(
         select(Project).where(
@@ -55,6 +57,7 @@ def get_project(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Project:
+    """Return one project by ID."""
     project = db.get(Project, project_id)
     if not project or (
         isinstance(user, User) and project.organization_id != user.organization_id

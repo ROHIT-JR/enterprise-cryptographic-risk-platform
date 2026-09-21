@@ -10,7 +10,7 @@ from backend.app.models import User
 from backend.app.schemas.compliance import NQMComplianceReport
 from backend.app.services.compliance_service import build_compliance_report
 
-router = APIRouter(prefix="/compliance", tags=["compliance"])
+router = APIRouter(prefix="/compliance", tags=["Enterprise"])
 
 
 @router.get("/nqm", response_model=NQMComplianceReport)

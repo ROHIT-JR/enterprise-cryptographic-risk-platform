@@ -15,13 +15,18 @@ from backend.app.models import (
 )
 from backend.app.schemas.enterprise import AuditLogResponse, EnterpriseOverview
 
-router = APIRouter(prefix="/enterprise", tags=["enterprise dashboard"])
+router = APIRouter(prefix="/enterprise", tags=["Enterprise"])
 
 
 @router.get("/overview", response_model=EnterpriseOverview)
 def enterprise_overview(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> EnterpriseOverview:
+    """Return organization-wide totals for the administrator dashboard.
+
+    Counts organizations, users, projects, scans, assets, critical risks and assets in migration,
+    alongside the most recent audit events.
+    """
     organization_id = user.organization_id
     recent = list(
         db.scalars(

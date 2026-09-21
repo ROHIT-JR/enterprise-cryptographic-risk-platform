@@ -9,13 +9,14 @@ from backend.app.models import Organization, User
 from backend.app.schemas.auth import OrganizationResponse, OrganizationUpdate
 from backend.app.services.audit_service import record_audit
 
-router = APIRouter(prefix="/organizations", tags=["organizations"])
+router = APIRouter(prefix="/organizations", tags=["Enterprise"])
 
 
 @router.get("/current", response_model=OrganizationResponse)
 def current_organization(
     user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> Organization:
+    """Return the caller's organization, including its industry and settings."""
     organization = db.get(Organization, user.organization_id)
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -28,6 +29,7 @@ def update_organization(
     user: User = Depends(require_permissions(Permission.CONFIGURE_ORGANIZATION)),
     db: Session = Depends(get_db),
 ) -> Organization:
+    """Update the caller's organization. Requires the `configure_organization` permission."""
     duplicate = db.scalar(
         select(Organization).where(
             func.lower(Organization.name) == payload.name.lower(),

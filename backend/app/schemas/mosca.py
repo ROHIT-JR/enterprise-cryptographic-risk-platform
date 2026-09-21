@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 MoscaVerdict = Literal["critical", "plan", "safe"]
 
@@ -10,6 +10,8 @@ MoscaVerdict = Literal["critical", "plan", "safe"]
 class MoscaSimulateRequest(BaseModel):
     quantum_arrival_year: int = Field(default=2035, ge=2026, le=2060)
     project_id: str | None = None
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"quantum_arrival_year": 2035}]})
 
 
 class MoscaAssetResult(BaseModel):

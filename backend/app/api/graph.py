@@ -9,7 +9,7 @@ from backend.app.models import Asset, AssetRelationship, Project, RiskFinding, U
 from backend.app.schemas.graph import GraphEdgeResponse, GraphNodeResponse, GraphResponse
 from backend.app.services.neo4j_service import create_graph_store
 
-router = APIRouter(prefix="/graph", tags=["graph"])
+router = APIRouter(prefix="/graph", tags=["Discovery"])
 
 
 @router.get("", response_model=GraphResponse)
@@ -19,6 +19,11 @@ def get_graph(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> GraphResponse:
+    """Return the cryptographic dependency graph as nodes and edges.
+
+    Served from Neo4j when it is reachable and from PostgreSQL otherwise; the `source` field says
+    which was used, so the graph stays available when Neo4j is down.
+    """
     organization_id = user.organization_id if isinstance(user, User) else None
     if project_id and organization_id:
         owned = db.scalar(

@@ -8,7 +8,7 @@ from backend.app.database import get_db
 from backend.app.models import AuditLog, User
 from backend.app.schemas.enterprise import AuditLogResponse
 
-router = APIRouter(prefix="/audit-logs", tags=["audit"])
+router = APIRouter(prefix="/audit-logs", tags=["Enterprise"])
 
 
 @router.get("", response_model=list[AuditLogResponse])
@@ -17,6 +17,11 @@ def list_audit_logs(
     user: User = Depends(require_permissions(Permission.VIEW_REPORTS)),
     db: Session = Depends(get_db),
 ) -> list[AuditLogResponse]:
+    """Return the organization's audit trail, newest first.
+
+    Records authentication, scan, report-export and configuration events with the acting user.
+    Requires the `view_reports` permission, so auditors can read it.
+    """
     rows = db.scalars(
         select(AuditLog)
         .where(AuditLog.organization_id == user.organization_id)

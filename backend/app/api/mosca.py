@@ -16,7 +16,7 @@ from backend.app.schemas.mosca import (
 )
 from risk_engine.mosca_model import MoscaModel
 
-router = APIRouter(prefix="/mosca", tags=["mosca"])
+router = APIRouter(prefix="/mosca", tags=["Intelligence"])
 
 # Buckets translating a 0-100 migration-complexity score into a rough number
 # of years the migration itself is expected to take.
@@ -36,6 +36,14 @@ def simulate_mosca(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> MoscaSimulateResponse:
+    """Evaluate the Mosca inequality (X + Y > Z) for every analyzed asset.
+
+    X is the years the data must stay confidential, Y the years the migration takes, and Z the years
+    until a cryptographically relevant quantum computer exists (`quantum_arrival_year` minus the
+    current year). An asset is `critical` when it is quantum-vulnerable and X + Y exceeds Z, `plan`
+    when it is vulnerable but the schedule still fits, and `safe` when it is not quantum-vulnerable.
+    Move `quantum_arrival_year` to see how the organization's exposure changes.
+    """
     model = MoscaModel()
     statement = (
         select(RiskAnalysis, Asset, BusinessContext)

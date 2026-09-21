@@ -3,7 +3,7 @@ from functools import cache
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from backend.app.auth.dependencies import require_permissions
@@ -13,7 +13,7 @@ from backend.app.models import User
 from backend.app.services.audit_service import record_audit
 from benchmarks import pqc_benchmarks
 
-router = APIRouter(prefix="/benchmarks", tags=["benchmarks"])
+router = APIRouter(prefix="/benchmarks", tags=["Research & Validation"])
 
 # The host is shared but its details (OS, Python, library versions) are not something one tenant
 # should see from another's run, so the latest run is kept per organisation, in process memory.
@@ -30,6 +30,10 @@ def _reference() -> dict[str, Any]:
 class BenchmarkRunRequest(BaseModel):
     iterations: int = Field(default=20, ge=1, le=pqc_benchmarks.MAX_ITERATIONS)
     include_pqc: bool = True
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"iterations": 20, "include_pqc": True}]}
+    )
 
 
 def _catalogue(organization_id: str) -> dict[str, Any]:

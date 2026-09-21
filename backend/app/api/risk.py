@@ -9,7 +9,7 @@ from backend.app.models import Asset, Project, RiskFinding, User
 from backend.app.schemas.common import DistributionItem
 from backend.app.schemas.risk import RiskPage
 
-router = APIRouter(prefix="/risks", tags=["risk"])
+router = APIRouter(prefix="/risks", tags=["Intelligence"])
 
 
 @router.get("", response_model=RiskPage)
@@ -21,6 +21,11 @@ def list_risks(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> RiskPage:
+    """List risk findings, highest score first, with their asset and project context.
+
+    Filter by project or severity. Scores are deterministic: every finding carries the rules that
+    produced it.
+    """
     filters = []
     if isinstance(user, User):
         filters.append(RiskFinding.organization_id == user.organization_id)
@@ -56,6 +61,7 @@ def list_risks(
 def risk_distribution(
     db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ) -> list[DistributionItem]:
+    """Return finding counts per severity (critical, high, medium, low)."""
     statement = select(RiskFinding.severity, func.count(RiskFinding.id))
     if isinstance(user, User):
         statement = statement.where(RiskFinding.organization_id == user.organization_id)
