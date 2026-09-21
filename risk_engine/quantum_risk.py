@@ -48,6 +48,14 @@ class QuantumRiskEngine:
             return f"AES-{size.group(1)}" if size else "AES-128"
         if "SHA-256" in subject or "SHA256" in subject:
             return "SHA-256"
+        if "SHA-384" in subject or "SHA384" in subject:
+            return "SHA-384"
+        if "SHA-512" in subject or "SHA512" in subject:
+            return "SHA-512"
+        if "SHA-3" in subject or "SHA3" in subject:
+            return "SHA-3"
+        if "HMAC" in subject:
+            return "HMAC"
         if "ECDH" in subject:
             return "ECDH"
         if any(token in subject for token in ("DIFFIE-HELLMAN", "DIFFIE HELLMAN")):
