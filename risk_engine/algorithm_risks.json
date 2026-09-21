@@ -6,6 +6,11 @@
   "AES-128": {"classification": "medium", "score": 50, "quantum_vulnerable": false, "reason": "Grover-style search reduces the effective security margin of AES-128."},
   "AES-256": {"classification": "low", "score": 20, "quantum_vulnerable": false, "reason": "AES-256 retains a strong security margin against known quantum attacks."},
   "SHA-256": {"classification": "low", "score": 15, "quantum_vulnerable": false, "reason": "SHA-256 remains acceptable with a reduced quantum security margin."},
+  "RC4": {"classification": "critical", "score": 90, "quantum_vulnerable": false, "reason": "RC4 is classically broken. Deprecated by RFC 7465."},
+  "MD5": {"classification": "high", "score": 70, "quantum_vulnerable": false, "reason": "MD5 has known collision attacks."},
+  "DES": {"classification": "critical", "score": 85, "quantum_vulnerable": false, "reason": "DES has only 56-bit keys. Classically broken."},
+  "3DES": {"classification": "high", "score": 75, "quantum_vulnerable": false, "reason": "3DES has 112-bit effective security. Deprecated by NIST."},
+  "SHA-1": {"classification": "medium", "score": 55, "quantum_vulnerable": false, "reason": "SHA-1 has known collision attacks (SHAttered)."},
   "ML-KEM": {"classification": "secure", "score": 0, "quantum_vulnerable": false, "reason": "ML-KEM is standardized for post-quantum key encapsulation."},
   "ML-DSA": {"classification": "secure", "score": 0, "quantum_vulnerable": false, "reason": "ML-DSA is standardized for post-quantum digital signatures."}
 }

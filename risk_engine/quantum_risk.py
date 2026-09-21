@@ -56,4 +56,14 @@ class QuantumRiskEngine:
             return "ECC"
         if "RSA" in subject:
             return "RSA"
+        if "RC4" in subject or "ARC4" in subject:
+            return "RC4"
+        if "MD5" in subject:
+            return "MD5"
+        if "3DES" in subject or "TRIPLEDES" in subject or "DESEDE" in subject:
+            return "3DES"
+        if "DES" in subject:
+            return "DES"
+        if "SHA-1" in subject or "SHA1" in subject:
+            return "SHA-1"
         return None
