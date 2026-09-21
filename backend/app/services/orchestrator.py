@@ -16,6 +16,7 @@ from backend.app.services.audit_service import record_audit
 from backend.app.services.intelligence_service import IntelligenceService
 from backend.app.services.neo4j_service import create_graph_store
 from backend.app.services.risk_service import RiskService
+from backend.app.services.scan_events import publish
 from cbom_engine import CBOMGenerator
 from scanners import ScanSource, build_default_registry
 from scanners.archive import safe_extract_zip
@@ -50,6 +51,7 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
         scan.started_at = datetime.now(UTC)
         scan.error_message = None
         db.commit()
+        publish(scan.id, {"type": "stage", "progress": 10, "message": "Scan started"})
 
         target: str | Path = raw_target
         options: dict[str, Any] = {}
@@ -67,10 +69,22 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
             )
             options["display_name"] = Path(scan.target).stem
 
+        publish(
+            scan.id,
+            {"type": "stage", "progress": 20, "message": f"Scanning {scan.source_type} target..."},
+        )
         plugin = registry.get(scan.source_type)
         result = await plugin.scan(target, **options)
         scan.progress = 45
         db.commit()
+        publish(
+            scan.id,
+            {
+                "type": "stage",
+                "progress": 45,
+                "message": f"Discovered {len(result.assets)} candidate assets, persisting...",
+            },
+        )
 
         incoming_dependencies = Counter(
             relationship.target_ref for relationship in result.relationships
@@ -103,6 +117,16 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
             db.add(row)
             db.flush()
             rows_by_ref[finding.fingerprint()] = row
+            publish(
+                scan.id,
+                {
+                    "type": "asset",
+                    "message": (
+                        f"Found {finding.name} in {finding.location} "
+                        f"(confidence: {finding.confidence:.2f})"
+                    ),
+                },
+            )
 
         relationship_rows: list[AssetRelationship] = []
         seen_edges: set[tuple[str, str, str]] = set()
@@ -127,6 +151,7 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
             relationship_rows.append(edge)
 
         scan.progress = 65
+        publish(scan.id, {"type": "stage", "progress": 65, "message": "Calculating risk scores..."})
         risk_service = RiskService()
         risks: list[RiskFinding] = []
         for asset in rows_by_ref.values():
@@ -135,6 +160,10 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
             risks.append(risk)
         db.flush()
 
+        publish(
+            scan.id,
+            {"type": "stage", "progress": 70, "message": "Analyzing quantum risk intelligence..."},
+        )
         intelligence = IntelligenceService().analyze_project(db, project)
         scan.progress = 74
         db.flush()
@@ -144,6 +173,7 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
             for asset in rows_by_ref.values()
         ]
         relationship_payloads = [_relationship_mapping(edge) for edge in relationship_rows]
+        publish(scan.id, {"type": "stage", "progress": 78, "message": "Generating CBOM..."})
         cbom = CBOMGenerator().generate(
             project=_project_mapping(project),
             scan=_scan_mapping(scan),
@@ -153,6 +183,7 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
         scan.progress = 82
 
         warnings = list(result.warnings)
+        publish(scan.id, {"type": "stage", "progress": 88, "message": "Syncing knowledge graph..."})
         graph_store = create_graph_store(settings)
         try:
             graph_store.sync_scan(
@@ -203,6 +234,15 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
         logger.info(
             "Completed %s scan %s with %d assets", scan.source_type, scan.id, len(rows_by_ref)
         )
+        publish(
+            scan.id,
+            {
+                "type": "completed",
+                "progress": 100,
+                "message": f"Scan complete: {len(rows_by_ref)} assets discovered",
+                "assets_discovered": len(rows_by_ref),
+            },
+        )
     except Exception as exc:
         _mark_failed(db, scan_id, exc)
     finally:
@@ -222,6 +262,7 @@ def _mark_failed(db: Session, scan_id: str, exc: Exception) -> None:
     scan.completed_at = datetime.now(UTC)
     scan.progress = min(scan.progress, 95)
     db.commit()
+    publish(scan_id, {"type": "failed", "progress": scan.progress, "message": scan.error_message})
 
 
 def _public_error(exc: Exception) -> str:

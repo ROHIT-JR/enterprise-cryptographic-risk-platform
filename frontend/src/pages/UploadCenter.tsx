@@ -2,6 +2,7 @@ import {
   Box,
   CheckCircle2,
   FileArchive,
+  FileSearch,
   Globe2,
   Loader2,
   Play,
@@ -17,6 +18,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiErrorMessage, scansApi } from "../api/client";
 import { Card, PageHeader, StatusBadge } from "../components/ui";
+import { useScanProgress } from "../hooks/useScanProgress";
 import type { Criticality, Scan } from "../types/api";
 
 type ScanKind = "repository" | "docker" | "tls";
@@ -42,6 +44,9 @@ export function UploadCenter() {
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
+  const liveScanId = scan && ["queued", "running"].includes(scan.status) ? scan.id : null;
+  const { events: liveEvents, progress: liveProgress } = useScanProgress(liveScanId);
 
   useEffect(() => {
     if (!scan || !["queued", "running"].includes(scan.status)) return;
@@ -54,6 +59,10 @@ export function UploadCenter() {
     }, 1_200);
     return () => window.clearInterval(timer);
   }, [scan]);
+
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
+  }, [liveEvents]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -367,15 +376,44 @@ export function UploadCenter() {
                   <span className="h-1.5 w-1.5 rounded-full bg-indigo-600" />
                   Stage: <strong className="text-zinc-900">{scanStage(scan)}</strong>
                 </span>
-                <span className="font-bold text-zinc-950">{scan.progress}%</span>
+                <span className="font-bold text-zinc-950">{liveProgress ?? scan.progress}%</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 border border-zinc-200">
                 <div
                   className="h-full bg-indigo-600 transition-all duration-500"
-                  style={{ width: `${scan.progress}%` }}
+                  style={{ width: `${liveProgress ?? scan.progress}%` }}
                 />
               </div>
             </div>
+
+            {/* Live Scan Log */}
+            {liveEvents.length > 0 && (
+              <div
+                ref={logRef}
+                className="max-h-48 space-y-1 overflow-y-auto rounded border border-zinc-200 bg-zinc-950 p-3 font-mono text-[11px] leading-relaxed"
+              >
+                {liveEvents.map((event, index) => (
+                  <div
+                    key={`${event.ts}-${index}`}
+                    className={
+                      event.type === "asset"
+                        ? "text-emerald-400"
+                        : event.type === "failed"
+                          ? "text-red-400"
+                          : event.type === "completed"
+                            ? "text-indigo-300"
+                            : "text-zinc-300"
+                    }
+                  >
+                    <span className="text-zinc-600">$</span>{" "}
+                    {event.type === "asset" ? (
+                      <FileSearch className="mb-0.5 inline h-3 w-3" />
+                    ) : null}{" "}
+                    {event.message}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {scan.error_message && (
               <p className="font-mono text-xs text-red-700 bg-red-50 p-2 rounded border border-red-200">
