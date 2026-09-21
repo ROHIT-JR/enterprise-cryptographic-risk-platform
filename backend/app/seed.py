@@ -369,12 +369,55 @@ def _refresh_demo_documents(db: Session, project: Project) -> None:
 
 
 def _ensure_phase3_users(db: Session, organization: Organization) -> None:
-    password_hash = hash_password(get_settings().demo_password)
-    definitions = (
-        ("securebank-admin", "admin@securebank.demo", Role.ADMINISTRATOR),
-        ("security-analyst", "analyst@securebank.demo", Role.SECURITY_ANALYST),
-        ("security-auditor", "auditor@securebank.demo", Role.AUDITOR),
+    _ensure_demo_users(
+        db,
+        organization,
+        password=get_settings().demo_password,
+        definitions=(
+            ("securebank-admin", "admin@securebank.demo", Role.ADMINISTRATOR),
+            ("security-analyst", "analyst@securebank.demo", Role.SECURITY_ANALYST),
+            ("security-auditor", "auditor@securebank.demo", Role.AUDITOR),
+        ),
     )
+
+
+def seed_india_payments_demo_org(db: Session) -> Organization:
+    """Pre-provision the India Payments Platform demo organization and its login.
+
+    Deliberately does not seed fake assets: the demo walks through an actual
+    upload and scan of ``sample_enterprise/india-payments-platform`` (see
+    ``docs/demo-script.md``), so every discovered asset and risk score comes
+    from the real scanning and intelligence pipeline, not fabricated data.
+    """
+    organization = db.scalar(
+        select(Organization).where(Organization.name == "India Payments Platform")
+    )
+    if not organization:
+        organization = Organization(name="India Payments Platform", industry="Fintech")
+        db.add(organization)
+        db.flush()
+    _ensure_demo_users(
+        db,
+        organization,
+        password=get_settings().demo_password,
+        definitions=(
+            ("india-payments-admin", "admin@india-payments.demo", Role.ADMINISTRATOR),
+            ("india-payments-analyst", "analyst@india-payments.demo", Role.SECURITY_ANALYST),
+        ),
+    )
+    db.commit()
+    db.refresh(organization)
+    return organization
+
+
+def _ensure_demo_users(
+    db: Session,
+    organization: Organization,
+    *,
+    password: str,
+    definitions: tuple[tuple[str, str, Role], ...],
+) -> None:
+    password_hash = hash_password(password)
     for username, email, role in definitions:
         user = db.scalar(
             select(User).where(
