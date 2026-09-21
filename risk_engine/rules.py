@@ -42,6 +42,16 @@ ALGORITHM_PROFILES: tuple[tuple[tuple[str, ...], AlgorithmProfile], ...] = (
     ),
     (("MD5",), AlgorithmProfile(70, "MD5 is cryptographically broken", "ALG-MD5")),
     (
+        ("RC4", "ARC4", "ARCFOUR"),
+        AlgorithmProfile(90, "RC4 is classically broken and deprecated by RFC 7465", "ALG-RC4"),
+    ),
+    (
+        ("HARDCODED KEY",),
+        AlgorithmProfile(
+            85, "A cryptographic secret is hardcoded directly in source code", "ALG-HARDCODED-KEY"
+        ),
+    ),
+    (
         ("TLSV1", "TLS1.0", "TLS 1.0"),
         AlgorithmProfile(65, "TLS 1.0 is deprecated", "PROTOCOL-TLS10"),
     ),

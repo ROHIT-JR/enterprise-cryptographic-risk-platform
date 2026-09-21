@@ -132,6 +132,33 @@ ALGORITHM_PATTERNS = (
         _compile(r"\b(?:ssl_certificate|SSLCertificateFile|BEGIN CERTIFICATE)\b"),
         0.9,
     ),
+    DetectionPattern(
+        "RC4",
+        "algorithm",
+        _compile(r"\b(?:RC4|ARC4|ARCFOUR|rc4|EVP_rc4|ARC4\.new|getInstance\s*\(\s*[\"']RC4)\b"),
+        0.97,
+        "RC4",
+    ),
+    DetectionPattern(
+        "MD5",
+        "algorithm",
+        _compile(
+            r"\b(?:MD5|md5\s*\(|hashlib\.md5|EVP_md5|MessageDigest.*MD5|"
+            r"createHash\s*\(\s*[\"']md5[\"']\s*\)|Digest::MD5)\b"
+        ),
+        0.97,
+        "MD5",
+    ),
+    DetectionPattern(
+        "Hardcoded Key",
+        "algorithm",
+        _compile(
+            r"(?:(?:secret|api|private|encryption|signing|auth)[-_]?key\s*[:=]\s*[\"'][A-Za-z0-9+/=]{16,}[\"']|"
+            r"-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----)"
+        ),
+        0.75,
+        "Hardcoded Key",
+    ),
 )
 
 
