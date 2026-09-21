@@ -12,12 +12,22 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '20260903_02_phase4_m5_lifecycle'
-down_revision: str | None = '20260903_01_phase4_m4_optimizer'
+down_revision: str | None = '20260903_01_phase4_m4'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    # On a fresh database revision 20260829_01 already builds the *current* schema, so the
+    # lifecycle columns and table exist. Only databases created before this revision lack them.
+    inspector = sa.inspect(op.get_bind())
+    if "lifecycle_state" not in {c["name"] for c in inspector.get_columns("assets")}:
+        _add_asset_lifecycle_columns()
+    if "crypto_lifecycle_events" not in inspector.get_table_names():
+        _create_lifecycle_events_table()
+
+
+def _add_asset_lifecycle_columns() -> None:
     # Asset table modifications
     op.add_column('assets', sa.Column('lifecycle_state', sa.String(length=32), nullable=True))
     op.add_column('assets', sa.Column('governance_status', sa.String(length=32), nullable=True))
@@ -34,6 +44,9 @@ def upgrade() -> None:
     op.create_index(op.f('ix_assets_lifecycle_state'), 'assets', ['lifecycle_state'], unique=False)
     op.create_index(op.f('ix_assets_governance_status'), 'assets', ['governance_status'], unique=False)
 
+
+
+def _create_lifecycle_events_table() -> None:
     # CryptoLifecycleEvent table creation
     op.create_table('crypto_lifecycle_events',
         sa.Column('id', sa.String(length=36), nullable=False),
