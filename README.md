@@ -2,6 +2,32 @@
 
 **Enterprise Cryptographic Discovery, Analysis & Transformation Platform**
 
+[![CI](https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform/actions/workflows/ci.yml)
+[![Security](https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform/actions/workflows/security.yml/badge.svg)](https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform/actions/workflows/security.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](backend/requirements.txt)
+[![TypeScript](https://img.shields.io/badge/TypeScript-React%20%2B%20Vite-3178C6?logo=typescript&logoColor=white)](frontend/package.json)
+[![Docker Compose](https://img.shields.io/badge/deploy-docker%20compose-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
+
+Find every cryptographic algorithm in an enterprise's codebase, containers, and TLS endpoints — then know exactly which ones a quantum computer breaks, which systems that takes down with them, and what order to migrate them in.
+
+- 🔍 **Discover** — scan repositories, Docker images, and live TLS endpoints for RSA, ECC, AES, hashing, and 15+ cryptographic libraries, with file/line evidence for every finding
+- ⚛️ **Quantify quantum risk** — a six-factor explainable score (quantum vulnerability, harvest-now-decrypt-later exposure, blast radius, business criticality, migration complexity, evidence confidence) and the Mosca inequality (X + Y > Z) answering "do we need to start migrating *now*?"
+- 🗺️ **Plan the migration** — TOPSIS-ranked ML-KEM/ML-DSA recommendations and a dependency-aware, wave-sequenced roadmap that migrates trust anchors before the applications that depend on them
+- 📄 **Prove compliance** — CycloneDX 1.6 CBOM export, branded executive/technical PDF reports, and a live India National Quantum Mission (NQM) phase-readiness dashboard
+
+## Quick start
+
+```bash
+git clone https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform.git
+cd enterprise-cryptographic-risk-platform
+cp .env.example .env && docker compose up -d
+```
+
+Open <http://localhost:5173> once `docker compose ps` shows every service `healthy` (the first build takes a few minutes). The SecureBank demo estate is seeded automatically — log in and explore, or see [Run the complete application with Docker](#run-the-complete-application-with-docker) below for the Docker-socket permission step most Linux hosts need.
+
+## What ECDAT-X does
+
 ECDAT-X gives security teams an evidence-backed map of where cryptography exists, what depends on it, and why it matters. Phase 1.5 accepts repository ZIPs, Docker image references, and TLS endpoints; normalizes discoveries into an inventory and CBOM; projects relationships into Neo4j; and calculates explainable rule-based risk.
 
 Phase 2 adds a cryptographic intelligence layer that answers how dangerous a finding is, which
@@ -344,6 +370,14 @@ docs/             Architecture, API, development, and security guidance
 ![ECDAT-X dashboard](docs/screenshots/dashboard.png)
 
 The dashboard is responsive and includes dedicated views for upload progress, inventory evidence, dependency topology, and risk factor composition.
+
+| View | |
+|---|---|
+| Blast Radius graph | _screenshot pending — capture from `/blast-radius` after a scan completes_ |
+| Migration Planner | _screenshot pending — capture from `/migration` with a seeded project_ |
+| Risk Analysis | _screenshot pending — capture from `/risks`_ |
+
+> These three are placeholders rather than fabricated images. Run the app locally, navigate to each route, and drop the PNGs into `docs/screenshots/` with matching filenames (`blast-radius.png`, `migration-planner.png`, `risk-analysis.png`) to complete this section.
 
 ## Deployment notes
 
