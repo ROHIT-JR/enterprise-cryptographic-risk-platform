@@ -6,6 +6,60 @@ India processes 10B+ UPI transactions a month — showing quantum risk against
 that kind of payment infrastructure is a much more compelling story for an
 Indian audience than a generic bank.
 
+## The 5-minute timed version (for the actual SIH slot)
+
+Use this section as the script for the live judging round. The numbered
+sections below it are the same material at rehearsal depth — read those
+first, then use this condensed version once you know the app well enough
+not to need the extra context mid-sentence. See
+[`docs/demo-checklist.md`](demo-checklist.md) for the pre-demo setup and
+what to do if the live scan fails.
+
+**0:00–1:00 — The problem**
+- Say it cold, before touching the laptop: "India processes over 10 billion
+  UPI transactions a month, most of it secured with RSA-2048 and TLS 1.2 —
+  both broken by a cryptographically relevant quantum computer. Nobody knows
+  where those algorithms live in their own codebase. That's what this scans
+  for."
+- Open the Dashboard. If it's empty, that's the hook: "Let's find out."
+
+**1:00–2:00 — Discovery**
+- Upload Center → Repository scan → `india-payments-platform.zip` →
+  criticality **Critical**.
+- Narrate the live progress feed as it streams (see #30): "It's finding
+  RSA-2048 in the UPI signing service right now, live."
+- Land on: **"54 cryptographic assets discovered across 6 services."**
+
+**2:00–3:00 — Risk intelligence**
+- Quantum Risk Dashboard → point at RSA-2048 and ECDSA P-256: **"77 out of
+  100, critical, both broken by Shor's algorithm."**
+- Point at the Mosca section: set X=20, Y=3, preset "Moderate" (2035) →
+  **"23 years of required protection, 9-year runway. Migration has to start
+  now, not after the next audit cycle."**
+- Point at the 3DES findings in IMPS/NEFT: **"This one doesn't need a
+  quantum computer — it's already breakable today."**
+
+**3:00–4:00 — Migration planning**
+- Migration Planner: **"RSA-2048 and ECDSA both route to ML-KEM and ML-DSA —
+  NIST-standardized, not something we invented."**
+- PQC Benchmarks page: **"ML-KEM is not slower where it matters — the actual
+  cost is wire size, not CPU."**
+
+**4:00–5:00 — Compliance and close**
+- NQM Compliance dashboard: **"Mapped automatically to India's National
+  Quantum Mission timeline and the RBI sector profile, because the
+  organization is tagged Fintech."**
+- Generate the PDF report live (or have it pre-generated as a fallback slide
+  — see the checklist).
+- Close on the line at the bottom of this document.
+
+**If something breaks:** switch to the pre-scanned fallback project ("India
+Payments Platform (Pre-Scanned Fallback)") in the same organization — same
+real numbers, no live upload needed. See the checklist for exactly when to
+make that call.
+
+---
+
 ## Numbers in this script are real, not scripted
 
 Every figure below came from actually running ECDAT-X's own scanner and risk

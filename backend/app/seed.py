@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import json
+import zipfile
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -24,6 +26,8 @@ from backend.app.models import (
 from backend.app.services.intelligence_service import IntelligenceService
 from backend.app.services.risk_service import RiskService
 from cbom_engine import CBOMGenerator
+
+SAMPLE_ENTERPRISE_ROOT = Path(__file__).resolve().parents[2] / "sample_enterprise"
 
 DATA_PATH = Path(__file__).resolve().parents[2] / "sample_data" / "securebank.json"
 
@@ -410,6 +414,73 @@ def seed_india_payments_demo_org(db: Session) -> Organization:
     return organization
 
 
+async def seed_india_payments_contingency_scan(db: Session) -> Scan | None:
+    """Pre-run a real scan of the India Payments Platform sample as a demo
+    fallback (see docs/demo-checklist.md's contingency plan).
+
+    If a live upload fails during the actual presentation - a flaky network,
+    a projector-machine Wi-Fi issue - the presenter can switch to this
+    already-scanned project and show the exact same real results instead of
+    the live scan step. This runs the same orchestrator job a live upload
+    would (not a hand-authored fixture), so the numbers stay genuine.
+
+    Idempotent: does nothing if a completed scan for this project already
+    exists. Skips silently if the sample directory isn't present.
+    """
+    from backend.app.services import orchestrator
+    from backend.app.services.scan_service import create_scan, get_or_create_project
+    from scanners import ScanSource
+
+    organization = seed_india_payments_demo_org(db)
+    project_name = "India Payments Platform (Pre-Scanned Fallback)"
+    sample_root = SAMPLE_ENTERPRISE_ROOT / "india-payments-platform"
+
+    existing_project = db.scalar(
+        select(Project).where(
+            Project.organization_id == organization.id, Project.name == project_name
+        )
+    )
+    if existing_project:
+        completed = db.scalar(
+            select(Scan).where(
+                Scan.project_id == existing_project.id, Scan.status == "completed"
+            )
+        )
+        if completed:
+            return completed
+
+    if not sample_root.is_dir():
+        return None
+
+    settings = get_settings()
+    project = get_or_create_project(
+        db,
+        name=project_name,
+        criticality="critical",
+        organization_id=organization.id,
+    )
+    scan = create_scan(
+        db,
+        project=project,
+        source_type=ScanSource.REPOSITORY.value,
+        target="india-payments-platform.zip",
+    )
+    db.commit()
+    db.refresh(scan)
+
+    job_directory = (settings.scan_storage_path / scan.id).resolve()
+    job_directory.mkdir(parents=True, exist_ok=True)
+    archive_path = job_directory / "repository.zip"
+    with zipfile.ZipFile(archive_path, "w") as bundle:
+        for file_path in sample_root.rglob("*"):
+            if file_path.is_file():
+                bundle.write(file_path, arcname=str(file_path.relative_to(sample_root.parent)))
+
+    await orchestrator.run_scan_job(scan.id, str(archive_path))
+    db.refresh(scan)
+    return scan
+
+
 def _ensure_demo_users(
     db: Session,
     organization: Organization,
@@ -442,6 +513,10 @@ def main() -> None:
     with SessionLocal() as db:
         project = seed_securebank_demo(db)
         print(f"Seeded demo project: {project.name} ({project.id})")
+        seed_india_payments_demo_org(db)
+        fallback_scan = asyncio.run(seed_india_payments_contingency_scan(db))
+        if fallback_scan:
+            print(f"Seeded India Payments Platform fallback scan: {fallback_scan.id}")
 
 
 if __name__ == "__main__":
