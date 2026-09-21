@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+import json
 import shutil
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import (
     APIRouter,
@@ -15,6 +17,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -26,6 +29,7 @@ from backend.app.models import Scan, User
 from backend.app.schemas.scan import CBOMResponse, DockerScanRequest, ScanResponse, TLSScanRequest
 from backend.app.services.audit_service import record_audit
 from backend.app.services.orchestrator import run_scan_job
+from backend.app.services.scan_events import subscribe, unsubscribe
 from backend.app.services.scan_service import create_scan, get_or_create_project
 from backend.app.services.tenant_service import resolve_organization_id
 from scanners import ScanSource
@@ -206,6 +210,63 @@ def get_scan(
     if not scan or (isinstance(user, User) and scan.organization_id != user.organization_id):
         raise HTTPException(status_code=404, detail="Scan not found")
     return scan
+
+
+def _sse_event(payload: dict[str, Any]) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
+
+
+@router.get("/{scan_id}/stream")
+async def stream_scan_progress(
+    scan_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    """Live scan progress as Server-Sent Events.
+
+    Each event is a JSON payload: ``{"type": "stage" | "asset" | "completed"
+    | "failed", "message": str, "progress"?: int}``. The stream closes after
+    a terminal ``completed``/``failed`` event.
+    """
+    scan = db.get(Scan, scan_id)
+    if not scan or (isinstance(user, User) and scan.organization_id != user.organization_id):
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    async def event_stream():
+        # A client connecting after the scan already progressed (or finished)
+        # should see its current state immediately rather than a blank feed.
+        yield _sse_event(
+            {"type": "stage", "progress": scan.progress, "message": f"Status: {scan.status}"}
+        )
+        if scan.status in {"completed", "failed"}:
+            yield _sse_event(
+                {
+                    "type": scan.status,
+                    "progress": scan.progress,
+                    "message": scan.error_message or "Scan already finished",
+                }
+            )
+            return
+
+        queue = subscribe(scan_id)
+        try:
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=15)
+                except TimeoutError:
+                    yield ": keep-alive\n\n"
+                    continue
+                yield _sse_event(event)
+                if event.get("type") in {"completed", "failed"}:
+                    break
+        finally:
+            unsubscribe(scan_id, queue)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/{scan_id}/cbom", response_model=CBOMResponse)
