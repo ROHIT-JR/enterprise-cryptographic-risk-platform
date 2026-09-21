@@ -49,7 +49,7 @@ security CI, and a public scanner extension contract. Discovery and intelligence
 - Audit history, plus branded PDF/JSON exports: one-page executive summary, multi-page technical
   report, inventory, quantum-risk, migration, and CycloneDX 1.6 CBOM
 - Admin, security-operations, and auditor dashboard experiences
-- Stable scanner plugin interface and Python entry-point discovery
+- Stable scanner plugin interface and registry (see [Scanner development](docs/scanner-development.md))
 - Full component health, API/proxy rate limits, hardened headers, and exact-origin CORS
 - Alembic migrations, production Compose, internal data networks, and Nginx reverse proxy
 - Test, build, dependency, secret, and Trivy GitHub Actions
@@ -170,24 +170,34 @@ evidence similar to:
 
 ```mermaid
 flowchart LR
-    UI[React + TypeScript dashboard] --> API[FastAPI API]
-    API --> ORCH[Scan orchestrator]
-    ORCH --> REG[Scanner plugin registry]
-    REG --> REPO[Repository scanner]
-    REG --> DOCKER[Docker scanner]
-    REG --> TLS[TLS scanner]
-    ORCH --> CBOM[CBOM engine]
-    ORCH --> RISK[Explainable risk engine]
-    ORCH --> PG[(PostgreSQL)]
-    ORCH --> NEO[(Neo4j projection)]
+    UI["React + TypeScript dashboard"] --> API["FastAPI<br/>JWT auth, RBAC, rate limit"]
+    API --> ORCH["Scan orchestrator"]
+    ORCH --> REG["Scanner plugin registry"]
+    REG --> REPO["Repository scanner"]
+    REG --> DOCKER["Docker scanner"]
+    REG --> TLS["TLS scanner"]
+    ORCH --> RISK["Risk engine<br/>quantum, HNDL, centrality"]
+    RISK --> MIG["Migration engine<br/>TOPSIS, roadmap"]
+    ORCH --> CBOM["CBOM engine<br/>CycloneDX 1.6"]
+    API --> REPORTS["Reports<br/>PDF, JSON, CBOM"]
+    ORCH --> PG[("PostgreSQL")]
+    ORCH --> NEO[("Neo4j projection")]
     API --> PG
     API --> NEO
 ```
 
 PostgreSQL is authoritative for projects, scans, assets, relationships, and risk findings. Neo4j is a rebuildable projection; if Neo4j is unavailable, the graph API continues from PostgreSQL.
 
-See [Architecture](docs/architecture.md), [Development](docs/development.md), and
-[Enterprise API reference](docs/api-reference.md) for implementation details.
+The complete system architecture, the upload-to-report data flow, the risk-scoring methodology,
+the TOPSIS decision, and the database schema are drawn in [Architecture](docs/architecture.md).
+For everything else:
+
+- [API guide](docs/api-guide.md): sign in, scan, read results, handle errors, with working commands.
+  The live, interactive reference is at <http://localhost:8000/docs> (or `/redoc`).
+- [Development guide](docs/development.md): setup without Docker, every configuration variable,
+  migrations, tests, and troubleshooting.
+- [Scanner development](docs/scanner-development.md): write a new scanner.
+- [Enterprise API reference](docs/api-reference.md) and [Discovery API](docs/api.md): older summaries.
 
 ## Requirements
 
@@ -391,6 +401,6 @@ The dashboard is responsive and includes dedicated views for upload progress, in
 
 ## Extension points
 
-The plugin contract supports future AWS, Azure, Kubernetes, and HSM scanners. Production images are
+The plugin contract ([how to write a scanner](docs/scanner-development.md)) supports future AWS, Azure, Kubernetes, and HSM scanners. Production images are
 cloud-portable without forcing a provider. A shared job queue and distributed rate limiter are the
 next scale upgrades; automated migration execution and an AI assistant remain outside this release.

@@ -20,6 +20,17 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) conve
   `migration_engine/verification.py`; limits live in `config/migration_verification.json`.
 - Reference benchmark data for ML-KEM-512 and SLH-DSA-SHA2-128f, the algorithms the recommender
   actually selects.
+- Complete API documentation. Every endpoint has a description and belongs to one of eight
+  feature-area groups (Discovery, Intelligence, Migration, Enterprise, and so on). Request bodies
+  carry working examples, error responses are documented, and each operation's required permission
+  is declared in the OpenAPI spec. New `docs/api-guide.md` walks through the API with commands that
+  have been run against a live server.
+- Architecture documentation: a complete system diagram, the upload-to-report data flow, the
+  risk-scoring methodology, a TOPSIS worked example, and the database schema. The schema and the
+  TOPSIS example are generated from the code (`scripts/generate_docs.py`), and tests fail if any
+  generated block, link, diagram or endpoint reference goes stale.
+- Developer setup guide covering running without Docker, every configuration variable, migrations
+  and troubleshooting, and a scanner development guide with a worked example that is run in tests.
 
 ### Changed
 
@@ -34,6 +45,15 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com/) conve
 - The production image now ships `config/` and `benchmarks/`. `config/` was missing, so edits to
   `config/quantum_timeline.json` were silently ignored in containers (the Mosca model fell back to
   identical built-in defaults); the benchmark endpoints need both directories.
+- `/docs` and `/redoc` rendered a blank page: the API-wide Content-Security-Policy blocked Swagger
+  UI's scripts and styles. Those two pages now get a narrower policy they can run under (inline
+  script allowed by hash only); every other route keeps the strict default.
+- Database migrations could not run at all. Two `down_revision` pointers named a file instead of
+  a revision ID, so `alembic upgrade head` (which the production Compose file runs before starting
+  the API) crashed. The chain is repaired, and the Phase 4 revisions now skip columns and tables
+  that the first revision already creates on a fresh database.
+- The scanner plugin docs and README described entry-point plugin discovery as a shipped feature.
+  `ScannerRegistry.discover()` exists but is never called by the application, so they now say so.
 
 ## [0.3.0] - 2026-08-29
 
