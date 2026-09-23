@@ -3,9 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#07101d" />
+    <meta name="theme-color" content="#fafafa" />
     <meta name="description" content="ECDAT-X enterprise cryptographic risk intelligence dashboard" />
     <title>ECDAT-X · Cryptographic Risk Intelligence</title>
+    <script>
+      // Blocking, pre-paint theme read — prevents a flash of the wrong theme.
+      // Mirrors the persistence logic in src/hooks/useTheme.ts.
+      (function () {
+        try {
+          var stored = localStorage.getItem("ecdatx-theme");
+          var theme = stored === "light" || stored === "dark"
+            ? stored
+            : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

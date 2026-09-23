@@ -21,11 +21,14 @@ export function relativeTime(value: string | null): string {
   return formatter.format(seconds, "second");
 }
 
+// Token-based (theme-aware) — resolves against --risk-* in index.css rather
+// than hardcoded Tailwind color scales, so severity badges read correctly in
+// both light and dark theme without a separate dark: variant per severity.
 export const severityStyles: Record<Severity, string> = {
-  critical: "border-red-300    bg-red-50/90    text-red-900",
-  high:     "border-orange-300 bg-orange-50/90 text-orange-950",
-  medium:   "border-amber-300  bg-amber-50/90  text-amber-950",
-  low:      "border-emerald-300 bg-emerald-50/90 text-emerald-950",
+  critical: "border-[var(--risk-critical)]/35 bg-[var(--risk-critical)]/10 text-[var(--risk-critical)]",
+  high:     "border-[var(--risk-high)]/35     bg-[var(--risk-high)]/10     text-[var(--risk-high)]",
+  medium:   "border-[var(--risk-medium)]/35   bg-[var(--risk-medium)]/10   text-[var(--risk-medium)]",
+  low:      "border-[var(--risk-low)]/35      bg-[var(--risk-low)]/10      text-[var(--risk-low)]",
 };
 
 export const severityHexColors: Record<Severity, string> = {

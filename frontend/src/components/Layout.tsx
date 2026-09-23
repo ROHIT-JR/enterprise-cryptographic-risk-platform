@@ -1,4 +1,5 @@
 import {
+  Bell,
   Boxes,
   Building2,
   Atom,
@@ -9,12 +10,17 @@ import {
   Landmark,
   Menu,
   LogOut,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   ScrollText,
   Radar,
   Route,
   ScanLine,
+  Search,
   ShieldCheck,
   Sparkles,
+  Sun,
   X,
   Activity,
   Gauge,
@@ -22,6 +28,7 @@ import {
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { useTheme } from "../hooks/useTheme";
 import type { UserRole } from "../types/api";
 
 type NavSection = {
@@ -73,26 +80,59 @@ const navSections: NavSection[] = [
   },
 ];
 
-function Brand() {
+function Brand({ collapsed }: { collapsed?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="flex h-7 w-7 items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-zinc-100">
-        <Radar className="h-4 w-4 text-indigo-400" strokeWidth={1.75} />
+      <div
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+        style={{ background: "var(--accent)" }}
+      >
+        <Radar className="h-4 w-4 text-white" strokeWidth={1.75} />
       </div>
-      <div>
-        <p className="font-mono text-xs font-bold tracking-widest text-zinc-100">ECDAT-X</p>
-        <p className="font-mono text-[9px] uppercase tracking-wider text-zinc-500">Crypto Intel Engine</p>
-      </div>
+      {!collapsed && (
+        <div className="min-w-0">
+          <p className="truncate font-mono text-xs font-bold tracking-widest" style={{ color: "var(--text-primary)" }}>
+            ECDAT-X
+          </p>
+          <p className="truncate font-mono text-[9px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+            Crypto Intel Engine
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
-function SidebarContent({ close, role }: { close?: () => void; role: UserRole }) {
+function SidebarContent({
+  close,
+  role,
+  collapsed,
+  onToggleCollapse,
+}: {
+  close?: () => void;
+  role: UserRole;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
+}) {
   return (
-    <div className="flex h-full flex-col bg-[#0c0d0e] text-zinc-400 border-r border-zinc-800/80">
+    <div
+      className="flex h-full flex-col"
+      style={{ background: "var(--bg-sidebar)", borderRight: "1px solid var(--border)" }}
+    >
       {/* Brand header */}
-      <div className="flex h-12 items-center border-b border-zinc-800/80 px-4">
-        <Brand />
+      <div className="flex h-12 items-center justify-between border-b px-3" style={{ borderColor: "var(--border)" }}>
+        <Brand collapsed={collapsed} />
+        {onToggleCollapse && (
+          <button
+            className="hidden shrink-0 rounded p-1.5 transition hover:bg-[var(--bg-hover)] lg:flex"
+            style={{ color: "var(--text-muted)" }}
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+          </button>
+        )}
       </div>
 
       {/* Nav groups */}
@@ -103,9 +143,14 @@ function SidebarContent({ close, role }: { close?: () => void; role: UserRole })
             if (visibleItems.length === 0) return null;
             return (
               <div key={section.label}>
-                <p className="mb-1 px-2.5 font-mono text-[9px] font-semibold uppercase tracking-widest text-zinc-500">
-                  {section.label}
-                </p>
+                {!collapsed && (
+                  <p
+                    className="mb-1 px-2.5 font-mono text-[9px] font-semibold uppercase tracking-widest"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {section.label}
+                  </p>
+                )}
                 <div className="space-y-0.5">
                   {visibleItems.map(({ to, label, icon: Icon }) => (
                     <NavLink
@@ -113,16 +158,19 @@ function SidebarContent({ close, role }: { close?: () => void; role: UserRole })
                       to={to}
                       end={to === "/"}
                       onClick={close}
+                      title={collapsed ? label : undefined}
                       className={({ isActive }) =>
-                        `group flex items-center gap-2.5 rounded-sm py-1.5 pr-2.5 text-xs transition ${
-                          isActive
-                            ? "border-l-2 border-indigo-500 bg-zinc-800/70 pl-[10px] text-zinc-100 font-semibold"
-                            : "pl-3 text-zinc-400 hover:bg-zinc-800/30 hover:text-zinc-200 font-normal"
-                        }`
+                        `group flex items-center gap-2.5 rounded-lg py-1.5 text-xs transition ${
+                          collapsed ? "justify-center px-2" : "px-2.5"
+                        } ${isActive ? "font-semibold" : "font-normal"}`
                       }
+                      style={({ isActive }) => ({
+                        background: isActive ? "var(--bg-active)" : "transparent",
+                        color: isActive ? "var(--text-primary)" : "var(--text-muted)",
+                      })}
                     >
-                      <Icon className="h-3.5 w-3.5 shrink-0 text-zinc-400 group-hover:text-zinc-200" strokeWidth={1.75} />
-                      <span className="truncate">{label}</span>
+                      <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+                      {!collapsed && <span className="truncate">{label}</span>}
                     </NavLink>
                   ))}
                 </div>
@@ -133,16 +181,22 @@ function SidebarContent({ close, role }: { close?: () => void; role: UserRole })
       </div>
 
       {/* System status footer */}
-      <div className="border-t border-zinc-800/80 p-3 bg-[#08090a]">
-        <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-300">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+      <div className="border-t p-3" style={{ borderColor: "var(--border)" }}>
+        <div className="flex items-center gap-2 text-[11px] font-mono" style={{ color: "var(--text-secondary)" }}>
+          <span className="relative flex h-1.5 w-1.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ background: "var(--risk-low)" }} />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: "var(--risk-low)" }} />
           </span>
-          <span className="font-semibold text-zinc-200">Engine Online</span>
-          <span className="ml-auto text-[9px] text-zinc-500 uppercase">v0.3.0</span>
+          {!collapsed && (
+            <>
+              <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Engine Online</span>
+              <span className="ml-auto text-[9px] uppercase" style={{ color: "var(--text-muted)" }}>v0.3.0</span>
+            </>
+          )}
         </div>
-        <p className="mt-1 font-mono text-[9px] text-zinc-500">Isolation: Tenant Org-1</p>
+        {!collapsed && (
+          <p className="mt-1 font-mono text-[9px]" style={{ color: "var(--text-muted)" }}>Isolation: Tenant Org-1</p>
+        )}
       </div>
     </div>
   );
@@ -150,13 +204,19 @@ function SidebarContent({ close, role }: { close?: () => void; role: UserRole })
 
 export function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   if (!user) return null;
   return (
-    <div className="min-h-screen bg-[#fafafa] text-zinc-950 font-sans">
+    <div className="min-h-screen font-sans" style={{ background: "var(--bg-app)", color: "var(--text-primary)" }}>
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col lg:flex">
-        <SidebarContent role={user.role} />
+      <aside
+        className={`fixed inset-y-0 left-0 z-30 hidden flex-col transition-[width] duration-200 lg:flex ${
+          collapsed ? "w-16" : "w-56"
+        }`}
+      >
+        <SidebarContent role={user.role} collapsed={collapsed} onToggleCollapse={() => setCollapsed((v) => !v)} />
       </aside>
 
       {/* Mobile sidebar overlay */}
@@ -164,7 +224,12 @@ export function Layout() {
         <div className="fixed inset-0 z-50 lg:hidden">
           <button className="absolute inset-0 bg-black/60 backdrop-blur-xs" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />
           <aside className="relative flex h-full w-60 flex-col shadow-2xl">
-            <button className="absolute right-2 top-2.5 z-10 rounded p-1.5 text-zinc-400 hover:text-white" onClick={() => setMobileOpen(false)} aria-label="Close navigation">
+            <button
+              className="absolute right-2 top-2.5 z-10 rounded p-1.5 transition hover:bg-[var(--bg-hover)]"
+              style={{ color: "var(--text-muted)" }}
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close navigation"
+            >
               <X className="h-4 w-4" />
             </button>
             <SidebarContent close={() => setMobileOpen(false)} role={user.role} />
@@ -172,25 +237,71 @@ export function Layout() {
         </div>
       )}
 
-      <div className="lg:pl-56">
+      <div className={`transition-[padding] duration-200 ${collapsed ? "lg:pl-16" : "lg:pl-56"}`}>
         {/* Top header */}
-        <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-zinc-200 bg-white px-4 md:px-6">
-          <button className="rounded p-1 text-zinc-600 hover:bg-zinc-100 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
+        <header
+          className="sticky top-0 z-20 flex h-12 items-center gap-3 px-4 md:px-6"
+          style={{ background: "var(--bg-topbar)", borderBottom: "1px solid var(--border)" }}
+        >
+          <button
+            className="rounded p-1 transition hover:bg-[var(--bg-hover)] lg:hidden"
+            style={{ color: "var(--text-secondary)" }}
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open navigation"
+          >
             <Menu className="h-4 w-4" />
           </button>
-          <div className="hidden items-center gap-1.5 font-mono text-xs text-zinc-500 lg:flex">
-            <span className="text-zinc-600">Organization workspace</span>
-            <span className="text-zinc-300">/</span>
-            <span className="font-semibold text-zinc-900">Cryptographic posture</span>
+
+          {/* Search */}
+          <div className="relative hidden max-w-xs flex-1 md:block">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+            <input
+              type="text"
+              placeholder="Search assets, findings, reports…"
+              className="field !py-1.5 pl-8 text-xs"
+              aria-label="Search"
+            />
           </div>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="rounded border border-zinc-200 bg-zinc-50 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-600">
+
+          <div className="ml-auto flex items-center gap-1.5">
+            <button
+              className="rounded-lg p-1.5 transition hover:bg-[var(--bg-hover)]"
+              style={{ color: "var(--text-secondary)" }}
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <Bell className="h-3.5 w-3.5" strokeWidth={1.75} />
+            </button>
+
+            <button
+              className="rounded-lg p-1.5 transition hover:bg-[var(--bg-hover)]"
+              style={{ color: "var(--text-secondary)" }}
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+            >
+              {theme === "dark" ? <Sun className="h-3.5 w-3.5" strokeWidth={1.75} /> : <Moon className="h-3.5 w-3.5" strokeWidth={1.75} />}
+            </button>
+
+            <span
+              className="ml-1 hidden rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider md:inline-block"
+              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+            >
               {user.role.replace("_", " ")}
             </span>
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-zinc-900 font-mono text-[10px] font-bold text-white">
+            <div
+              className="flex h-6 w-6 items-center justify-center rounded-full font-mono text-[10px] font-bold"
+              style={{ background: "var(--accent)", color: "var(--text-on-accent)" }}
+            >
               {user.username.slice(0, 2).toUpperCase()}
             </div>
-            <button onClick={() => void logout()} className="rounded p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700" title="Sign out" aria-label="Sign out">
+            <button
+              onClick={() => void logout()}
+              className="rounded-lg p-1.5 transition hover:bg-[var(--bg-hover)]"
+              style={{ color: "var(--text-muted)" }}
+              title="Sign out"
+              aria-label="Sign out"
+            >
               <LogOut className="h-3.5 w-3.5" strokeWidth={1.75} />
             </button>
           </div>
