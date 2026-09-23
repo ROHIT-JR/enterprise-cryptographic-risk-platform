@@ -1,4 +1,4 @@
-import { Database, Filter, GitBranch, Info, Network, Search, X } from "lucide-react";
+import { Database, Maximize2, Radar, Search, ShieldAlert, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import ReactFlow, {
   Background,
@@ -8,25 +8,22 @@ import ReactFlow, {
   MiniMap,
   Node,
   Position,
+  useReactFlow,
+  ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { apiErrorMessage, graphApi } from "../api/client";
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge } from "../components/ui";
+import { Card, EmptyState, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuFieldTrigger, DropdownMenuItem } from "../components/DropdownMenu";
+import { TypedNode, type TypedNodeData } from "../components/graph/TypedNode";
+import { GraphStats } from "../components/graph/GraphStats";
+import { NodeDetail } from "../components/graph/NodeDetail";
 import { useAsync } from "../hooks/useAsync";
-import type { GraphNode } from "../types/api";
+import type { GraphNode, Severity } from "../types/api";
 
-const colors: Record<string, string> = {
-  project:       "#22d3ee",  // cyan
-  application:   "#60a5fa",  // blue
-  library:       "#a78bfa",  // purple
-  algorithm:     "#fbbf24",  // amber
-  certificate:   "#34d399",  // emerald
-  protocol:      "#fb7185",  // rose
-  configuration: "#94a3b8",  // slate
-  service:       "#4ade80",  // green
-};
+const nodeTypes = { typed: TypedNode };
 
-const levelByType: Record<string, number> = {
+const LEVEL_BY_TYPE: Record<string, number> = {
   project: 0,
   application: 1,
   service: 1,
@@ -37,27 +34,55 @@ const levelByType: Record<string, number> = {
   certificate: 3,
 };
 
-const NODE_TYPE_LABELS: Record<string, string> = {
-  project:       "Project",
-  application:   "Application",
-  library:       "Library",
-  algorithm:     "Algorithm",
-  certificate:   "Certificate",
-  protocol:      "Protocol",
-  configuration: "Configuration",
-  service:       "Service",
+const EDGE_STYLE: Record<string, { stroke: string; dash?: string }> = {
+  USES: { stroke: "var(--text-muted)" },
+  DEPENDS_ON: { stroke: "var(--accent)", dash: "6 3" },
+  PROTECTS: { stroke: "var(--q-safe)", dash: "1 3" },
+  CONTAINS: { stroke: "var(--border)" },
 };
 
-export function KnowledgeGraph() {
-  const { data, error, loading, reload } = useAsync(() => graphApi.get(), []);
-  const [selected, setSelected] = useState<GraphNode | null>(null);
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
+const NODE_TYPE_LABELS: Record<string, string> = {
+  project: "Project", application: "Application", library: "Library",
+  algorithm: "Algorithm", certificate: "Certificate", protocol: "Protocol",
+  configuration: "Configuration", service: "Service",
+};
 
-  // Compute node degree (connection count) for sizing
+const SEVERITIES: Severity[] = ["critical", "high", "medium", "low"];
+
+function FitViewButton() {
+  const { fitView } = useReactFlow();
+  return (
+    <button
+      onClick={() => fitView({ padding: 0.1, duration: 300 })}
+      className="interactive absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-panel"
+      style={{ borderColor: "var(--border)", background: "var(--bg-card)", color: "var(--text-secondary)" }}
+    >
+      <Maximize2 className="h-3.5 w-3.5" /> Fit View
+    </button>
+  );
+}
+
+function GraphCanvas() {
+  const { data, error, loading, reload } = useAsync(() => graphApi.get(), []);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [activeTypes, setActiveTypes] = useState<Set<string> | null>(null);
+  const [riskFilter, setRiskFilter] = useState<Severity | "all">("all");
+  const [algorithmFilter, setAlgorithmFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [riskOverlay, setRiskOverlay] = useState(false);
+
+  const allTypes = useMemo(() => (data ? Array.from(new Set(data.nodes.map((n) => n.type))).sort() : []), [data]);
+  const enabledTypes = activeTypes ?? new Set(allTypes);
+
+  const algorithmNames = useMemo(
+    () => (data ? Array.from(new Set(data.nodes.filter((n) => n.type === "algorithm").map((n) => n.label))).sort() : []),
+    [data],
+  );
+
   const nodeDegree = useMemo(() => {
-    if (!data) return new Map<string, number>();
     const deg = new Map<string, number>();
+    if (!data) return deg;
     for (const edge of data.edges) {
       deg.set(edge.source, (deg.get(edge.source) ?? 0) + 1);
       deg.set(edge.target, (deg.get(edge.target) ?? 0) + 1);
@@ -65,321 +90,273 @@ export function KnowledgeGraph() {
     return deg;
   }, [data]);
 
-  const graph = useMemo(() => {
-    if (!data) return { nodes: [] as Node[], edges: [] as Edge[] };
+  const nodesById = useMemo(() => new Map((data?.nodes ?? []).map((n) => [n.id, n])), [data]);
 
+  // 1-hop neighbor set for hover highlighting.
+  const hoverNeighborhood = useMemo(() => {
+    if (!hoveredId || !data) return null;
+    const ids = new Set([hoveredId]);
+    for (const edge of data.edges) {
+      if (edge.source === hoveredId) ids.add(edge.target);
+      if (edge.target === hoveredId) ids.add(edge.source);
+    }
+    return ids;
+  }, [hoveredId, data]);
+
+  const { nodes, edges, visibleCount } = useMemo(() => {
+    if (!data) return { nodes: [] as Node<TypedNodeData>[], edges: [] as Edge[], visibleCount: 0 };
     const searchLower = search.trim().toLowerCase();
-    const isSearchActive = searchLower !== "";
-    const visible = data.nodes.filter((node) => filter === "all" || node.type === filter);
-    const visibleIds = new Set(visible.map((node) => node.id));
+
+    const visible = data.nodes.filter((n) => {
+      if (!enabledTypes.has(n.type)) return false;
+      if (riskFilter !== "all" && n.properties.risk_severity !== riskFilter) return false;
+      if (algorithmFilter !== "all" && !(n.type === "algorithm" && n.label === algorithmFilter)) return false;
+      return true;
+    });
+    const visibleIds = new Set(visible.map((n) => n.id));
 
     const buckets = new Map<number, GraphNode[]>();
     for (const item of visible) {
-      const level = levelByType[item.type] ?? 2;
+      const level = LEVEL_BY_TYPE[item.type] ?? 2;
       buckets.set(level, [...(buckets.get(level) ?? []), item]);
     }
 
-    const nodes: Node[] = [];
-    let yOffset = 40;
     const maxDegree = Math.max(...Array.from(nodeDegree.values()), 1);
-
-    for (const [, items] of Array.from(buckets.entries()).sort(([left], [right]) => left - right)) {
+    const rfNodes: Node<TypedNodeData>[] = [];
+    let yOffset = 40;
+    for (const [, items] of Array.from(buckets.entries()).sort(([a], [b]) => a - b)) {
       const columns = Math.min(items.length, 6);
-      const width = Math.max(columns - 1, 1) * 220;
-
+      const width = Math.max(columns - 1, 1) * 200;
       items.forEach((item, index) => {
         const degree = nodeDegree.get(item.id) ?? 0;
-        // Node width scales with degree: min 150, max 210
-        const nodeWidth = 150 + Math.round((degree / maxDegree) * 60);
-        const isSearchMatch = isSearchActive && item.label.toLowerCase().includes(searchLower);
-        const opacity = isSearchActive ? (isSearchMatch ? 1 : 0.35) : 1;
-
-        nodes.push({
+        const isSearchMatch = searchLower !== "" && item.label.toLowerCase().includes(searchLower);
+        const dimmedBySearch = searchLower !== "" && !isSearchMatch;
+        const dimmedByHover = hoverNeighborhood ? !hoverNeighborhood.has(item.id) : false;
+        rfNodes.push({
           id: item.id,
-          data: { label: item.label, raw: item },
-          position: {
-            x: (index % columns) * 220 - width / 2 + 640,
-            y: yOffset + Math.floor(index / columns) * 150,
+          type: "typed",
+          data: {
+            label: item.label,
+            nodeType: item.type,
+            severity: (item.properties.risk_severity as Severity) ?? null,
+            quantumSafe: item.properties.risk_severity === "low" || item.properties.risk_severity == null,
+            degree,
+            maxDegree,
+            dimmed: dimmedBySearch || dimmedByHover,
+            highlighted: isSearchMatch || hoveredId === item.id,
+            riskOverlay,
+            pulse: riskOverlay && item.type === "algorithm" && (item.properties.risk_severity === "critical" || item.properties.risk_severity === "high"),
           },
+          position: { x: (index % columns) * 200 - width / 2 + 620, y: yOffset + Math.floor(index / columns) * 130 },
           sourcePosition: Position.Bottom,
           targetPosition: Position.Top,
-          style: {
-            width: nodeWidth,
-            borderRadius: 8,
-            border: isSearchMatch
-              ? "2px solid #4f46e5"
-              : `1px solid ${colors[item.type] ?? "#94a3b8"}60`,
-            background: isSearchMatch ? "#eef2ff" : "#ffffff",
-            color: "#09090b",
-            padding: "10px 12px",
-            fontSize: degree > (maxDegree * 0.5) ? 13 : 11,
-            fontWeight: isSearchMatch || degree > (maxDegree * 0.5) ? 700 : 600,
-            opacity,
-            boxShadow: isSearchMatch
-              ? "0 0 0 3px rgba(79, 70, 229, 0.25), 0 4px 12px rgba(79, 70, 229, 0.15)"
-              : "0 1px 2px rgba(0,0,0,0.05)",
-            transition: "opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
-          },
+          draggable: true,
         });
       });
-      yOffset += Math.ceil(items.length / columns) * 150 + 70;
+      yOffset += Math.ceil(items.length / columns) * 130 + 60;
     }
 
-    const matchIds = new Set(
-      isSearchActive
-        ? data.nodes.filter((n) => n.label.toLowerCase().includes(searchLower)).map((n) => n.id)
-        : [],
-    );
-
-    const edges: Edge[] = data.edges
-      .filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target))
-      .map((edge) => {
-        const isEdgeHighlighted =
-          !isSearchActive || matchIds.has(edge.source) || matchIds.has(edge.target);
+    const rfEdges: Edge[] = data.edges
+      .filter((e) => visibleIds.has(e.source) && visibleIds.has(e.target))
+      .map((e) => {
+        const style = EDGE_STYLE[e.type.toUpperCase()] ?? EDGE_STYLE.USES!;
+        const dimmedByHover = hoverNeighborhood ? !(hoverNeighborhood.has(e.source) && hoverNeighborhood.has(e.target)) : false;
         return {
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          label: edge.type,
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          label: hoveredId && !dimmedByHover ? e.type : undefined,
           type: "smoothstep",
-          animated: edge.type === "USES",
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: isEdgeHighlighted ? (isSearchActive ? "#4f46e5" : "#64748b") : "#cbd5e1",
-          },
-          style: {
-            stroke: isEdgeHighlighted ? (isSearchActive ? "#4f46e5" : "#94a3b8") : "#e2e8f0",
-            strokeWidth: isEdgeHighlighted && isSearchActive ? 2 : 1.4,
-            opacity: isEdgeHighlighted ? 1 : 0.25,
-          },
-          labelStyle: {
-            fill: isEdgeHighlighted ? "#475569" : "#94a3b8",
-            fontSize: 9,
-            fontWeight: 700,
-          },
-          labelBgStyle: { fill: "#ffffff", fillOpacity: 0.95 },
+          animated: e.type.toUpperCase() === "USES",
+          markerEnd: { type: MarkerType.ArrowClosed, color: style.stroke },
+          style: { stroke: style.stroke, strokeWidth: dimmedByHover ? 1 : 1.6, strokeDasharray: style.dash, opacity: dimmedByHover ? 0.15 : 1 },
+          labelStyle: { fill: "var(--text-secondary)", fontSize: 9, fontWeight: 700 },
+          labelBgStyle: { fill: "var(--bg-card)", fillOpacity: 0.95 },
         };
       });
 
-    return { nodes, edges };
-  }, [data, filter, search, nodeDegree]);
+    return { nodes: rfNodes, edges: rfEdges, visibleCount: visible.length };
+  }, [data, enabledTypes, riskFilter, algorithmFilter, search, nodeDegree, hoverNeighborhood, hoveredId, riskOverlay]);
 
   if (loading) return <LoadingState label="Loading cryptographic topology" />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
 
-  const types = Array.from(new Set(data.nodes.map((node) => node.type))).sort();
+  const selectedNode = selectedId ? nodesById.get(selectedId) ?? null : null;
 
   return (
-    <div className="space-y-8">
+    <div className="page-enter space-y-6">
       <PageHeader
         eyebrow="Dependency intelligence"
         title="Knowledge graph"
         description="Trace how applications, libraries, algorithms, protocols, and certificates influence one another."
         action={
-          <div className="flex items-center gap-2 rounded border border-zinc-200 bg-zinc-50 px-3 py-1.5 font-mono text-xs text-zinc-600">
-            <Database className="h-3.5 w-3.5 text-indigo-600" />
-            Source: <span className="font-bold capitalize text-zinc-950">{data.source}</span>
+          <div className="flex items-center gap-2 rounded-lg border px-3 py-1.5 font-mono text-xs" style={{ borderColor: "var(--border)", background: "var(--bg-hover)", color: "var(--text-secondary)" }}>
+            <Database className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
+            Source: <span className="font-bold capitalize" style={{ color: "var(--text-primary)" }}>{data.source}</span>
           </div>
         }
       />
 
-      {/* Node type legend */}
-      <div className="flex flex-wrap gap-2">
-        {types.map((type) => (
-          <button
-            key={type}
-            onClick={() => setFilter(filter === type ? "all" : type)}
-            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize transition ${
-              filter === type
-                ? "border-slate-300 bg-slate-100 text-slate-900 font-semibold"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ background: colors[type] ?? "#94a3b8" }}
-            />
-            {NODE_TYPE_LABELS[type] ?? type}
-          </button>
-        ))}
-        {filter !== "all" && (
-          <button
-            onClick={() => setFilter("all")}
-            className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-500 hover:text-slate-700"
-          >
-            <X className="h-3 w-3" /> Clear filter
-          </button>
-        )}
-      </div>
+      <GraphStats stats={data.stats} />
 
-      <Card className="overflow-hidden">
-        {/* Toolbar */}
-        <div className="flex flex-col gap-3 border-b border-zinc-200 px-5 py-3.5 md:flex-row md:items-center md:justify-between bg-zinc-50/50">
-          <div className="flex items-center gap-2 font-mono text-xs text-zinc-500">
-            <Network className="h-4 w-4 text-indigo-600" />
-            <span>
-              {graph.nodes.length} / {data.nodes.length} nodes
-              {search.trim() !== "" && (
-                <span className="ml-1 text-indigo-700 font-bold">
-                  ({graph.nodes.filter((n) => (n.data?.raw?.label as string)?.toLowerCase().includes(search.trim().toLowerCase())).length} matched)
-                </span>
-              )}
-            </span>
-            <span className="text-zinc-300">·</span>
-            <span>{graph.edges.length} relationships</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Search */}
-            <label className="relative flex items-center">
-              <Search className="absolute left-3 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Find RSA-2048…"
-                value={search}
-                onChange={(e) => { setSearch(e.target.value); setSelected(null); }}
-                className="field w-48 py-2 pl-8 text-xs"
-              />
-              {search && (
-                <button
-                  className="absolute right-2 text-slate-400 hover:text-slate-600"
-                  onClick={() => setSearch("")}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </label>
-            {/* Filter dropdown */}
-            <label className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
-              <select
-                value={filter}
-                onChange={(event) => { setFilter(event.target.value); setSelected(null); }}
-                className="field w-40 py-2 text-xs"
-              >
-                <option value="all">All node types</option>
-                {types.map((type) => (
-                  <option key={type} value={type} className="capitalize">
-                    {NODE_TYPE_LABELS[type] ?? type}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+      {/* Filter panel */}
+      <Card className="p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="relative flex items-center">
+            <Search className="absolute left-3 h-3.5 w-3.5" style={{ color: "var(--text-muted)" }} />
+            <input
+              type="text"
+              placeholder="Find RSA-2048…"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setSelectedId(null); }}
+              className="field w-48 py-2 pl-8 text-xs"
+            />
+          </label>
+
+          <DropdownMenu>
+            <DropdownMenuFieldTrigger className="w-36 capitalize">
+              {riskFilter === "all" ? "All risk levels" : riskFilter}
+            </DropdownMenuFieldTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem selected={riskFilter === "all"} onSelect={() => setRiskFilter("all")}>All risk levels</DropdownMenuItem>
+              {SEVERITIES.map((s) => (
+                <DropdownMenuItem key={s} selected={riskFilter === s} onSelect={() => setRiskFilter(s)}>
+                  <span className="capitalize">{s}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuFieldTrigger className="w-40">
+              {algorithmFilter === "all" ? "All algorithms" : algorithmFilter}
+            </DropdownMenuFieldTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem selected={algorithmFilter === "all"} onSelect={() => setAlgorithmFilter("all")}>All algorithms</DropdownMenuItem>
+              {algorithmNames.map((name) => (
+                <DropdownMenuItem key={name} selected={algorithmFilter === name} onSelect={() => setAlgorithmFilter(name)}>
+                  {name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <button
+            onClick={() => setRiskOverlay((v) => !v)}
+            className="interactive ml-auto flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold"
+            style={{
+              borderColor: riskOverlay ? "var(--risk-critical)" : "var(--border)",
+              background: riskOverlay ? "color-mix(in srgb, var(--risk-critical) 10%, transparent)" : "var(--bg-card)",
+              color: riskOverlay ? "var(--risk-critical)" : "var(--text-secondary)",
+            }}
+          >
+            <ShieldAlert className="h-3.5 w-3.5" /> Risk Overlay {riskOverlay ? "On" : "Off"}
+          </button>
         </div>
 
-        {graph.nodes.length ? (
-          <div className="h-[650px]">
-            <ReactFlow
-              nodes={graph.nodes}
-              edges={graph.edges}
-              fitView
-              fitViewOptions={{ padding: 0.08, minZoom: 0.5, maxZoom: 0.9 }}
-              minZoom={0.15}
-              maxZoom={1.8}
-              onNodeClick={(_, node) => setSelected((node.data as { raw: GraphNode }).raw)}
-              proOptions={{ hideAttribution: true }}
+        {/* Type checkboxes */}
+        <div className="mt-3 flex flex-wrap gap-2 border-t pt-3" style={{ borderColor: "var(--border)" }}>
+          {allTypes.map((type) => {
+            const active = enabledTypes.has(type);
+            return (
+              <button
+                key={type}
+                onClick={() => {
+                  const next = new Set(enabledTypes);
+                  if (next.has(type)) next.delete(type); else next.add(type);
+                  setActiveTypes(next);
+                }}
+                className="interactive flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize"
+                style={{
+                  borderColor: active ? "var(--accent)" : "var(--border)",
+                  background: active ? "var(--accent-soft)" : "var(--bg-card)",
+                  color: active ? "var(--accent)" : "var(--text-muted)",
+                }}
+              >
+                {NODE_TYPE_LABELS[type] ?? type}
+              </button>
+            );
+          })}
+          {(activeTypes || riskFilter !== "all" || algorithmFilter !== "all" || search) && (
+            <button
+              onClick={() => { setActiveTypes(null); setRiskFilter("all"); setAlgorithmFilter("all"); setSearch(""); }}
+              className="interactive flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px]"
+              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
             >
-              <Background color="#e2e8f0" gap={28} size={1} />
-              <Controls className="graph-controls" />
-              <MiniMap
-                nodeColor={(node) =>
-                  colors[(node.data as { raw?: GraphNode }).raw?.type ?? ""] ?? "#94a3b8"
-                }
-                maskColor="rgba(248,250,252,.80)"
-                className="graph-minimap"
-              />
-            </ReactFlow>
+              <X className="h-3 w-3" /> Clear filters
+            </button>
+          )}
+        </div>
+
+        {riskOverlay && (
+          <div className="mt-3 flex flex-wrap gap-3 border-t pt-3 text-[10px]" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+            {SEVERITIES.map((s) => (
+              <span key={s} className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: `var(--risk-${s})` }} /> {s}
+              </span>
+            ))}
+            <span>· pulsing = quantum-vulnerable algorithm</span>
           </div>
-        ) : (
-          <EmptyState
-            title="No graph nodes available"
-            body={search ? `No nodes match "${search}". Try a different search term.` : "Complete a discovery scan to build the cryptographic topology."}
-          />
         )}
       </Card>
 
-      {/* Node detail panel */}
-      {selected && (
-        <Card className="animate-fade-in p-5 md:p-6">
-          <div className="flex items-start gap-4 md:items-center">
-            <span
-              className="shrink-0 rounded-xl p-3"
-              style={{ color: colors[selected.type], background: `${colors[selected.type]}15` }}
+      <Card className="overflow-hidden">
+        <div className="flex items-center gap-2 border-b px-5 py-2.5 font-mono text-xs" style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}>
+          <Radar className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
+          {visibleCount} / {data.nodes.length} nodes · {edges.length} relationships
+        </div>
+        {nodes.length ? (
+          <div className="relative h-[650px]">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              fitView
+              fitViewOptions={{ padding: 0.1, minZoom: 0.4, maxZoom: 1 }}
+              minZoom={0.15}
+              maxZoom={1.8}
+              onNodeClick={(_, node) => setSelectedId(node.id)}
+              onNodeMouseEnter={(_, node) => setHoveredId(node.id)}
+              onNodeMouseLeave={() => setHoveredId(null)}
+              proOptions={{ hideAttribution: true }}
             >
-              <GitBranch className="h-5 w-5" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: colors[selected.type] }}>
-                {NODE_TYPE_LABELS[selected.type] ?? selected.type}
-              </p>
-              <h2 className="mt-1 font-semibold text-slate-900">{selected.label}</h2>
-              <p className="mt-1 font-mono text-xs text-slate-500">
-                {String(selected.properties.location ?? "No location reported")}
-              </p>
-            </div>
-            <button
-              onClick={() => setSelected(null)}
-              className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
+              <Background color="var(--border)" gap={28} size={1} />
+              <Controls className="graph-controls" />
+              <MiniMap
+                nodeColor={(node) => {
+                  const raw = nodesById.get(node.id);
+                  return raw?.properties.risk_severity ? `var(--risk-${raw.properties.risk_severity})` : "var(--accent)";
+                }}
+                maskColor="color-mix(in srgb, var(--bg-app) 65%, transparent)"
+                className="graph-minimap"
+              />
+              <FitViewButton />
+            </ReactFlow>
           </div>
+        ) : (
+          <EmptyState title="No graph nodes available" body={search ? `No nodes match "${search}".` : "Complete a discovery scan to build the cryptographic topology."} />
+        )}
+      </Card>
 
-          {/* Properties grid */}
-          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Risk score */}
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-              <p className="text-[10px] text-slate-500">Risk severity</p>
-              <div className="mt-1.5">
-                {(() => {
-                  const sev = selected.properties.risk_severity;
-                  if (sev && typeof sev === "string") {
-                    return <SeverityBadge severity={sev as "critical" | "high" | "medium" | "low"} />;
-                  }
-                  return <span className="text-xs text-slate-500">Not scored</span>;
-                })()}
-              </div>
-            </div>
-
-            {/* PQC recommendation */}
-            {Boolean(selected.properties.recommended_algorithm) && (
-              <div className="rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3">
-                <p className="text-[10px] text-slate-500">PQC replacement</p>
-                <p className="mt-1 text-xs font-semibold text-blue-700">
-                  {String(selected.properties.recommended_algorithm)}
-                </p>
-              </div>
-            )}
-
-            {/* Connection count */}
-            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-              <p className="text-[10px] text-slate-500">Connections</p>
-              <p className="tabular-nums mt-1 text-sm font-semibold text-slate-900">
-                {nodeDegree.get(selected.id) ?? 0} relationships
-              </p>
-            </div>
-
-            {/* All other properties */}
-            {Object.entries(selected.properties)
-              .filter(([key]) => !["location", "risk_severity", "recommended_algorithm"].includes(key))
-              .map(([key, val]) => (
-                <div key={key} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-                  <p className="text-[10px] capitalize text-slate-500">{key.replace(/_/g, " ")}</p>
-                  <p className="mt-1 truncate text-xs font-semibold text-slate-800">{String(val ?? "—")}</p>
-                </div>
-              ))}
-          </div>
-
-          {/* View in asset explorer link */}
-          <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-            <Info className="h-4 w-4 text-blue-600" />
-            <span>Click another node to inspect it, or</span>
-            <button onClick={() => setSelected(null)} className="text-blue-600 hover:text-blue-700 font-medium">
-              close panel
-            </button>
-          </div>
-        </Card>
+      {selectedNode && (
+        <div className="page-enter">
+          <NodeDetail
+            node={selectedNode}
+            edges={data.edges}
+            nodesById={nodesById}
+            onClose={() => setSelectedId(null)}
+            onSelectNode={setSelectedId}
+          />
+        </div>
       )}
     </div>
+  );
+}
+
+export function KnowledgeGraph() {
+  return (
+    <ReactFlowProvider>
+      <GraphCanvas />
+    </ReactFlowProvider>
   );
 }

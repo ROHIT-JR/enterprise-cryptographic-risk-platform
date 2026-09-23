@@ -42,6 +42,7 @@
   /* Decorative asset-type tints (graph node coloring — not risk-semantic). */
   --tint-library: #9333ea;
   --tint-protocol: #0d9488;
+  --tint-certificate: #b45309;
 }
 
 :root[data-theme="dark"] {
@@ -76,6 +77,7 @@
 
   --tint-library: #c084fc;
   --tint-protocol: #2dd4bf;
+  --tint-certificate: #fbbf24;
 }
 } /* end @layer base (design tokens) */
 

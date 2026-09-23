@@ -117,10 +117,29 @@ export interface GraphEdge {
   properties: Record<string, unknown>;
 }
 
+export interface GraphNodeRef {
+  id: string;
+  label: string;
+}
+
+export interface GraphStats {
+  total_nodes: number;
+  nodes_by_type: Record<string, number>;
+  total_edges: number;
+  most_connected: GraphNodeRef | null;
+  most_connected_degree: number;
+  top_centrality: GraphNodeRef | null;
+  top_centrality_score: number;
+  community_count: number;
+  quantum_vulnerable_count: number;
+  quantum_total_count: number;
+}
+
 export interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
   source: "neo4j" | "postgresql";
+  stats: GraphStats;
 }
 
 export interface IntelligenceItem {
