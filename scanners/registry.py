@@ -60,6 +60,7 @@ def build_default_registry(
     timeout_seconds: int = 45,
     tls_timeout_seconds: float = 8,
     tls_allow_private_targets: bool = False,
+    enable_discovery: bool = False,
 ) -> ScannerRegistry:
     registry = ScannerRegistry(
         [
@@ -71,4 +72,9 @@ def build_default_registry(
             ),
         ]
     )
+    # Off by default: an entry-point scanner runs arbitrary code from any installed package,
+    # so loading one is an explicit operator choice (ECDAT_ENABLE_SCANNER_DISCOVERY), not the
+    # default behaviour of a fresh install.
+    if enable_discovery:
+        registry.discover()
     return registry

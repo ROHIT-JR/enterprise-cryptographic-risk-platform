@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     tls_connect_timeout_seconds: float = 8.0
     tls_allow_private_targets: bool = False
     docker_enabled: bool = True
+    enable_scanner_discovery: bool = False
     neo4j_enabled: bool = True
     neo4j_uri: str = Field(
         default="bolt://localhost:7687",

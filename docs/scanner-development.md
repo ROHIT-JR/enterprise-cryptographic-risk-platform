@@ -114,11 +114,10 @@ part of the application:
    `require_permissions(Permission.RUN_SCANS)` and give it a docstring; the
    [API docs tests](development.md#adding-an-api-endpoint) enforce both.
 
-**Known gap: entry-point plugins are not loaded yet.** `ScannerRegistry.discover()` can load
-scanners published under the `ecdat_x.scanners` entry-point group, but the application never calls
-it, so a scanner installed from a separate package is not picked up. Until that is wired in,
-register scanners in `build_default_registry()` as above. Wiring it in is a deliberate decision
-for the maintainers because it means running code from any installed package.
+**Entry-point plugins are opt-in.** `ScannerRegistry.discover()` loads scanners published under the
+`ecdat_x.scanners` entry-point group, but this runs code from any installed package, so it is off
+by default. Set `ECDAT_ENABLE_SCANNER_DISCOVERY=true` to load them at startup. Registering a
+scanner in `build_default_registry()` as above works either way and needs no configuration change.
 
 ## Security checklist
 

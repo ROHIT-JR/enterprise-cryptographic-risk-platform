@@ -34,6 +34,7 @@ async def run_scan_job(scan_id: str, raw_target: str) -> None:
         timeout_seconds=settings.scanner_timeout_seconds,
         tls_timeout_seconds=settings.tls_connect_timeout_seconds,
         tls_allow_private_targets=settings.tls_allow_private_targets,
+        enable_discovery=settings.enable_scanner_discovery,
     )
     db = SessionLocal()
     cleanup_root: Path | None = None

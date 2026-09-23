@@ -361,6 +361,7 @@ SETTING_DOCS = {
     "tls_connect_timeout_seconds": "Connect timeout for TLS endpoint scans.",
     "tls_allow_private_targets": "Allow TLS scans of private and loopback addresses. Off by default to prevent SSRF.",
     "docker_enabled": "Enable the Docker image scanner (needs access to the Docker socket).",
+    "enable_scanner_discovery": "Load third-party scanners published under the `ecdat_x.scanners` entry-point group at startup. Off by default: this runs code from any installed package.",
     "neo4j_enabled": "Project the graph into Neo4j. When off, the graph is served from the database.",
     "neo4j_uri": "Neo4j Bolt endpoint.",
     "neo4j_user": "Neo4j user.",

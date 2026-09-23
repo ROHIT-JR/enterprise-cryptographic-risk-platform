@@ -109,6 +109,7 @@ application variables below are `ECDAT_`-prefixed; where a plain alias also work
 | `ECDAT_TLS_CONNECT_TIMEOUT_SECONDS` | `8.0` | Connect timeout for TLS endpoint scans. |
 | `ECDAT_TLS_ALLOW_PRIVATE_TARGETS` | `False` | Allow TLS scans of private and loopback addresses. Off by default to prevent SSRF. |
 | `ECDAT_DOCKER_ENABLED` | `True` | Enable the Docker image scanner (needs access to the Docker socket). |
+| `ECDAT_ENABLE_SCANNER_DISCOVERY` | `False` | Load third-party scanners published under the `ecdat_x.scanners` entry-point group at startup. Off by default: this runs code from any installed package. |
 | `ECDAT_NEO4J_ENABLED` | `True` | Project the graph into Neo4j. When off, the graph is served from the database. |
 | `ECDAT_NEO4J_URI`, `NEO4J_URI` | `bolt://localhost:7687` | Neo4j Bolt endpoint. |
 | `ECDAT_NEO4J_USER`, `NEO4J_USERNAME`, `NEO4J_USER` | `neo4j` | Neo4j user. |
