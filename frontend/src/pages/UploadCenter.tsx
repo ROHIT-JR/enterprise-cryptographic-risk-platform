@@ -18,6 +18,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiErrorMessage, scansApi } from "../api/client";
 import { Card, PageHeader, StatusBadge } from "../components/ui";
+import { ScanProgressSteps, deriveScanStepsFromEvents } from "../components/ScanProgressSteps";
 import { useScanProgress } from "../hooks/useScanProgress";
 import type { Criticality, Scan } from "../types/api";
 
@@ -385,6 +386,12 @@ export function UploadCenter() {
                 />
               </div>
             </div>
+
+            {/* Step-by-step progress (issue #67) — derived from the same
+                real SSE checkpoints as the log below, not a fixed demo timer. */}
+            {liveScanId && (
+              <ScanProgressSteps steps={deriveScanStepsFromEvents(liveEvents, liveProgress)} />
+            )}
 
             {/* Live Scan Log */}
             {liveEvents.length > 0 && (

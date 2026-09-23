@@ -160,12 +160,11 @@ function SidebarContent({
                       onClick={close}
                       title={collapsed ? label : undefined}
                       className={({ isActive }) =>
-                        `group flex items-center gap-2.5 rounded-lg py-1.5 text-xs transition ${
+                        `interactive group flex items-center gap-2.5 rounded-lg py-1.5 text-xs ${
                           collapsed ? "justify-center px-2" : "px-2.5"
-                        } ${isActive ? "font-semibold" : "font-normal"}`
+                        } ${isActive ? "nav-active font-semibold" : "font-normal hover:bg-[var(--bg-hover)]"}`
                       }
                       style={({ isActive }) => ({
-                        background: isActive ? "var(--bg-active)" : "transparent",
                         color: isActive ? "var(--text-primary)" : "var(--text-muted)",
                       })}
                     >

@@ -18,6 +18,7 @@ import { Link } from "react-router-dom";
 import { apiErrorMessage, dashboardApi } from "../api/client";
 import { ReportGenerator } from "../components/ReportGenerator";
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge } from "../components/ui";
+import { NumberTicker } from "../components/NumberTicker";
 import { useAsync } from "../hooks/useAsync";
 import { formatNumber, relativeTime } from "../utils/format";
 
@@ -124,16 +125,16 @@ export function Dashboard() {
       };
 
   const metrics = [
-    { label: "Total Assets Discovered", value: formatNumber(data.metrics.total_assets),   icon: Boxes,       sub: `${data.metrics.projects_scanned} projects normalized` },
-    { label: "Critical Findings",       value: formatNumber(data.metrics.critical_assets), icon: ShieldAlert, sub: "Immediate migration pressure", alert: true },
-    { label: quantumMetric.label,       value: quantumMetric.value,                       icon: Atom,        sub: quantumMetric.sub },
-    { label: "Overall Risk Score",       value: computedRiskScore.value,                   icon: Activity,    sub: computedRiskScore.sub },
+    { label: "Total Assets Discovered", value: formatNumber(data.metrics.total_assets),   numeric: data.metrics.total_assets,   icon: Boxes,       sub: `${data.metrics.projects_scanned} projects normalized` },
+    { label: "Critical Findings",       value: formatNumber(data.metrics.critical_assets), numeric: data.metrics.critical_assets, icon: ShieldAlert, sub: "Immediate migration pressure", alert: true },
+    { label: quantumMetric.label,       value: quantumMetric.value,                       numeric: undefined,                    icon: Atom,        sub: quantumMetric.sub },
+    { label: "Overall Risk Score",       value: computedRiskScore.value,                   numeric: undefined,                    icon: Activity,    sub: computedRiskScore.sub },
   ];
 
   const riskTotal = data.risk_distribution.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <div className="space-y-5">
+    <div className="page-enter space-y-5">
       <PageHeader
         eyebrow="Posture Intelligence"
         title="Cryptographic Risk Overview"
@@ -151,14 +152,17 @@ export function Dashboard() {
       />
 
       {/* Hero stats */}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(({ label, value, icon: Icon, sub, alert }) => (
+      <section className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(({ label, value, numeric, icon: Icon, sub, alert }) => (
           <Card key={label} className="p-4">
             <div className="flex items-start justify-between">
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{label}</p>
-                <p className={`tabular-nums font-mono mt-1 text-2xl font-bold tracking-tight ${alert ? "text-red-600" : "text-zinc-950"}`}>
-                  {value}
+                <p
+                  className="tabular-nums font-mono mt-1 text-2xl font-bold tracking-tight"
+                  style={{ color: alert ? "var(--risk-critical)" : "var(--text-primary)" }}
+                >
+                  {numeric !== undefined ? <NumberTicker end={numeric} duration={1.1} /> : value}
                 </p>
               </div>
               <div className="flex h-7 w-7 items-center justify-center rounded border border-zinc-200 bg-zinc-50 text-zinc-700">

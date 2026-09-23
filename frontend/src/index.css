@@ -106,26 +106,85 @@ button, a { -webkit-tap-highlight-color: transparent; }
     box-shadow: 0 0 0 1px var(--accent);
   }
 
-  /* Primary Technical Action Button */
+  /* Primary Technical Action Button — every button gets the same
+     lift-on-hover/press-on-click feedback baked in, not opt-in. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded px-3.5 py-1.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded px-3.5 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40;
     background: var(--accent);
     color: var(--text-on-accent);
+    transition: background-color 150ms ease, transform 100ms ease, box-shadow 200ms ease;
   }
-  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.98); transition-duration: 60ms; }
 
-  /* Secondary / Ghost button */
+  /* Secondary / Ghost button — same feedback contract as .btn-primary. */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded border px-3 py-1.5 text-xs font-medium transition disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded border px-3 py-1.5 text-xs font-medium disabled:opacity-40;
     background: var(--bg-card);
     border-color: var(--border);
     color: var(--text-secondary);
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 100ms ease;
   }
-  .btn-secondary:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .btn-secondary:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); transform: translateY(-1px); }
+  .btn-secondary:active:not(:disabled) { transform: translateY(0) scale(0.98); transition-duration: 60ms; }
 
   /* Segmented control tab */
   .segment-tab {
     @apply relative px-3 py-1.5 text-xs font-medium transition;
+  }
+}
+
+/* ===================================================================
+   Micro-interaction / animation system (issue #67) — the single shared
+   contract every clickable element and loading state uses. No component
+   should hand-roll its own hover/click transition outside this block.
+   =================================================================== */
+@layer components {
+  /* Every clickable surface: buttons, nav items, table row actions,
+     dropdown triggers, card CTAs. */
+  .interactive {
+    transition: background-color 150ms ease, border-color 150ms ease, transform 100ms ease, box-shadow 200ms ease;
+  }
+  .interactive:hover { transform: translateY(-1px); }
+  .interactive:active { transform: translateY(0) scale(0.98); transition-duration: 60ms; }
+
+  /* Cards: lift + accent border glow on hover. */
+  .card-hover { transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease; }
+  .card-hover:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Sidebar/nav active state — an instant fill, not a transitioned one. */
+  .nav-active { background: var(--bg-active); border-radius: 0.5rem; }
+
+  /* Page-level entrance. */
+  .page-enter { animation: fadeIn 0.25s ease-out; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Staggered children — e.g. a KPI card grid appearing one-by-one. */
+  .stagger > * { animation: fadeIn 0.3s ease-out both; }
+  .stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger > *:nth-child(6) { animation-delay: 250ms; }
+  .stagger > *:nth-child(7) { animation-delay: 300ms; }
+  .stagger > *:nth-child(8) { animation-delay: 350ms; }
+
+  /* Skeleton shimmer for loading states. */
+  .shimmer {
+    background: linear-gradient(90deg, transparent 0%, var(--bg-hover) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
 }
 

@@ -2,7 +2,31 @@ import { ChevronLeft, ChevronRight, ExternalLink, FileSearch, Search, X } from "
 import { useEffect, useState } from "react";
 import { apiErrorMessage, assetsApi } from "../api/client";
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge } from "../components/ui";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuFieldTrigger,
+  DropdownMenuItem,
+} from "../components/DropdownMenu";
 import type { Asset, Severity } from "../types/api";
+
+const ASSET_TYPE_OPTIONS = [
+  { value: "", label: "All asset types" },
+  { value: "application", label: "Application" },
+  { value: "library", label: "Library" },
+  { value: "algorithm", label: "Algorithm" },
+  { value: "certificate", label: "Certificate" },
+  { value: "protocol", label: "Protocol" },
+  { value: "configuration", label: "Configuration" },
+];
+
+const SEVERITY_OPTIONS = [
+  { value: "", label: "All severities" },
+  { value: "critical", label: "Critical" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+];
 
 export function AssetExplorer() {
   const [search, setSearch] = useState("");
@@ -45,36 +69,44 @@ export function AssetExplorer() {
               placeholder="Search asset, algorithm, evidence, or location"
             />
           </label>
-          <select
-            value={assetType}
-            onChange={(event) => {
-              setAssetType(event.target.value);
-              setPage(1);
-            }}
-            className="field"
-          >
-            <option value="">All asset types</option>
-            <option value="application">Application</option>
-            <option value="library">Library</option>
-            <option value="algorithm">Algorithm</option>
-            <option value="certificate">Certificate</option>
-            <option value="protocol">Protocol</option>
-            <option value="configuration">Configuration</option>
-          </select>
-          <select
-            value={severity}
-            onChange={(event) => {
-              setSeverity(event.target.value);
-              setPage(1);
-            }}
-            className="field"
-          >
-            <option value="">All severities</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+          <DropdownMenu>
+            <DropdownMenuFieldTrigger>
+              {ASSET_TYPE_OPTIONS.find((o) => o.value === assetType)?.label ?? "All asset types"}
+            </DropdownMenuFieldTrigger>
+            <DropdownMenuContent>
+              {ASSET_TYPE_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  selected={option.value === assetType}
+                  onSelect={() => {
+                    setAssetType(option.value);
+                    setPage(1);
+                  }}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuFieldTrigger>
+              {SEVERITY_OPTIONS.find((o) => o.value === severity)?.label ?? "All severities"}
+            </DropdownMenuFieldTrigger>
+            <DropdownMenuContent>
+              {SEVERITY_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  selected={option.value === severity}
+                  onSelect={() => {
+                    setSeverity(option.value);
+                    setPage(1);
+                  }}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </Card>
 
