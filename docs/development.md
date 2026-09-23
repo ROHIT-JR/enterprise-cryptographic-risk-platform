@@ -183,6 +183,11 @@ Set `ECDAT_DATABASE_URL` first so Alembic targets the database you mean. Two rul
 2. **Make a revision safe on a fresh database.** The first revision builds the *current* schema on an
    empty database, so later revisions must skip a column or table that already exists. Check with
    the inspector before `add_column` or `create_table`, as the existing revisions do.
+3. **Use `op.batch_alter_table` to alter an existing column** (change `nullable`, a type, and so
+   on). SQLite has no `ALTER COLUMN`; batch mode recreates the table there and is a plain
+   `ALTER COLUMN` on backends that support it directly, such as Postgres. `tests/test_migrations.py`
+   proves the guarded branches by downgrading a migrated database and upgrading it again, and CI
+   runs that same test against a real Postgres service container, not only SQLite.
 
 ## Tests and quality checks
 

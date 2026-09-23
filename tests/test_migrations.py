@@ -53,7 +53,13 @@ def test_revision_chain_resolves_to_a_single_head():
 
 @pytest.fixture
 def migrated(tmp_path):
-    url = f"sqlite+pysqlite:///{tmp_path / 'migrated.db'}"
+    # ECDAT_TEST_MIGRATIONS_URL lets CI point every test in this module at a real Postgres
+    # service container instead of a throwaway SQLite file, so the same assertions run against
+    # the engine the production Compose stack actually uses. All tests in this module share that
+    # one database when it is set (Postgres tests run sequentially, not with pytest-xdist), and
+    # each test that touches it leaves it at `head` again before returning.
+    default_url = f"sqlite+pysqlite:///{tmp_path / 'migrated.db'}"
+    url = os.environ.get("ECDAT_TEST_MIGRATIONS_URL") or default_url
     result = _alembic(url, "upgrade", "head")
     assert result.returncode == 0, result.stderr[-2000:]
     return url
@@ -81,3 +87,39 @@ def test_upgrading_twice_is_a_no_op(migrated):
     again = _alembic(migrated, "upgrade", "head")
     assert again.returncode == 0, again.stderr[-2000:]
     assert _alembic(migrated, "current").returncode == 0
+
+
+def test_upgrade_head_adds_the_phase4_columns_to_a_database_that_predates_them(migrated):
+    """On a genuinely fresh database, revision 20260829_01's `create_all` already builds every
+    column, so the phase4 migrations' `if column not in columns: add it` guards never run on any
+    of the tests above — every one of them upgrades a database that never lacked the columns.
+
+    Downgrading to the base revision runs the real, unguarded `downgrade()` functions and drops
+    those columns and the `crypto_lifecycle_events` table, producing exactly the schema the
+    guards describe: "databases created before this revision". Upgrading again is the first time
+    any test exercises the add-column branches themselves, on SQLite and (in CI) on Postgres.
+
+    This does not exercise the `constraints`/lifecycle backfill UPDATE statements against
+    pre-existing rows with NULL values: reaching that state would need a row that predates the
+    column, which a downgrade (drops the column, destroying its data) cannot simulate. The
+    guard's existence check — the thing that previously crashed with "column already exists" —
+    is what this test covers.
+    """
+    result = _alembic(migrated, "downgrade", "20260829_01")
+    assert result.returncode == 0, result.stderr[-2000:]
+    engine = create_engine(migrated)
+    inspector = inspect(engine)
+    assert "priority_score" not in {c["name"] for c in inspector.get_columns("migration_plan")}
+    assert "crypto_lifecycle_events" not in inspector.get_table_names()
+
+    result = _alembic(migrated, "upgrade", "head")
+    assert result.returncode == 0, result.stderr[-2000:]
+
+    inspector = inspect(create_engine(migrated))
+    for name, table in Base.metadata.tables.items():
+        actual = {column["name"] for column in inspector.get_columns(name)}
+        assert actual == {column.name for column in table.columns}, name
+    with engine.connect() as connection:
+        stamped = connection.execute(text("SELECT version_num FROM alembic_version")).scalar()
+    scripts = ScriptDirectory.from_config(Config(str(ROOT / "alembic.ini")))
+    assert stamped == scripts.get_current_head()

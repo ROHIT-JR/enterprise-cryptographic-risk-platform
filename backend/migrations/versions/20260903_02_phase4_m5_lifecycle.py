@@ -28,19 +28,27 @@ def upgrade() -> None:
 
 
 def _add_asset_lifecycle_columns() -> None:
-    # Asset table modifications
-    op.add_column('assets', sa.Column('lifecycle_state', sa.String(length=32), nullable=True))
-    op.add_column('assets', sa.Column('governance_status', sa.String(length=32), nullable=True))
-    op.add_column('assets', sa.Column('lifecycle_updated_at', sa.DateTime(timezone=True), nullable=True))
-    
+    # SQLite has no ALTER COLUMN, so locking these to NOT NULL after backfilling has to go
+    # through Alembic's batch mode (it recreates the table on SQLite; it is a plain ALTER
+    # COLUMN, with no recreation, on backends that support it directly, such as Postgres).
+    with op.batch_alter_table("assets") as batch_op:
+        batch_op.add_column(sa.Column('lifecycle_state', sa.String(length=32), nullable=True))
+        batch_op.add_column(sa.Column('governance_status', sa.String(length=32), nullable=True))
+        batch_op.add_column(
+            sa.Column('lifecycle_updated_at', sa.DateTime(timezone=True), nullable=True)
+        )
+
     op.execute("UPDATE assets SET lifecycle_state = 'DISCOVERED' WHERE lifecycle_state IS NULL")
     op.execute("UPDATE assets SET governance_status = 'ACTIVE' WHERE governance_status IS NULL")
     op.execute("UPDATE assets SET lifecycle_updated_at = CURRENT_TIMESTAMP WHERE lifecycle_updated_at IS NULL")
-    
-    op.alter_column('assets', 'lifecycle_state', nullable=False)
-    op.alter_column('assets', 'governance_status', nullable=False)
-    op.alter_column('assets', 'lifecycle_updated_at', nullable=False)
-    
+
+    with op.batch_alter_table("assets") as batch_op:
+        batch_op.alter_column('lifecycle_state', existing_type=sa.String(length=32), nullable=False)
+        batch_op.alter_column('governance_status', existing_type=sa.String(length=32), nullable=False)
+        batch_op.alter_column(
+            'lifecycle_updated_at', existing_type=sa.DateTime(timezone=True), nullable=False
+        )
+
     op.create_index(op.f('ix_assets_lifecycle_state'), 'assets', ['lifecycle_state'], unique=False)
     op.create_index(op.f('ix_assets_governance_status'), 'assets', ['governance_status'], unique=False)
 
