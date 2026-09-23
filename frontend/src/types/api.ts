@@ -159,6 +159,14 @@ export interface IntelligenceRiskData {
   items: IntelligenceItem[];
 }
 
+export interface BlastRadiusImpactSummary {
+  total_affected: number;
+  by_degree: Record<string, number>;
+  critical_systems: number;
+  estimated_effort_hours: number;
+  critical_path: string[];
+}
+
 export interface BlastRadiusData {
   asset_id: string | null;
   asset_name: string | null;
@@ -166,6 +174,7 @@ export interface BlastRadiusData {
   centrality_score: number;
   nodes: GraphNode[];
   edges: GraphEdge[];
+  impact_summary: BlastRadiusImpactSummary;
 }
 
 export interface MigrationRecommendation {
