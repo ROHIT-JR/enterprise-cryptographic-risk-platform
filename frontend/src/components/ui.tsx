@@ -117,6 +117,41 @@ export function LoadingState({ label = "Loading cryptographic intelligence telem
   );
 }
 
+function SkeletonBlock({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`shimmer rounded-xl ${className}`}
+      style={{ background: "var(--bg-hover)" }}
+    />
+  );
+}
+
+/**
+ * Shimmer skeleton for whole-page loading states (issue #73) — replaces a
+ * bare spinner with a layout-shaped placeholder so the page doesn't visually
+ * "pop" once data arrives. `rows` controls how many list/table rows to fake
+ * below the header + KPI-card placeholders.
+ */
+export function PageSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <SkeletonBlock className="h-3 w-32" />
+          <SkeletonBlock className="h-6 w-64" />
+        </div>
+        <SkeletonBlock className="h-9 w-36" />
+      </div>
+      <div className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => <SkeletonBlock key={i} className="h-24" />)}
+      </div>
+      <div className="space-y-2">
+        {Array.from({ length: rows }, (_, i) => <SkeletonBlock key={i} className="h-14" />)}
+      </div>
+    </div>
+  );
+}
+
 export function ErrorState({ message, retry }: { message: string; retry?: () => void }) {
   return (
     <Card className="flex min-h-48 flex-col items-center justify-center p-6 text-center" style={{ borderColor: "var(--risk-critical)", opacity: 0.94 }}>

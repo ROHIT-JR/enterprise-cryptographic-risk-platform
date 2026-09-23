@@ -218,13 +218,17 @@ export function Layout() {
         <SidebarContent role={user.role} collapsed={collapsed} onToggleCollapse={() => setCollapsed((v) => !v)} />
       </aside>
 
-      {/* Mobile sidebar overlay */}
+      {/* Mobile sidebar — a slide-over sheet, not a permanently-expanded panel */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button className="absolute inset-0 bg-black/60 backdrop-blur-xs" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />
-          <aside className="relative flex h-full w-60 flex-col shadow-2xl">
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+          <button
+            className="animate-fade-in absolute inset-0 bg-black/60 backdrop-blur-xs"
+            aria-label="Close navigation"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="animate-sheet-slide-in relative flex h-full w-60 flex-col shadow-2xl">
             <button
-              className="absolute right-2 top-2.5 z-10 rounded p-1.5 transition hover:bg-[var(--bg-hover)]"
+              className="interactive absolute right-2 top-2.5 z-10 rounded p-1.5 hover:bg-[var(--bg-hover)]"
               style={{ color: "var(--text-muted)" }}
               onClick={() => setMobileOpen(false)}
               aria-label="Close navigation"

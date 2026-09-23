@@ -184,7 +184,7 @@ function GraphCanvas() {
   const selectedNode = selectedId ? nodesById.get(selectedId) ?? null : null;
 
   return (
-    <div className="page-enter space-y-6">
+    <div className="page-enter space-y-8">
       <PageHeader
         eyebrow="Dependency intelligence"
         title="Knowledge graph"

@@ -1,6 +1,6 @@
-import { CheckCircle2, Fingerprint, Network, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Fingerprint, Network, ShieldAlert, Sparkles } from "lucide-react";
 import { intelligenceApi, apiErrorMessage } from "../api/client";
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge } from "../components/ui";
+import { Card, EmptyState, ErrorState, PageHeader, PageSkeleton, SeverityBadge } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import type { CryptoAgilityBand } from "../types/api";
 
@@ -30,7 +30,7 @@ function CryptoAgilityCard() {
   if (loading) {
     return (
       <Card className="p-5">
-        <LoadingState label="Computing crypto-agility score" />
+        <div className="shimmer h-24 rounded-xl" style={{ background: "var(--bg-hover)" }} />
       </Card>
     );
   }
@@ -40,7 +40,7 @@ function CryptoAgilityCard() {
 
   const style = BAND_STYLE[data.band];
   return (
-    <Card className="overflow-hidden">
+    <Card className="card-hover overflow-hidden">
       <div className="flex flex-col gap-4 border-b border-zinc-100 p-5 md:flex-row md:items-center md:justify-between md:p-6">
         <div>
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">
@@ -101,10 +101,10 @@ function CryptoAgilityCard() {
 
 export function AssetIntelligence() {
   const { data, error, loading, reload } = useAsync(intelligenceApi.risk, []);
-  if (loading) return <LoadingState label="Correlating cryptographic evidence" />;
+  if (loading) return <PageSkeleton rows={4} />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
   return (
-    <div className="space-y-8">
+    <div className="page-enter space-y-8">
       <PageHeader
         eyebrow="Evidence intelligence"
         title="Asset intelligence"
@@ -112,9 +112,9 @@ export function AssetIntelligence() {
       />
       <CryptoAgilityCard />
       {data.items.length ? (
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="stagger grid gap-5 xl:grid-cols-2">
           {data.items.map((item) => (
-            <Card key={item.asset_id} className="p-5 md:p-6">
+            <Card key={item.asset_id} className="card-hover p-5 md:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">
@@ -151,7 +151,22 @@ export function AssetIntelligence() {
                   ))}
                 </div>
               </div>
-              <p className="mt-5 line-clamp-2 text-xs leading-relaxed text-zinc-600">{item.explanations[0]}</p>
+              {item.explanations[0] && (
+                <div
+                  className="mt-5 flex items-start gap-2.5 rounded-xl border p-3"
+                  style={{ borderColor: "var(--accent)", background: "var(--accent-soft)" }}
+                >
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: "var(--accent)", color: "var(--text-on-accent)" }}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </span>
+                  <p className="line-clamp-2 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                    {item.explanations[0]}
+                  </p>
+                </div>
+              )}
             </Card>
           ))}
         </div>
