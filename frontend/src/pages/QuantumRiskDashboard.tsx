@@ -1,5 +1,5 @@
-import { Activity, Atom, DatabaseZap, ShieldAlert } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, Atom, Banknote, CheckCircle2, DatabaseZap, ShieldAlert, ShieldCheck } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -14,6 +14,10 @@ import {
 } from "recharts";
 import { intelligenceApi, apiErrorMessage } from "../api/client";
 import { MoscaSection } from "../components/mosca/MoscaSection";
+import { QDayCountdown, type QDayScenario } from "../components/hndl/QDayCountdown";
+import { HNDLTimeline } from "../components/hndl/HNDLTimeline";
+import { HNDLRiskMatrix, classifyHNDL, type HNDLRow } from "../components/hndl/HNDLRiskMatrix";
+import { NumberTicker, NumberTickerLabeled } from "../components/NumberTicker";
 import {
   Card,
   EmptyState,
@@ -25,315 +29,291 @@ import {
 import { useAsync } from "../hooks/useAsync";
 import type { IntelligenceItem } from "../types/api";
 
-const colors: Record<string, string> = {
-  critical: "#dc2626",
-  high:     "#ea580c",
-  medium:   "#d97706",
-  low:      "#16a34a",
-  secure:   "#4f46e5",
-  unknown:  "#71717a",
+const SEVERITY_CHART_COLORS: Record<string, string> = {
+  critical: "var(--risk-critical)",
+  high: "var(--risk-high)",
+  medium: "var(--risk-medium)",
+  low: "var(--risk-low)",
+  secure: "var(--accent)",
+  unknown: "var(--text-muted)",
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-// Derive data sensitivity label from hndl_risk
-function sensitivityLabel(item: IntelligenceItem): string {
-  if (item.hndl_risk === "critical") return "Top Secret";
-  if (item.hndl_risk === "high")     return "Confidential";
-  if (item.hndl_risk === "medium")   return "Sensitive";
-  return "Internal";
+// Real config default (config/quantum_timeline.json) used as the "Moderate"
+// scenario baseline; Optimistic/Pessimistic are +/-5yr heuristic offsets
+// around it, not independently-sourced estimates.
+const MODERATE_QUANTUM_YEAR = 2035;
+const SCENARIO_YEARS: Record<Exclude<QDayScenario, "custom">, number> = {
+  optimistic: MODERATE_QUANTUM_YEAR + 5,
+  moderate: MODERATE_QUANTUM_YEAR,
+  pessimistic: MODERATE_QUANTUM_YEAR - 5,
+};
+
+// Illustrative estimate, not measured telemetry — we don't have real
+// network traffic volume data, so this scales with how many quantum-
+// vulnerable assets were actually discovered. Documented the same way
+// estimateDataLifetime() below already documents its own heuristic.
+function estimateTbPerYear(vulnerableAssetCount: number): number {
+  return Math.round(vulnerableAssetCount * 1.8 * 10) / 10;
 }
 
-// Estimate data lifetime (years) from hndl_score (0-100 → 0-30 years proxy)
+// Derive data sensitivity label from hndl_risk (no raw sensitivity field
+// is returned by the API — hndl_risk is itself derived from it server-side).
+function sensitivityLabel(item: IntelligenceItem): string {
+  if (item.hndl_risk === "critical") return "top secret";
+  if (item.hndl_risk === "high") return "confidential";
+  if (item.hndl_risk === "medium") return "sensitive";
+  return "internal";
+}
+
+// Estimate data lifetime (years) from hndl_score (0-100 -> proxy years).
 function estimateDataLifetime(item: IntelligenceItem): number {
   return Math.round((item.hndl_score / 100) * 25) + 3;
 }
 
-// ─────────────────────────────────────────────
-// HNDL Timeline component
-// ─────────────────────────────────────────────
-function HndlTimeline({ quantumYear }: { quantumYear: number }) {
-  const timeToQuantum = quantumYear - CURRENT_YEAR;
-  const totalSpan = 2045 - CURRENT_YEAR;
-  const markerPct = Math.round(((quantumYear - CURRENT_YEAR) / totalSpan) * 100);
-
-  return (
-    <Card className="p-6">
-      <p className="mb-1 text-base font-semibold text-slate-900">HNDL Threat Timeline</p>
-      <p className="mb-5 text-xs text-slate-500">
-        Adversaries harvest encrypted data today to decrypt it once quantum computers arrive. Adjust the slider to estimate quantum arrival timing.
-      </p>
-
-      {/* Timeline bar */}
-      <div className="relative h-16 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
-        {/* Zones */}
-        <div
-          className="absolute inset-y-0 left-0 flex items-center justify-center border-r border-red-200 bg-red-50/80 transition-all duration-200"
-          style={{ width: `${markerPct}%` }}
-        >
-          <div className="flex items-center gap-2 px-3">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="animate-data-packet h-2.5 w-4 rounded-sm bg-red-400"
-                style={{ animationDelay: `${i * 0.8}s` }}
-              />
-            ))}
-            <span className="hidden text-[11px] font-medium text-red-700 sm:block">
-              Harvesting window
-            </span>
-          </div>
-        </div>
-        <div
-          className="absolute inset-y-0 right-0 flex items-center justify-center bg-amber-50/70 transition-all duration-200"
-          style={{ width: `${100 - markerPct}%` }}
-        >
-          <div className="flex items-center gap-2 px-3">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="animate-decrypt h-2.5 w-4 rounded-sm bg-amber-400"
-                style={{ animationDelay: `${i * 0.6 + 1}s` }}
-              />
-            ))}
-            <span className="hidden text-[11px] font-medium text-amber-800 sm:block">
-              Decryption era
-            </span>
-          </div>
-        </div>
-
-        {/* Quantum arrival marker line */}
-        <div
-          className="absolute inset-y-0 z-10 flex flex-col items-center"
-          style={{ left: `${markerPct}%`, transform: "translateX(-50%)" }}
-        >
-          <div className="h-full w-px border-l-2 border-dashed border-indigo-500" />
-          <div className="absolute top-1.5 flex items-center gap-1 whitespace-nowrap rounded-md border border-indigo-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-indigo-700 shadow-sm">
-            Q-Day {quantumYear}
-          </div>
-        </div>
-      </div>
-
-      {/* Year labels */}
-      <div className="mt-2 flex justify-between text-xs text-slate-400">
-        <span>{CURRENT_YEAR} (Today)</span>
-        <span className="font-semibold text-indigo-600">Estimated Q-Day: {quantumYear}</span>
-        <span>2045</span>
-      </div>
-
-      {/* Time indicators */}
-      <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
-        <div className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-red-500" />
-          {timeToQuantum} years until Q-day — active data retention is exposed
-        </div>
-        <div className="flex items-center gap-1.5 ml-auto text-slate-400">
-          Slide below to evaluate different arrival scenarios
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────
-// HNDL Asset Card
-// ─────────────────────────────────────────────
-function HndlAssetCard({ item, quantumYear }: { item: IntelligenceItem; quantumYear: number }) {
-  const timeToQuantum = quantumYear - CURRENT_YEAR;
-  const dataLifetime = estimateDataLifetime(item);
-  const isAtRisk = dataLifetime > timeToQuantum;
-  const sensitivity = sensitivityLabel(item);
-
-  return (
-    <Card className={`p-4 transition ${
-      isAtRisk
-        ? "border-red-200 bg-red-50/20"
-        : "border-slate-200 bg-white"
-    }`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-slate-900">{item.asset_name}</p>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {item.algorithm ?? item.asset_type} · {item.project_name}
-          </p>
-        </div>
-        <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] ${
-          isAtRisk
-            ? "border-red-200 bg-red-50 text-red-700"
-            : "border-green-200 bg-green-50 text-green-700"
-        }`}>
-          {isAtRisk ? "At Risk" : "Safe"}
-        </span>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-          <p className="text-slate-400">Data sensitivity</p>
-          <p className="mt-0.5 font-semibold text-slate-800">{sensitivity}</p>
-        </div>
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-          <p className="text-slate-400">Est. data lifetime</p>
-          <p className="mt-0.5 font-semibold text-slate-800">{dataLifetime} years</p>
-        </div>
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-          <p className="text-slate-400">Time to Q-day</p>
-          <p className={`mt-0.5 font-semibold ${isAtRisk ? "text-red-600" : "text-emerald-600"}`}>
-            {timeToQuantum} years
-          </p>
-        </div>
-        <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-          <p className="text-slate-400">HNDL score</p>
-          <p className="mt-0.5 font-semibold text-slate-800">{Math.round(item.hndl_score)}/100</p>
-        </div>
-      </div>
-      {isAtRisk && (
-        <p className="mt-2.5 text-[11px] text-red-600">
-          Harvested today could be decrypted in {timeToQuantum} years — before its {dataLifetime}-year retention expires.
-        </p>
-      )}
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────
-// Main page
-// ─────────────────────────────────────────────
 export function QuantumRiskDashboard() {
   const { data, error, loading, reload } = useAsync(intelligenceApi.risk, []);
-  const [quantumYear, setQuantumYear] = useState(2032);
+  const [scenario, setScenario] = useState<QDayScenario>("moderate");
+  const [customYear, setCustomYear] = useState(MODERATE_QUANTUM_YEAR);
+
+  const quantumYear = scenario === "custom" ? customYear : SCENARIO_YEARS[scenario];
+  const yearsUntilQuantum = quantumYear - CURRENT_YEAR;
+
+  const hndlRows = useMemo<HNDLRow[]>(() => {
+    if (!data) return [];
+    return data.items.map((item) => {
+      const dataLifetimeYears = estimateDataLifetime(item);
+      const quantumSafe = item.quantum_score < 50;
+      const status = classifyHNDL({ dataLifetimeYears, quantumSafe, yearsUntilQuantum });
+      return {
+        assetId: item.asset_id,
+        assetName: item.asset_name,
+        algorithm: item.algorithm ?? item.asset_type,
+        sensitivity: sensitivityLabel(item),
+        dataLifetimeYears,
+        quantumBreakYear: quantumYear,
+        status,
+      };
+    });
+  }, [data, quantumYear, yearsUntilQuantum]);
 
   if (loading) return <LoadingState label="Calculating quantum risk intelligence" />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
 
   const metrics = [
-    { label: "Vulnerable assets",    value: data.metrics.vulnerable_assets,       icon: Atom,        color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Critical quantum risks", value: data.metrics.critical_quantum_risks, icon: ShieldAlert, color: "text-red-600",    bg: "bg-red-50" },
-    { label: "HNDL exposures",       value: data.metrics.hndl_exposures,           icon: DatabaseZap, color: "text-amber-600",  bg: "bg-amber-50" },
-    { label: "Average risk score",   value: data.metrics.average_risk_score,       icon: Activity,    color: "text-blue-600",   bg: "bg-blue-50" },
+    { label: "Vulnerable assets", value: data.metrics.vulnerable_assets, icon: Atom },
+    { label: "Critical quantum risks", value: data.metrics.critical_quantum_risks, icon: ShieldAlert },
+    { label: "HNDL exposures", value: data.metrics.hndl_exposures, icon: DatabaseZap },
+    { label: "Average risk score", value: data.metrics.average_risk_score, icon: ShieldCheck },
   ];
 
-  const atRiskCount = data.items.filter(
-    (item) => estimateDataLifetime(item) > (quantumYear - CURRENT_YEAR),
-  ).length;
+  const atRiskRows = hndlRows.filter((r) => r.status === "at_risk");
+  const atRiskCount = atRiskRows.length;
+  const topSecretAtRiskCount = atRiskRows.filter((r) => r.sensitivity === "top secret").length;
+  const criticalDataOverExposedPercent = hndlRows.length
+    ? Math.round((atRiskCount / hndlRows.length) * 100)
+    : 0;
+
+  const vulnerableAssetCount = data.metrics.vulnerable_assets;
+  const tbPerYear = estimateTbPerYear(vulnerableAssetCount);
+  const vulnerableAlgorithms = [...new Set(data.items.filter((i) => i.quantum_score >= 50).map((i) => i.algorithm ?? i.asset_type))];
+  const topAtRiskAsset = atRiskRows[0]?.assetName ?? null;
+  // How long adversaries have plausibly been harvesting — same illustrative
+  // framing as the rest of this page, not a measured start date.
+  const yearsHarvestedSoFar = Math.max(1, CURRENT_YEAR - 2020);
 
   return (
-    <div className="space-y-8">
+    <div className="page-enter space-y-8">
       <PageHeader
         eyebrow="Phase 2 intelligence"
         title="Quantum risk dashboard"
         description="Prioritize cryptographic exposure using quantum vulnerability, HNDL, blast radius, business impact, migration complexity, and evidence confidence."
       />
 
+      {/* Q-Day Countdown */}
+      <QDayCountdown
+        scenario={scenario}
+        onScenarioChange={setScenario}
+        quantumYear={quantumYear}
+        customYear={customYear}
+        onCustomYearChange={setCustomYear}
+      />
+
       <MoscaSection />
 
       {/* Metrics row */}
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className="p-5">
+      <section className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(({ label, value, icon: Icon }) => (
+          <Card key={label} className="card-hover p-5">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-slate-500">{label}</p>
-                <p className="tabular-nums mt-2.5 text-3xl font-semibold text-slate-900">{value}</p>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>{label}</p>
+                <p className="tabular-nums mt-2.5 text-3xl font-semibold" style={{ color: "var(--text-primary)" }}>
+                  <NumberTicker end={value} duration={1.1} decimals={Number.isInteger(value) ? 0 : 1} />
+                </p>
               </div>
-              <span className={`rounded-lg p-2.5 ${bg} ${color}`}><Icon className="h-5 w-5" /></span>
+              <span className="rounded-lg p-2.5" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
+                <Icon className="h-5 w-5" />
+              </span>
             </div>
           </Card>
         ))}
       </section>
 
-      {/* HNDL Timeline */}
-      <section className="space-y-4">
-        <HndlTimeline quantumYear={quantumYear} />
-        {/* Slider Card */}
-        <Card className="p-4 flex flex-col sm:flex-row items-center gap-4">
-          <span className="text-xs font-medium text-slate-600 shrink-0">Adjust Q-Day Target:</span>
-          <input
-            type="range"
-            min={2028}
-            max={2045}
-            value={quantumYear}
-            onChange={(e) => setQuantumYear(Number(e.target.value))}
-            className="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-blue-600"
-          />
-          <span className="tabular-nums shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-800">
-            {quantumYear}
-          </span>
-        </Card>
-        <p className="text-xs text-slate-500 px-1">
-          {atRiskCount} of {data.items.length} analyzed assets are exposed to Harvest Now, Decrypt Later threats based on a Q-Day of {quantumYear}.
+      {/* HNDL Attack Flow */}
+      <section className="space-y-3">
+        <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>
+          HNDL Attack Flow
         </p>
+        <HNDLTimeline
+          tbPerYear={tbPerYear}
+          algorithmsIntercepted={vulnerableAlgorithms}
+          yearsHarvested={yearsHarvestedSoFar}
+          topAtRiskAsset={topAtRiskAsset}
+        />
+      </section>
+
+      {/* Organization HNDL Exposure Summary */}
+      <section>
+        <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>
+          Your HNDL Exposure
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card className="p-5">
+            <NumberTickerLabeled end={atRiskCount} label={`of ${hndlRows.length} assets at HNDL risk`} dotColor="var(--risk-critical)" />
+            <div className="mt-3 h-1.5 w-full rounded-full" style={{ background: "var(--bg-hover)" }}>
+              <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${criticalDataOverExposedPercent}%`, background: "var(--risk-critical)" }} />
+            </div>
+          </Card>
+          <Card className="p-5">
+            <NumberTickerLabeled end={topSecretAtRiskCount} label="top-secret assets at risk" dotColor="var(--risk-high)" />
+            <div className="mt-3 h-1.5 w-full rounded-full" style={{ background: "var(--bg-hover)" }}>
+              <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${hndlRows.length ? Math.round((topSecretAtRiskCount / hndlRows.length) * 100) : 0}%`, background: "var(--risk-high)" }} />
+            </div>
+          </Card>
+          <Card className="p-5">
+            <NumberTickerLabeled end={criticalDataOverExposedPercent} label="% of scored data at risk" dotColor="var(--accent)" />
+            <div className="mt-3 h-1.5 w-full rounded-full" style={{ background: "var(--bg-hover)" }}>
+              <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${criticalDataOverExposedPercent}%`, background: "var(--accent)" }} />
+            </div>
+          </Card>
+        </div>
+        {yearsUntilQuantum > 0 && (
+          <p className="mt-3 flex items-center gap-2 text-xs" style={{ color: "var(--text-secondary)" }}>
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--risk-high)" }} />
+            An adversary harvesting your RSA-encrypted traffic today will be able to read it within approximately {yearsUntilQuantum} years.
+          </p>
+        )}
+      </section>
+
+      {/* What's At Stake */}
+      <section className="grid gap-4 md:grid-cols-2">
+        <Card className="p-5" style={{ borderColor: "var(--risk-critical)" }}>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" style={{ color: "var(--risk-critical)" }} />
+            <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>If no action is taken</p>
+          </div>
+          <ul className="mt-3 space-y-2 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            <li>Customer financial records with long data-retention periods could be exposed once quantum computers arrive.</li>
+            <li>Competitor-sensitive business communications intercepted today become decryptable.</li>
+            <li>Potential compliance exposure under RBI/NQM cryptographic-modernization guidance.</li>
+            <li>
+              Average cost of a data breach: <strong style={{ color: "var(--text-primary)" }}>$4.88M</strong> (~₹40.5 crore) — IBM
+              Cost of a Data Breach Report 2024. HNDL-driven breaches compound this via retroactive exposure of data harvested years earlier.
+            </li>
+          </ul>
+        </Card>
+        <Card className="p-5" style={{ borderColor: "var(--risk-low)" }}>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4" style={{ color: "var(--risk-low)" }} />
+            <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>If migration starts now</p>
+          </div>
+          <ul className="mt-3 space-y-2 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            <li>Data captured after migration remains protected through the quantum transition.</li>
+            <li>Progress toward NQM Phase 1 (cryptographic inventory &amp; assessment) compliance.</li>
+            <li>
+              Estimated migration effort for currently at-risk assets:{" "}
+              <strong style={{ color: "var(--text-primary)" }}>{atRiskCount * 6} engineering hours</strong> — a fraction of the cost of a breach.
+            </li>
+            <li className="flex items-center gap-1.5">
+              <Banknote className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--risk-low)" }} />
+              India's National Quantum Mission budget: ₹6,003 crore over 8 years — national-level investment signal for PQC readiness.
+            </li>
+          </ul>
+        </Card>
       </section>
 
       {/* Charts */}
       <section className="grid gap-5 xl:grid-cols-2">
         <Card className="p-5 md:p-6">
-          <p className="text-sm font-semibold text-slate-900">Algorithm vulnerability</p>
-          <p className="mt-1 text-xs text-slate-400">Quantum classification across discovered cryptography</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Algorithm vulnerability</p>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Quantum classification across discovered cryptography</p>
           <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.algorithm_vulnerability_distribution}>
-                <CartesianGrid vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis allowDecimals={false} tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 12 }} />
-                <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 0, 0]} maxBarSize={44} />
+                <CartesianGrid vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fill: "var(--text-muted)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12, color: "var(--text-primary)" }} cursor={{ fill: "var(--bg-hover)" }} />
+                <Bar dataKey="value" fill="var(--accent)" radius={[6, 6, 0, 0]} maxBarSize={44} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
 
         <Card className="p-5 md:p-6">
-          <p className="text-sm font-semibold text-slate-900">Final risk severity</p>
-          <p className="mt-1 text-xs text-slate-400">Normalized ECDAT score from six intelligence factors</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Final risk severity</p>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Normalized ECDAT score from six intelligence factors</p>
           <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={data.severity_distribution} dataKey="value" nameKey="name" innerRadius={68} outerRadius={105} paddingAngle={3} stroke="none">
                   {data.severity_distribution.map((item) => (
-                    <Cell key={item.name} fill={colors[item.name] ?? "#94a3b8"} />
+                    <Cell key={item.name} fill={SEVERITY_CHART_COLORS[item.name] ?? "var(--text-muted)"} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 12 }} />
+                <Tooltip contentStyle={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12, color: "var(--text-primary)" }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </Card>
       </section>
 
-      {/* Per-asset HNDL risk cards */}
-      {data.items.length > 0 && (
+      {/* Per-Asset HNDL Risk Matrix */}
+      {hndlRows.length > 0 ? (
         <section>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">Per-asset HNDL risk</p>
-            <span className="text-xs text-slate-500">
-              Q-Day: <span className="font-semibold text-indigo-600">{quantumYear}</span>
-            </span>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {data.items.map((item) => (
-              <HndlAssetCard key={item.asset_id} item={item} quantumYear={quantumYear} />
-            ))}
-          </div>
+          <p className="mb-3 font-mono text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>
+            Per-Asset HNDL Risk Matrix
+          </p>
+          <HNDLRiskMatrix rows={hndlRows} />
         </section>
+      ) : (
+        <Card><EmptyState title="No intelligence yet" body="Complete a discovery scan to calculate Phase 2 risk." /></Card>
       )}
 
       {/* Highest-priority assets table */}
       <Card className="overflow-hidden">
-        <div className="border-b border-slate-100 px-5 py-4">
-          <p className="text-sm font-semibold text-slate-900">Highest-priority assets</p>
+        <div className="border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Highest-priority assets</p>
         </div>
         {data.items.length ? (
-          <div className="divide-y divide-slate-100">
-            {data.items.slice(0, 6).map((item) => (
-              <div key={item.asset_id} className="grid gap-3 px-5 py-4 transition hover:bg-slate-50 md:grid-cols-[1fr_140px_140px_120px] md:items-center">
+          <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+            {data.items.slice(0, 6).map((item, index) => (
+              <div
+                key={item.asset_id}
+                className="interactive grid gap-3 px-5 py-4 hover:bg-[var(--bg-hover)] md:grid-cols-[1fr_140px_140px_120px] md:items-center"
+                style={{ background: index % 2 === 1 ? "var(--bg-hover)" : "transparent" }}
+              >
                 <div>
-                  <p className="text-sm font-medium text-slate-900">{item.asset_name}</p>
-                  <p className="mt-1 text-xs text-slate-500">{item.algorithm ?? item.asset_type} · {item.dependent_systems} affected systems</p>
+                  <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.asset_name}</p>
+                  <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>{item.algorithm ?? item.asset_type} · {item.dependent_systems} affected systems</p>
                 </div>
-                <p className="text-xs text-slate-500">HNDL <span className="font-medium capitalize text-amber-700">{item.hndl_risk}</span></p>
-                <p className="text-xs text-slate-500">Confidence <span className="font-medium text-blue-600">{item.evidence_confidence}%</span></p>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>HNDL <span className="font-medium capitalize" style={{ color: "var(--risk-high)" }}>{item.hndl_risk}</span></p>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>Confidence <span className="font-medium" style={{ color: "var(--accent)" }}>{item.evidence_confidence}%</span></p>
                 <div className="flex items-center gap-2">
                   <SeverityBadge severity={item.severity} />
-                  <span className="tabular-nums font-mono text-sm font-semibold text-slate-800">{Math.round(item.final_score)}</span>
+                  <span className="tabular-nums font-mono text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{Math.round(item.final_score)}</span>
                 </div>
               </div>
             ))}
