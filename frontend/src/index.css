@@ -38,6 +38,10 @@
   --risk-medium: #d97706;
   --risk-low: #16a34a;
   --q-safe: #16a34a;
+
+  /* Decorative asset-type tints (graph node coloring — not risk-semantic). */
+  --tint-library: #9333ea;
+  --tint-protocol: #0d9488;
 }
 
 :root[data-theme="dark"] {
@@ -69,6 +73,9 @@
   --risk-medium: #fbbf24;
   --risk-low: #4ade80;
   --q-safe: #4ade80;
+
+  --tint-library: #c084fc;
+  --tint-protocol: #2dd4bf;
 }
 } /* end @layer base (design tokens) */
 
