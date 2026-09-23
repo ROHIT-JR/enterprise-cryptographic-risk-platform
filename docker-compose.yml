@@ -64,7 +64,10 @@ services:
       - ./knowledge_graph:/app/knowledge_graph
       - ./risk_engine:/app/risk_engine
       - ./graph_analysis:/app/graph_analysis
+      - ./migration_engine:/app/migration_engine
       - ./lifecycle_engine:/app/lifecycle_engine
+      - ./benchmarks:/app/benchmarks
+      - ./config:/app/config
       - ./sample_data:/app/sample_data:ro
       - scan_data:/app/scan-data
       - /var/run/docker.sock:/var/run/docker.sock

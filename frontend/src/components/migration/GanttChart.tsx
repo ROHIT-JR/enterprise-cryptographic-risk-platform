@@ -122,18 +122,25 @@ export function GanttChart({
                   className="interactive card-hover absolute inset-y-1 rounded-md border"
                   style={{
                     left: `${left}%`,
-                    width: `${Math.max(width, 4)}%`,
+                    width: `${Math.max(width, 2)}%`,
                     background: `color-mix(in srgb, ${color} 14%, var(--bg-card))`,
                     borderColor: color,
                     boxShadow: isSelected ? `0 0 0 2px ${color}` : "none",
                   }}
                   onClick={() => onSelectWave(isSelected ? null : wave.wave)}
-                  title={`Depends on: ${prevWave ? `Wave ${prevWave.wave}` : "none (foundation layer)"}`}
+                  title={`Months ${wave.startMonth + 1}–${wave.endMonth} · ${wave.totalHours}h — depends on: ${prevWave ? `Wave ${prevWave.wave}` : "none (foundation layer)"}`}
+                />
+                {/* Label sits next to the bar rather than inside it — Q-Day can be
+                    years past a short migration window, which shrinks the bar to a
+                    sliver too narrow to hold its own text (found via live visual
+                    check: "Months 3-9 · 22h" was clipped mid-word inside a ~6%-wide
+                    bar). An external label is legible at any bar width. */}
+                <span
+                  className="pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-[11px] font-semibold"
+                  style={{ left: `calc(${left}% + ${Math.max(width, 2)}% + 8px)`, color }}
                 >
-                  <span className="flex h-full items-center justify-center truncate px-2 text-[11px] font-semibold" style={{ color }}>
-                    Months {wave.startMonth + 1}–{wave.endMonth} · {wave.totalHours}h
-                  </span>
-                </button>
+                  Months {wave.startMonth + 1}–{wave.endMonth} · {wave.totalHours}h
+                </span>
               </div>
             </div>
           );
