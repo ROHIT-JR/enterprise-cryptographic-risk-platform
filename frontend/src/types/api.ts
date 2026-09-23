@@ -193,6 +193,8 @@ export interface MigrationRecommendation {
     metrics?: Record<string, string>;
     constraints?: string[];
   };
+  dependent_systems: number;
+  estimated_hours: number;
 }
 
 export interface MigrationRoadmap {
