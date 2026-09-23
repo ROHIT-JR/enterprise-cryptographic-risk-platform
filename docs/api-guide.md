@@ -149,7 +149,7 @@ endpoint reference below says which role an endpoint requires.
 | --- | --- | --- | --- | --- | --- |
 | `manage_users` | List and create users |  |  |  | yes |
 | `configure_organization` | Change organization settings |  |  |  | yes |
-| `view_scans` | Read scans and inventory *(no endpoint requires it yet)* | yes | yes | yes | yes |
+| `view_scans` | Read scans and inventory | yes | yes | yes | yes |
 | `run_scans` | Start scans, create projects, run benchmarks |  |  | yes | yes |
 | `analyze_risks` | Set business context for an asset |  |  | yes | yes |
 | `create_migration_plans` | Create migration plans *(no endpoint requires it yet)* |  |  | yes | yes |
@@ -193,13 +193,13 @@ Find cryptography and inventory it: start repository, container and TLS scans, f
 | `GET /api/v1/projects` | List this organization's projects, most recently updated first. | Any signed-in user |
 | `POST /api/v1/projects` | Create a project. | `security_analyst` and above |
 | `GET /api/v1/projects/{project_id}` | Return one project by ID. | Any signed-in user |
-| `GET /api/v1/scans` | List this organization's scans, newest first, optionally filtered by project. | Any signed-in user |
+| `GET /api/v1/scans` | List this organization's scans, newest first, optionally filtered by project. | `viewer` and above |
 | `POST /api/v1/scans/docker` | Start a discovery scan of a container image. | `security_analyst` and above |
 | `POST /api/v1/scans/repository` | Upload a ZIP archive of a repository and start a discovery scan. | `security_analyst` and above |
 | `POST /api/v1/scans/tls` | Start a discovery scan of a TLS endpoint. | `security_analyst` and above |
-| `GET /api/v1/scans/{scan_id}` | Return one scan with its status, progress and summary. | Any signed-in user |
-| `GET /api/v1/scans/{scan_id}/cbom` | Return the cryptographic bill of materials produced by a completed scan. | Any signed-in user |
-| `GET /api/v1/scans/{scan_id}/stream` | Live scan progress as Server-Sent Events. | Any signed-in user |
+| `GET /api/v1/scans/{scan_id}` | Return one scan with its status, progress and summary. | `viewer` and above |
+| `GET /api/v1/scans/{scan_id}/cbom` | Return the cryptographic bill of materials produced by a completed scan. | `viewer` and above |
+| `GET /api/v1/scans/{scan_id}/stream` | Live scan progress as Server-Sent Events. | `viewer` and above |
 
 #### Intelligence
 

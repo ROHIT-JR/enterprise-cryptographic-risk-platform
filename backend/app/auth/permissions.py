@@ -14,6 +14,8 @@ class Permission(StrEnum):
     VIEW_SCANS = "view_scans"
     RUN_SCANS = "run_scans"
     ANALYZE_RISKS = "analyze_risks"
+    # Reserved: migration plans are computed on request (GET /migration/roadmap), not persisted,
+    # so there is no "create" action to gate yet. Enforce this once a save/approve endpoint exists.
     CREATE_MIGRATION_PLANS = "create_migration_plans"
     VIEW_REPORTS = "view_reports"
     EXPORT_FINDINGS = "export_findings"

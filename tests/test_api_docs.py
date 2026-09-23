@@ -100,6 +100,21 @@ def test_api_metadata_explains_authentication(spec):
     assert "HTTPBearer" in spec["components"]["securitySchemes"]
 
 
+def test_scan_read_endpoints_require_view_scans(spec):
+    """These four returned `Any signed-in user` in the docs until an organization could add a
+    role without view_scans and discover, by accident, that nothing had ever enforced it."""
+    scopes = {"view_scans"}
+    for path in (
+        "/api/v1/scans",
+        "/api/v1/scans/{scan_id}",
+        "/api/v1/scans/{scan_id}/stream",
+        "/api/v1/scans/{scan_id}/cbom",
+    ):
+        security = spec["paths"][path]["get"].get("security") or []
+        granted = {scope for entry in security for scope in entry.get("HTTPBearer", [])}
+        assert scopes <= granted, f"GET {path}: expected view_scans, got {sorted(granted)}"
+
+
 def test_operations_document_how_they_fail(spec):
     missing = []
     for path, method, operation in operations(spec):

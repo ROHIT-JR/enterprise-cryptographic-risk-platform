@@ -209,7 +209,7 @@ def list_scans(
     project_id: str | None = None,
     limit: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_permissions(Permission.VIEW_SCANS)),
 ) -> list[Scan]:
     """List this organization's scans, newest first, optionally filtered by project."""
     statement = select(Scan)
@@ -224,7 +224,7 @@ def list_scans(
 def get_scan(
     scan_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_permissions(Permission.VIEW_SCANS)),
 ) -> Scan:
     """Return one scan with its status, progress and summary.
 
@@ -246,7 +246,7 @@ def _sse_event(payload: dict[str, Any]) -> str:
 async def stream_scan_progress(
     scan_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_permissions(Permission.VIEW_SCANS)),
 ) -> StreamingResponse:
     """Live scan progress as Server-Sent Events.
 
@@ -299,7 +299,7 @@ async def stream_scan_progress(
 def get_cbom(
     scan_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_permissions(Permission.VIEW_SCANS)),
 ) -> CBOMResponse:
     """Return the cryptographic bill of materials produced by a completed scan.
 
