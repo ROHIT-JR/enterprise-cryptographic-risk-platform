@@ -6,6 +6,13 @@ import type { RiskFinding, Severity } from "../types/api";
 
 const severityOrder: (Severity | "all")[] = ["all", "critical", "high", "medium", "low"];
 
+const severityBarColor: Record<Severity, string> = {
+  critical: "var(--risk-critical)",
+  high: "var(--risk-high)",
+  medium: "var(--risk-medium)",
+  low: "var(--risk-low)",
+};
+
 export function RiskAnalysis() {
   const [severity, setSeverity] = useState<Severity | "all">("all");
   const [data, setData] = useState<Awaited<ReturnType<typeof risksApi.list>> | null>(null);
@@ -58,15 +65,16 @@ export function RiskAnalysis() {
               <p className="mt-0.5 font-mono text-xs text-zinc-500">{data.total} scored assets</p>
             </div>
             <div className="divide-y divide-zinc-100">
-              {data.items.map((risk) => (
+              {data.items.map((risk, index) => (
                 <button
                   key={risk.id}
                   onClick={() => setSelected(risk)}
-                  className={`flex w-full items-center gap-4 px-5 py-4 text-left transition ${
+                  className={`interactive flex w-full items-center gap-4 px-5 py-4 text-left ${
                     selected?.id === risk.id
                       ? "bg-indigo-50/70 border-l-2 border-indigo-600 pl-[18px]"
-                      : "hover:bg-zinc-50"
+                      : "hover:bg-[var(--bg-hover)]"
                   }`}
+                  style={selected?.id !== risk.id ? { background: index % 2 === 1 ? "var(--bg-hover)" : "transparent" } : undefined}
                 >
                   <div className="grid h-10 w-10 shrink-0 place-items-center rounded border border-zinc-200 bg-zinc-50 font-mono text-xs font-bold text-zinc-950">
                     {Math.round(risk.score)}
@@ -76,6 +84,12 @@ export function RiskAnalysis() {
                     <p className="mt-0.5 truncate font-mono text-[11px] text-zinc-500">
                       {risk.project_name} · {risk.asset_type}
                     </p>
+                    <div className="mt-1.5 h-1 w-full max-w-[140px] rounded-full" style={{ background: "var(--bg-hover)" }}>
+                      <div
+                        className="h-1 rounded-full"
+                        style={{ width: `${Math.min(100, risk.score)}%`, background: severityBarColor[risk.severity] }}
+                      />
+                    </div>
                   </div>
                   <SeverityBadge severity={risk.severity} />
                   <ChevronRight className="h-4 w-4 text-zinc-400" />
@@ -178,16 +192,19 @@ function RiskDetails({ finding }: { finding: RiskFinding }) {
 }
 
 function ScoreGauge({ score, severity }: { score: number; severity: Severity }) {
-  const color = severity === "critical" ? "#dc2626" : severity === "high" ? "#ea580c" : severity === "medium" ? "#d97706" : "#16a34a";
+  const color = severityBarColor[severity];
   return (
     <div
       className="relative grid h-32 w-32 shrink-0 place-items-center rounded-full"
-      style={{ background: `conic-gradient(${color} ${score * 3.6}deg, #e4e4e7 0deg)` }}
+      style={{ background: `conic-gradient(${color} ${score * 3.6}deg, var(--border) 0deg)` }}
     >
-      <div className="grid h-[106px] w-[106px] place-items-center rounded-full bg-white text-center shadow-xs border border-zinc-100">
+      <div
+        className="grid h-[106px] w-[106px] place-items-center rounded-full text-center shadow-xs border"
+        style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}
+      >
         <div>
-          <p className="text-3xl font-bold tracking-tight text-zinc-950">{Math.round(score)}</p>
-          <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-zinc-500">risk score</p>
+          <p className="text-3xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>{Math.round(score)}</p>
+          <p className="font-mono text-[9px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>risk score</p>
         </div>
       </div>
     </div>
