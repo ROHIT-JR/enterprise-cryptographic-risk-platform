@@ -96,6 +96,13 @@ class MigrationRecommendationResponse(BaseModel):
     risk_score: float | None
     reasons: list[str]
     recommendation: dict[str, Any]
+    # Real, already-computed elsewhere (RiskAnalysis.dependent_systems is the
+    # same figure the blast-radius endpoint uses) rather than a new estimate.
+    dependent_systems: int = 0
+    # Heuristic effort estimate keyed off migration_complexity's own label
+    # (see MigrationComplexityEngine) - documented in migration.py where it's
+    # computed, same style as the blast-radius endpoint's effort heuristic.
+    estimated_hours: int = 0
 
 
 class MigrationRoadmapWave(BaseModel):
