@@ -1,6 +1,7 @@
 import { ArrowRight, Gauge, KeyRound, Sparkles, type LucideIcon } from "lucide-react";
 import { migrationApi, apiErrorMessage } from "../api/client";
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { ShineBorder } from "../components/ShineBorder";
 import { useAsync } from "../hooks/useAsync";
 
 export function PQCRecommendations() {
@@ -17,10 +18,10 @@ export function PQCRecommendations() {
       />
       {cryptographic.length ? (
         <div className="grid gap-5 xl:grid-cols-2">
-          {cryptographic.map((item) => {
+          {cryptographic.map((item, index) => {
             const metrics = item.recommendation.metrics ?? {};
-            return (
-              <Card key={item.asset_id} className="overflow-hidden">
+            const card = (
+              <Card className="overflow-hidden">
                 <div className="border-b border-zinc-200 bg-zinc-50/60 p-5 md:p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -59,6 +60,14 @@ export function PQCRecommendations() {
                   )}
                 </div>
               </Card>
+            );
+            // Top-priority recommendation (Wave 1, first in the API's own
+            // priority order) gets the ShineBorder treatment — exactly one
+            // card per screen, per issue #67's "signal, not noise" rule.
+            return (
+              <div key={item.asset_id}>
+                {index === 0 ? <ShineBorder>{card}</ShineBorder> : card}
+              </div>
             );
           })}
         </div>
