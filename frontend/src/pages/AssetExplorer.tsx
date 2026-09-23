@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, ExternalLink, FileSearch, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiErrorMessage, assetsApi } from "../api/client";
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge } from "../components/ui";
+import { Card, EmptyState, ErrorState, PageHeader, PageSkeleton, SeverityBadge } from "../components/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -111,11 +111,11 @@ export function AssetExplorer() {
       </Card>
 
       {loading ? (
-        <LoadingState label="Loading asset inventory" />
+        <PageSkeleton rows={6} />
       ) : error ? (
         <ErrorState message={apiErrorMessage(error)} />
       ) : data ? (
-        <Card className="overflow-hidden">
+        <Card className="card-hover overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] text-left">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500">
@@ -133,7 +133,7 @@ export function AssetExplorer() {
                   <tr
                     key={asset.id}
                     onClick={() => setSelected(asset)}
-                    className="cursor-pointer text-sm transition hover:bg-zinc-50/80"
+                    className="interactive cursor-pointer text-sm hover:bg-zinc-50/80"
                   >
                     <td className="px-5 py-4">
                       <p className="font-semibold text-zinc-950">{asset.name}</p>

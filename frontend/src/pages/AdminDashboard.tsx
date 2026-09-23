@@ -1,6 +1,6 @@
 import { Activity, Building2, Database, Network, Users } from "lucide-react";
 import { enterpriseApi, apiErrorMessage } from "../api/client";
-import { Card, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { Card, ErrorState, PageHeader, PageSkeleton } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 
 export function AdminDashboard() {
@@ -13,7 +13,7 @@ export function AdminDashboard() {
     },
     [],
   );
-  if (loading) return <LoadingState label="Loading enterprise administration" />;
+  if (loading) return <PageSkeleton rows={3} />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
   const metrics = [
     ["Organizations", data.overview.organizations, Building2], ["Users", data.overview.users, Users],
@@ -28,7 +28,7 @@ export function AdminDashboard() {
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(([label, value, Icon]) => (
-          <Card key={label} className="p-5">
+          <Card key={label} className="card-hover p-5">
             <Icon className="h-5 w-5 text-indigo-600" strokeWidth={1.75} />
             <p className="mt-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{label}</p>
             <p className="mt-1 text-3xl font-bold tracking-tight text-zinc-950">{value}</p>

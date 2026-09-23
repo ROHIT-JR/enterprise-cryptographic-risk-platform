@@ -1,7 +1,7 @@
 import { ArrowDown, ChevronDown, ChevronUp, Clock, Route, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { migrationApi, apiErrorMessage } from "../api/client";
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge } from "../components/ui";
+import { Card, EmptyState, ErrorState, PageHeader, PageSkeleton, SeverityBadge } from "../components/ui";
 import { NumberTicker } from "../components/NumberTicker";
 import { GanttChart, computeWaveSchedule } from "../components/migration/GanttChart";
 import { CostOfDelay } from "../components/migration/CostOfDelay";
@@ -46,7 +46,7 @@ export function MigrationPlanner() {
     return { count: cheapest.length, hours, assets: cheapest.map((i) => i.asset_name) };
   }, [data]);
 
-  if (loading) return <LoadingState label="Building dependency-aware migration waves" />;
+  if (loading) return <PageSkeleton rows={5} />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
 
   return (

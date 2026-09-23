@@ -146,7 +146,7 @@ export function Dashboard() {
   const riskColorFor = (name: string) => riskColors[name] ?? "var(--text-muted)";
 
   return (
-    <div className="page-enter space-y-5">
+    <div className="page-enter space-y-8">
       <PageHeader
         eyebrow="Posture Intelligence"
         title="Cryptographic Risk Overview"

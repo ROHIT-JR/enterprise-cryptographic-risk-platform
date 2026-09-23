@@ -1,12 +1,12 @@
 import { ArrowRight, Gauge, KeyRound, Sparkles, type LucideIcon } from "lucide-react";
 import { migrationApi, apiErrorMessage } from "../api/client";
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { Card, EmptyState, ErrorState, PageHeader, PageSkeleton } from "../components/ui";
 import { ShineBorder } from "../components/ShineBorder";
 import { useAsync } from "../hooks/useAsync";
 
 export function PQCRecommendations() {
   const { data, error, loading, reload } = useAsync(migrationApi.recommendations, []);
-  if (loading) return <LoadingState label="Selecting post-quantum alternatives" />;
+  if (loading) return <PageSkeleton rows={3} />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
   const cryptographic = data.filter((item) => !["application", "library"].includes(item.asset_type));
   return (
@@ -21,7 +21,7 @@ export function PQCRecommendations() {
           {cryptographic.map((item, index) => {
             const metrics = item.recommendation.metrics ?? {};
             const card = (
-              <Card className="overflow-hidden">
+              <Card className="card-hover overflow-hidden">
                 <div className="border-b border-zinc-200 bg-zinc-50/60 p-5 md:p-6">
                   <div className="flex items-center justify-between">
                     <div>

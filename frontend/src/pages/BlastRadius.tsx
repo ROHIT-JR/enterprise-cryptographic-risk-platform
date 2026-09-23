@@ -227,7 +227,7 @@ export function BlastRadius() {
   };
 
   return (
-    <div className="page-enter space-y-6">
+    <div className="page-enter space-y-8">
       <PageHeader
         eyebrow="Dependency centrality"
         title="Blast radius visualization"

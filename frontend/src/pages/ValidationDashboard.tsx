@@ -2,7 +2,7 @@ import { AlertCircle, Clock } from "lucide-react";
 import { useState } from "react";
 import { apiErrorMessage, validationApi } from "../api/client";
 import { MigrationVerification } from "../components/MigrationVerification";
-import { Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { Card, CardContent, CardHeader, CardTitle, EmptyState, ErrorState, PageHeader, PageSkeleton } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import type { ValidationBaseline } from "../types/api";
 
@@ -15,14 +15,14 @@ const TABS: { id: Tab; label: string }[] = [
 
 function MigrationVerificationPanel() {
   const { data, error, loading, reload } = useAsync(() => validationApi.migrations(), []);
-  if (loading) return <LoadingState label="Verifying migration plans" />;
+  if (loading) return <PageSkeleton rows={3} />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
   return <MigrationVerification report={data} />;
 }
 
 function ScalabilityPanel() {
   const { data, error, loading, reload } = useAsync(() => validationApi.baseline(), []);
-  if (loading) return <LoadingState label="Loading benchmark results" />;
+  if (loading) return <PageSkeleton rows={3} />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
   if (data.status === "error") return <ErrorState message={data.message} retry={() => void reload()} />;
 
@@ -40,7 +40,7 @@ function ScalabilityPanel() {
 
   const experiments = [...baseline.experiments].sort((a, b) => a.nodes - b.nodes);
   return (
-    <Card>
+    <Card className="card-hover">
       <CardHeader>
         <CardTitle>Graph Analytics Scalability</CardTitle>
         <div className="text-right font-mono text-[11px] text-zinc-500">
@@ -68,7 +68,7 @@ function ScalabilityPanel() {
               {experiments.map((experiment) => {
                 const betweenness = experiment.stages.betweenness_centrality;
                 return (
-                  <tr key={`${experiment.topology}-${experiment.nodes}`} className="transition hover:bg-zinc-50/80">
+                  <tr key={`${experiment.topology}-${experiment.nodes}`} className="interactive hover:bg-zinc-50/80">
                     <td className="p-3 font-semibold capitalize text-zinc-900">{experiment.topology}</td>
                     <td className="p-3 font-mono text-zinc-700">{experiment.graph_nodes}</td>
                     <td className="p-3 font-mono text-zinc-700">{experiment.graph_edges}</td>
@@ -76,17 +76,26 @@ function ScalabilityPanel() {
                     <td className="p-3">
                       {betweenness?.status === "skipped" ? (
                         <span
-                          className="flex items-center gap-1 font-mono text-xs font-semibold text-amber-700"
+                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider"
+                          style={{ background: "color-mix(in srgb, var(--risk-medium) 14%, transparent)", color: "var(--risk-medium)" }}
                           title={betweenness.reason}
                         >
-                          <AlertCircle className="h-3.5 w-3.5" aria-hidden /> SKIPPED
+                          <AlertCircle className="h-3 w-3" aria-hidden /> Skipped
                         </span>
                       ) : betweenness?.status === "measured" ? (
-                        <span className="flex items-center gap-1 font-mono text-xs font-semibold text-emerald-700">
-                          <Clock className="h-3.5 w-3.5" aria-hidden /> {betweenness.duration_ms} ms
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider"
+                          style={{ background: "color-mix(in srgb, var(--risk-low) 14%, transparent)", color: "var(--risk-low)" }}
+                        >
+                          <Clock className="h-3 w-3" aria-hidden /> {betweenness.duration_ms} ms
                         </span>
                       ) : (
-                        <span className="font-mono text-zinc-400">N/A</span>
+                        <span
+                          className="inline-flex items-center rounded-full px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider"
+                          style={{ background: "var(--bg-hover)", color: "var(--text-muted)" }}
+                        >
+                          N/A
+                        </span>
                       )}
                     </td>
                     <td className="p-3 font-mono text-zinc-700">
@@ -116,7 +125,7 @@ function ScalabilityPanel() {
 export function ValidationDashboard() {
   const [tab, setTab] = useState<Tab>("migrations");
   return (
-    <div className="space-y-5">
+    <div className="page-enter space-y-8">
       <PageHeader
         eyebrow="Research"
         title="Research & Validation"
@@ -132,7 +141,7 @@ export function ValidationDashboard() {
             aria-selected={tab === id}
             aria-controls={`validation-panel-${id}`}
             onClick={() => setTab(id)}
-            className={`-mb-px border-b-2 px-3 py-2 text-xs font-medium transition ${
+            className={`interactive -mb-px border-b-2 px-3 py-2 text-xs font-medium ${
               tab === id ? "border-indigo-600 text-zinc-950" : "border-transparent text-zinc-500 hover:text-zinc-800"
             }`}
           >
