@@ -214,16 +214,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 /* Blast radius propagation animations */
 @keyframes pulse-glow-red {
-  0%, 100% { box-shadow: 0 0 0 1px #dc2626; }
-  50%       { box-shadow: 0 0 0 3px rgba(220,38,38,0.25); }
+  0%, 100% { box-shadow: 0 0 0 1px var(--risk-critical); }
+  50%       { box-shadow: 0 0 0 3px color-mix(in srgb, var(--risk-critical) 25%, transparent); }
 }
 @keyframes pulse-glow-orange {
-  0%, 100% { box-shadow: 0 0 0 1px #ea580c; }
-  50%       { box-shadow: 0 0 0 3px rgba(234,88,12,0.20); }
+  0%, 100% { box-shadow: 0 0 0 1px var(--risk-high); }
+  50%       { box-shadow: 0 0 0 3px color-mix(in srgb, var(--risk-high) 20%, transparent); }
 }
 @keyframes pulse-glow-amber {
-  0%, 100% { box-shadow: 0 0 0 1px #d97706; }
-  50%       { box-shadow: 0 0 0 3px rgba(217,119,6,0.18); }
+  0%, 100% { box-shadow: 0 0 0 1px var(--risk-medium); }
+  50%       { box-shadow: 0 0 0 3px color-mix(in srgb, var(--risk-medium) 18%, transparent); }
 }
 @keyframes edge-flow {
   0%   { stroke-dashoffset: 20; }
