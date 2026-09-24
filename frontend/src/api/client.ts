@@ -116,6 +116,20 @@ export const scansApi = {
     body.append("criticality", criticality);
     return (await api.post<Scan>("/scans/repository", body)).data;
   },
+  repositoryUrl: async (
+    url: string,
+    branch: string | undefined,
+    projectName: string,
+    criticality: Criticality,
+  ) =>
+    (
+      await api.post<Scan>("/scans/repository-url", {
+        url,
+        branch: branch || undefined,
+        project_name: projectName,
+        criticality,
+      })
+    ).data,
   docker: async (image: string, projectName: string, criticality: Criticality) =>
     (
       await api.post<Scan>("/scans/docker", {

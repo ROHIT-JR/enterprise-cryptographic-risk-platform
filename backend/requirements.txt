@@ -12,3 +12,4 @@ networkx==3.4.2
 numpy==2.2.3
 scipy==1.18.1
 reportlab==5.0.1
+httpx==0.28.1

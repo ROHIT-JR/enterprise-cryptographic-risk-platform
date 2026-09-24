@@ -26,8 +26,19 @@ from backend.app.auth.permissions import Permission
 from backend.app.config import get_settings
 from backend.app.database import get_db
 from backend.app.models import Scan, User
-from backend.app.schemas.scan import CBOMResponse, DockerScanRequest, ScanResponse, TLSScanRequest
+from backend.app.schemas.scan import (
+    CBOMResponse,
+    DockerScanRequest,
+    RepositoryUrlScanRequest,
+    ScanResponse,
+    TLSScanRequest,
+)
 from backend.app.services.audit_service import record_audit
+from backend.app.services.github_fetch import (
+    InvalidRepositoryUrlError,
+    download_github_archive,
+    parse_github_repo_url,
+)
 from backend.app.services.orchestrator import run_scan_job
 from backend.app.services.scan_events import subscribe, unsubscribe
 from backend.app.services.scan_service import create_scan, get_or_create_project
@@ -102,6 +113,72 @@ async def scan_repository(
         organization_id=organization_id,
         user=user if isinstance(user, User) else None,
         metadata={"scan_id": scan.id, "filename": filename},
+    )
+    db.commit()
+    return scan
+
+
+@router.post(
+    "/repository-url",
+    response_model=ScanResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(require_permissions(Permission.RUN_SCANS))],
+)
+async def scan_repository_url(
+    payload: RepositoryUrlScanRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Scan:
+    try:
+        owner, repo = parse_github_repo_url(payload.url)
+    except InvalidRepositoryUrlError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    organization_id = resolve_organization_id(db, user)
+    project = get_or_create_project(
+        db,
+        name=payload.project_name,
+        criticality=payload.criticality,
+        organization_id=organization_id,
+    )
+    scan = create_scan(
+        db,
+        project=project,
+        source_type=ScanSource.REPOSITORY.value,
+        target=f"{owner}/{repo}",
+    )
+    db.commit()
+    db.refresh(scan)
+
+    settings = get_settings()
+    job_directory = (settings.scan_storage_path / scan.id).resolve()
+    archive_path = job_directory / "repository.zip"
+    job_directory.mkdir(parents=True, exist_ok=False)
+    try:
+        branch_used = await download_github_archive(
+            owner, repo, payload.branch, archive_path, settings.max_upload_bytes
+        )
+    except InvalidRepositoryUrlError as exc:
+        shutil.rmtree(job_directory, ignore_errors=True)
+        scan.status = "failed"
+        scan.error_message = str(exc)
+        db.commit()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception:
+        shutil.rmtree(job_directory, ignore_errors=True)
+        scan.status = "failed"
+        scan.error_message = "Repository download could not be completed"
+        db.commit()
+        raise
+
+    background_tasks.add_task(run_scan_job, scan.id, str(archive_path))
+    record_audit(
+        db,
+        action="repository.fetched",
+        organization_id=organization_id,
+        user=user if isinstance(user, User) else None,
+        metadata={"scan_id": scan.id, "url": payload.url, "branch": branch_used},
     )
     db.commit()
     return scan

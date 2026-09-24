@@ -16,6 +16,17 @@ class TLSScanRequest(BaseModel):
     criticality: Literal["low", "medium", "high", "critical"] = "medium"
 
 
+class RepositoryUrlScanRequest(BaseModel):
+    url: str = Field(
+        min_length=1,
+        max_length=512,
+        examples=["https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform"],
+    )
+    branch: str | None = Field(default=None, max_length=250)
+    project_name: str = Field(min_length=2, max_length=160)
+    criticality: Literal["low", "medium", "high", "critical"] = "medium"
+
+
 class ScanResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
