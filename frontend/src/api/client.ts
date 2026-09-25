@@ -14,6 +14,7 @@ import type {
   RiskPage,
   Scan,
   AuthUser,
+  UserRole,
   TokenResponse,
   Organization,
   AuditLog,
@@ -185,6 +186,12 @@ export const authApi = {
     (await api.post<TokenResponse>("/auth/refresh", { refresh_token: refreshToken })).data,
   logout: async (refreshToken: string) =>
     api.post("/auth/logout", { refresh_token: refreshToken }),
+};
+
+export const usersApi = {
+  list: async () => (await api.get<AuthUser[]>("/users")).data,
+  create: async (payload: { username: string; email: string; password: string; role: UserRole }) =>
+    (await api.post<AuthUser>("/users", payload)).data,
 };
 
 export const enterpriseApi = {

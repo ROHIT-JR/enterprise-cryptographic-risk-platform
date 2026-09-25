@@ -5,6 +5,13 @@ import type { AuthUser } from "../types/api";
 interface AuthContextValue {
   user: AuthUser | null;
   login: (organization: string, username: string, password: string) => Promise<void>;
+  register: (payload: {
+    organization_name: string;
+    industry?: string;
+    username: string;
+    email: string;
+    password: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -17,6 +24,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       login: async (organization, username, password) => {
         const tokens = await authApi.login(organization, username, password);
+        authStorage.save(tokens);
+        setUser(tokens.user);
+      },
+      register: async (payload) => {
+        const tokens = await authApi.register(payload);
         authStorage.save(tokens);
         setUser(tokens.user);
       },

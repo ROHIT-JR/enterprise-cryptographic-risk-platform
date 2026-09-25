@@ -17,6 +17,7 @@ const MigrationPlanner = lazy(() => import("./pages/MigrationPlanner").then((mod
 const PQCRecommendations = lazy(() => import("./pages/PQCRecommendations").then((module) => ({ default: module.PQCRecommendations })));
 const PQCBenchmarks = lazy(() => import("./pages/PQCBenchmarks").then((module) => ({ default: module.PQCBenchmarks })));
 const Login = lazy(() => import("./pages/Login").then((module) => ({ default: module.Login })));
+const Register = lazy(() => import("./pages/Register").then((module) => ({ default: module.Register })));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then((module) => ({ default: module.AdminDashboard })));
 const SecurityOperations = lazy(() => import("./pages/SecurityOperations").then((module) => ({ default: module.SecurityOperations })));
 const AuditorView = lazy(() => import("./pages/AuditorView").then((module) => ({ default: module.AuditorView })));
@@ -31,6 +32,7 @@ export default function App() {
         <Suspense fallback={<div className="min-h-screen bg-ink-950"><LoadingState /></div>}>
           <Routes>
             <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
