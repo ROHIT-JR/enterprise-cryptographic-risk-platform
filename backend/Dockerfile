@@ -33,7 +33,7 @@ COPY sample_data /app/sample_data
 COPY alembic.ini /app/alembic.ini
 COPY backend/migrations /app/backend/migrations
 
-RUN mkdir -p /app/scan-data && chown -R ecdat:ecdat /app
+RUN mkdir -p /app/scan-data && chown -R ecdat:ecdat /app && chmod +x /app/backend/start.sh
 
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
