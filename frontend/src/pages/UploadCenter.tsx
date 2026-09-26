@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   FileArchive,
   FileSearch,
+  GitBranch,
   Globe2,
   Loader2,
   Play,
@@ -23,6 +24,7 @@ import { useScanProgress } from "../hooks/useScanProgress";
 import type { Criticality, Scan } from "../types/api";
 
 type ScanKind = "repository" | "docker" | "tls";
+type RepositorySource = "zip" | "url";
 
 function scanStage(scan: Scan): string {
   if (scan.status === "failed") return "PIPELINE_FAILED";
@@ -37,7 +39,10 @@ export function UploadCenter() {
   const [projectName, setProjectName] = useState("SecureBank Enterprise Core");
   const [criticality, setCriticality] = useState<Criticality>("critical");
   const [selectedKind, setSelectedKind] = useState<ScanKind>("repository");
+  const [repositorySource, setRepositorySource] = useState<RepositorySource>("zip");
   const [file, setFile] = useState<File | null>(null);
+  const [repoUrl, setRepoUrl] = useState("");
+  const [repoBranch, setRepoBranch] = useState("");
   const [dockerImage, setDockerImage] = useState("nginx:1.27-alpine");
   const [tlsEndpoint, setTlsEndpoint] = useState("api.securebank.internal:443");
   const [activeSubmitting, setActiveSubmitting] = useState<boolean>(false);
@@ -71,11 +76,16 @@ export function UploadCenter() {
     setActiveSubmitting(true);
     try {
       let next: Scan;
-      if (selectedKind === "repository") {
+      if (selectedKind === "repository" && repositorySource === "zip") {
         if (!file) {
           throw new Error("Target archive required. Select or drag a valid ZIP package.");
         }
         next = await scansApi.repository(file, projectName, criticality);
+      } else if (selectedKind === "repository" && repositorySource === "url") {
+        if (!repoUrl.trim()) {
+          throw new Error("Repository URL required, e.g. https://github.com/owner/repo");
+        }
+        next = await scansApi.repositoryUrl(repoUrl.trim(), repoBranch.trim(), projectName, criticality);
       } else if (selectedKind === "docker") {
         next = await scansApi.docker(dockerImage, projectName, criticality);
       } else {
@@ -173,7 +183,64 @@ export function UploadCenter() {
         <form onSubmit={handleSubmit} className="p-5">
           {selectedKind === "repository" && (
             <div className="space-y-4">
+              {/* Zip upload vs GitHub URL sub-toggle */}
+              <div className="inline-flex rounded-lg border p-0.5" style={{ borderColor: "var(--border)" }}>
+                <button
+                  type="button"
+                  onClick={() => setRepositorySource("zip")}
+                  className={`interactive rounded-md px-3 py-1.5 font-mono text-[11px] font-semibold ${
+                    repositorySource === "zip" ? "bg-white text-zinc-950 shadow-xs" : "text-zinc-600"
+                  }`}
+                >
+                  Upload archive
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRepositorySource("url")}
+                  className={`interactive rounded-md px-3 py-1.5 font-mono text-[11px] font-semibold ${
+                    repositorySource === "url" ? "bg-white text-zinc-950 shadow-xs" : "text-zinc-600"
+                  }`}
+                >
+                  From GitHub URL
+                </button>
+              </div>
+
+              {repositorySource === "url" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-1.5">
+                      Repository URL
+                    </label>
+                    <div className="relative">
+                      <GitBranch className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+                      <input
+                        required
+                        value={repoUrl}
+                        onChange={(e) => setRepoUrl(e.target.value)}
+                        placeholder="https://github.com/owner/repo"
+                        className="field font-mono text-xs pl-8 text-zinc-950"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-1.5">
+                      Branch (optional)
+                    </label>
+                    <input
+                      value={repoBranch}
+                      onChange={(e) => setRepoBranch(e.target.value)}
+                      placeholder="defaults to main, falls back to master"
+                      className="field font-mono text-xs text-zinc-950"
+                    />
+                  </div>
+                  <p className="font-mono text-[11px] text-zinc-500">
+                    Downloads the repository's zip archive directly from GitHub (codeload.github.com) and runs it through the same AST parser and CBOM pipeline as an uploaded archive. Only public github.com repository URLs are supported.
+                  </p>
+                </div>
+              )}
+
               {/* Drag & Drop Zone with high-contrast WCAG styling */}
+              {repositorySource === "zip" && (
               <div
                 role="button"
                 tabIndex={0}
@@ -242,6 +309,7 @@ export function UploadCenter() {
                   </div>
                 )}
               </div>
+              )}
 
               {/* Technical Parser Matrix Callout */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px] text-zinc-600">
