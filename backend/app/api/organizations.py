@@ -12,6 +12,7 @@ from backend.app.database import get_db
 from backend.app.models import Organization, User
 from backend.app.schemas.auth import (
     OrganizationCreate,
+    OrganizationDeleteRequest,
     OrganizationResponse,
     OrganizationUpdate,
 )
@@ -65,6 +66,39 @@ def create_organization(
     db.commit()
     db.refresh(organization)
     return organization
+
+
+@router.delete("/{organization_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_organization(
+    organization_id: str,
+    payload: OrganizationDeleteRequest,
+    admin: User = Depends(require_platform_admin),
+    db: Session = Depends(get_db),
+) -> None:
+    if organization_id == admin.organization_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own organization")
+    organization = db.get(Organization, organization_id)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    if payload.confirm_name.strip() != organization.name:
+        raise HTTPException(
+            status_code=400, detail="Confirmation name does not match the organization name"
+        )
+    # Logged against the platform admin's own organization, not the one being
+    # deleted — everything in the target org (including its own audit trail)
+    # is about to cascade-delete along with the row itself.
+    record_audit(
+        db,
+        action="organization.deleted",
+        organization_id=admin.organization_id,
+        user=admin,
+        metadata={
+            "deleted_organization_id": organization.id,
+            "deleted_organization_name": organization.name,
+        },
+    )
+    db.delete(organization)
+    db.commit()
 
 
 @router.put("/current", response_model=OrganizationResponse)

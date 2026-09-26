@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -17,7 +17,16 @@ def _build_engine(url: str) -> Engine:
             kwargs["poolclass"] = StaticPool
     else:
         kwargs.update({"pool_size": 10, "max_overflow": 20})
-    return create_engine(url, **kwargs)
+    built = create_engine(url, **kwargs)
+    if url.startswith("sqlite"):
+        # SQLite ignores FK constraints (including ON DELETE CASCADE) unless
+        # explicitly told to enforce them per connection.
+        @event.listens_for(built, "connect")
+        def _enable_sqlite_foreign_keys(dbapi_connection, _):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+    return built
 
 
 engine = _build_engine(get_settings().database_url)
