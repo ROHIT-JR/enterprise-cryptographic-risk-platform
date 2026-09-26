@@ -9,14 +9,23 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from backend.app.api import api_router, auth, health, phase2, phase15
 from backend.app.auth.dependencies import get_current_user
 from backend.app.config import get_settings
 from backend.app.database import SessionLocal, init_db
 from backend.app.logging_config import configure_logging
+from backend.app.openapi_docs import (
+    API_DESCRIPTION,
+    COMMON_RESPONSES,
+    OPENAPI_TAGS,
+    docs_content_security_policy,
+)
 from backend.app.security import RateLimitMiddleware
+
+REPOSITORY_URL = "https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform"
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -53,10 +62,15 @@ def create_app() -> FastAPI:
     application = FastAPI(
         title=settings.app_name,
         version="0.3.0",
-        description="Multi-organization enterprise cryptographic intelligence API.",
-        docs_url="/docs",
-        redoc_url="/redoc",
+        description=API_DESCRIPTION,
+        openapi_tags=OPENAPI_TAGS,
+        contact={"name": "ECDAT-X maintainers", "url": REPOSITORY_URL},
+        license_info={"name": "Apache-2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0"},
+        # /docs and /redoc are served by the routes below, under a CSP those pages can run with.
+        docs_url=None,
+        redoc_url=None,
         openapi_url=f"{settings.api_prefix}/openapi.json",
+        swagger_ui_parameters={"persistAuthorization": True, "displayRequestDuration": True},
         lifespan=lifespan,
     )
     application.add_middleware(
@@ -81,9 +95,10 @@ def create_app() -> FastAPI:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; frame-ancestors 'none'; base-uri 'self'"
-        )
+        if "Content-Security-Policy" not in response.headers:
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+            )
         if settings.environment.lower() == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         logger.info(
@@ -122,13 +137,46 @@ def create_app() -> FastAPI:
             content={"detail": "Internal server error", "request_id": request_id},
         )
 
+    _register_docs_pages(application, settings.api_prefix)
+
     application.include_router(health.public_router)
     application.include_router(auth.router)
     protected = [Depends(get_current_user)]
-    application.include_router(phase15.router, dependencies=protected)
-    application.include_router(phase2.router, dependencies=protected)
-    application.include_router(api_router, prefix=settings.api_prefix, dependencies=protected)
+    application.include_router(phase15.router, dependencies=protected, responses=COMMON_RESPONSES)
+    application.include_router(phase2.router, dependencies=protected, responses=COMMON_RESPONSES)
+    application.include_router(
+        api_router,
+        prefix=settings.api_prefix,
+        dependencies=protected,
+        responses=COMMON_RESPONSES,
+    )
     return application
+
+
+def _register_docs_pages(application: FastAPI, api_prefix: str) -> None:
+    """Serve /docs and /redoc under a CSP that lets their CDN assets and init script run.
+
+    The API's default policy (``default-src 'self'``) blocks Swagger UI's script, stylesheet and
+    inline initializer, which left /docs blank. Only these two pages get the wider policy, and the
+    inline script is allowed by its exact hash rather than by ``'unsafe-inline'``.
+    """
+    openapi_url = f"{api_prefix}/openapi.json"
+    swagger = get_swagger_ui_html(
+        openapi_url=openapi_url,
+        title=f"{application.title} - Swagger UI",
+        swagger_ui_parameters=application.swagger_ui_parameters,
+    )
+    redoc = get_redoc_html(openapi_url=openapi_url, title=f"{application.title} - ReDoc")
+    swagger_csp = docs_content_security_policy(swagger.body.decode("utf-8"))
+    redoc_csp = docs_content_security_policy(redoc.body.decode("utf-8"), redoc=True)
+
+    @application.get("/docs", include_in_schema=False)
+    async def swagger_ui() -> HTMLResponse:
+        return HTMLResponse(swagger.body, headers={"Content-Security-Policy": swagger_csp})
+
+    @application.get("/redoc", include_in_schema=False)
+    async def redoc_ui() -> HTMLResponse:
+        return HTMLResponse(redoc.body, headers={"Content-Security-Policy": redoc_csp})
 
 
 app = create_app()

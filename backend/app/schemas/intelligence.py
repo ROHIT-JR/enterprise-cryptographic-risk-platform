@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from backend.app.schemas.common import DistributionItem
 from backend.app.schemas.graph import GraphEdgeResponse, GraphNodeResponse
@@ -18,6 +18,22 @@ class BusinessContextUpdate(BaseModel):
     downtime_requirement: str = Field(default="standard", max_length=32)
     compatibility: str = Field(default="unknown", max_length=32)
     legacy_technology: bool = False
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "criticality": "critical",
+                    "owner": "Payments engineering",
+                    "data_lifetime_years": 15,
+                    "data_sensitivity": "financial",
+                    "downtime_requirement": "zero",
+                    "compatibility": "limited",
+                    "legacy_technology": True,
+                }
+            ]
+        }
+    )
 
 
 class BusinessContextResponse(BusinessContextUpdate):

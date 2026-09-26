@@ -29,7 +29,7 @@ from backend.app.schemas.graph import GraphResponse
 from backend.app.schemas.risk import RiskSummaryResponse
 from backend.app.schemas.scan import CBOMResponse, ScanResponse
 
-router = APIRouter(prefix="/api", tags=["phase-1.5 compatibility"])
+router = APIRouter(prefix="/api", tags=["Compatibility"])
 
 
 @router.post(
@@ -61,6 +61,7 @@ def get_assets(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AssetPage:
+    """Compatibility alias for `GET /api/v1/assets`. Prefer the versioned endpoint."""
     return list_assets(project_id, asset_type, severity, search, page, page_size, db, user)
 
 
@@ -70,6 +71,10 @@ def get_project_cbom(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> CBOMResponse:
+    """Return the combined CBOM for every completed scan in a project.
+
+    Compatibility endpoint; `GET /api/v1/scans/{scan_id}/cbom` returns the per-scan document.
+    """
     project = db.get(Project, project_id)
     if not project or (
         isinstance(user, User) and project.organization_id != user.organization_id
@@ -97,6 +102,7 @@ def get_risk_summary(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> RiskSummaryResponse:
+    """Compatibility alias for the risk summary. Prefer `GET /api/v1/risks`."""
     filters = [RiskFinding.project_id == project_id] if project_id else []
     if isinstance(user, User):
         filters.append(RiskFinding.organization_id == user.organization_id)
@@ -139,4 +145,5 @@ def get_compatibility_graph(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> GraphResponse:
+    """Compatibility alias for `GET /api/v1/graph`. Prefer the versioned endpoint."""
     return get_graph(project_id, limit, db, user)

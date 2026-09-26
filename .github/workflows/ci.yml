@@ -21,6 +21,36 @@ jobs:
       - run: ruff check backend scanners cbom_engine knowledge_graph risk_engine migration_engine tests
       - run: pytest --cov=backend --cov=scanners --cov=cbom_engine --cov=risk_engine --cov=migration_engine --cov-report=term-missing
 
+  migrations-postgres:
+    # The production Compose file runs `alembic upgrade head` against Postgres, and SQLite (used
+    # by the other backend job and by `make dev`) is forgiving about things Postgres is not, so
+    # this proves the same revisions on the real production database engine.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ecdat_user
+          POSTGRES_PASSWORD: ci-postgres-password
+          POSTGRES_DB: ecdat_migrations_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r backend/requirements-dev.txt
+      - run: pytest tests/test_migrations.py -v
+        env:
+          ECDAT_TEST_MIGRATIONS_URL: postgresql+psycopg://ecdat_user:ci-postgres-password@localhost:5432/ecdat_migrations_ci
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

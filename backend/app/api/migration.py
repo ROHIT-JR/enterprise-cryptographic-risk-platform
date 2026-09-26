@@ -15,7 +15,7 @@ from backend.app.schemas.intelligence import (
     MigrationRoadmapWave,
 )
 
-router = APIRouter(prefix="/migration", tags=["phase-2 migration"])
+router = APIRouter(prefix="/migration", tags=["Migration"])
 
 # Heuristic engineering-hours per complexity band. There is no historical
 # migration-duration dataset to fit this against, so it is a documented
@@ -66,6 +66,11 @@ def get_recommendations(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> list[MigrationRecommendationResponse]:
+    """Return the PQC migration recommendation for every planned asset.
+
+    Each recommendation names the target algorithm chosen by the TOPSIS engine, its migration wave
+    and complexity, and the reasoning behind it.
+    """
     organization_id = user.organization_id if isinstance(user, User) else None
     return [_recommendation(*row) for row in _rows(db, project_id, organization_id)]
 
@@ -76,6 +81,11 @@ def get_roadmap(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> MigrationRoadmapResponse:
+    """Return the migration plan grouped into dependency-ordered waves.
+
+    Trust anchors and cryptographic primitives migrate before the services that consume them, so a
+    wave only starts once the wave it depends on can pass interoperability testing.
+    """
     organization_id = user.organization_id if isinstance(user, User) else None
     items = [_recommendation(*row) for row in _rows(db, project_id, organization_id)]
     grouped: dict[int, list[MigrationRecommendationResponse]] = defaultdict(list)

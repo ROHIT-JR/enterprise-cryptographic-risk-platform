@@ -9,7 +9,7 @@ from backend.app.schemas.common import DistributionItem
 from backend.app.schemas.dashboard import DashboardMetrics, DashboardResponse
 from backend.app.services.audit_service import record_audit
 
-router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["Intelligence"])
 
 
 @router.get("", response_model=DashboardResponse)
@@ -18,6 +18,11 @@ def dashboard(
     user: User = Depends(get_current_user),
     organization_id: str | None = Query(default=None),
 ) -> DashboardResponse:
+    """Return headline metrics for the analyst dashboard.
+
+    Covers asset and risk counts, the severity and algorithm distributions, and the most recent
+    scans, all scoped to the caller's organization.
+    """
     crypto_types = ("algorithm", "library", "certificate", "protocol", "configuration")
     organization_id = resolve_org_id(user, organization_id) if isinstance(user, User) else None
     if isinstance(user, User) and organization_id != user.organization_id:

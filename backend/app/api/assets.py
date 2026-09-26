@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -10,7 +10,7 @@ from backend.app.models import Asset, RiskFinding, User
 from backend.app.schemas.asset import AssetPage, AssetResponse
 from backend.app.services.audit_service import record_audit
 
-router = APIRouter(prefix="/assets", tags=["assets"])
+router = APIRouter(prefix="/assets", tags=["Discovery"])
 
 
 @router.get("", response_model=AssetPage)
@@ -25,6 +25,11 @@ def list_assets(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AssetPage:
+    """List discovered cryptographic assets, newest first.
+
+    Filter by project, asset type or risk severity, and search `search` across asset name,
+    algorithm, location and evidence. Results are paginated and scoped to the caller's organization.
+    """
     filters = []
     if isinstance(user, User):
         target_org_id = resolve_org_id(user, organization_id)
@@ -84,6 +89,7 @@ def get_asset(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AssetResponse:
+    """Return one asset with its project context and current risk finding."""
     asset = db.scalar(
         select(Asset)
         .where(Asset.id == asset_id)
@@ -100,26 +106,43 @@ class LifecycleTransitionBody(BaseModel):
     reason: str | None = None
     force_override: bool = False
 
-@router.get("/{asset_id}/lifecycle")
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"target_state": "MIGRATION_PLANNED", "reason": "Approved in CR-1042"}]
+        }
+    )
+
+
+@router.get(
+    "/{asset_id}/lifecycle",
+    responses={404: {"description": "No such asset in this organization."}},
+)
 def get_lifecycle(
     asset_id: str,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """Return an asset's lifecycle state, governance status and full transition history.
+
+    History is newest first and records who changed what, why, and whether the change was automated.
+    """
     asset = db.scalar(
         select(Asset).where(Asset.id == asset_id, Asset.organization_id == user.organization_id)
     )
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
-        
+
     # Get history
     from backend.app.models.lifecycle import CryptoLifecycleEvent
-    events = list(db.scalars(
-        select(CryptoLifecycleEvent)
-        .where(CryptoLifecycleEvent.asset_id == asset_id)
-        .order_by(CryptoLifecycleEvent.created_at.desc())
-    ))
-    
+
+    events = list(
+        db.scalars(
+            select(CryptoLifecycleEvent)
+            .where(CryptoLifecycleEvent.asset_id == asset_id)
+            .order_by(CryptoLifecycleEvent.created_at.desc())
+        )
+    )
+
     return {
         "lifecycle_state": asset.lifecycle_state,
         "governance_status": asset.governance_status,
@@ -135,27 +158,66 @@ def get_lifecycle(
                 "reason": e.reason,
                 "actor_role": e.actor_role,
                 "migration_wave": e.migration_wave,
-                "created_at": e.created_at
-            } for e in events
-        ]
+                "created_at": e.created_at,
+            }
+            for e in events
+        ],
     }
 
-@router.post("/{asset_id}/lifecycle/transition")
+
+@router.post(
+    "/{asset_id}/lifecycle/transition",
+    # Checked in LifecycleService rather than by a permission dependency, so it is declared here
+    # for the docs; tests/test_api_docs.py proves it matches the real behaviour.
+    openapi_extra={"x-minimum-role": "security_analyst"},
+    responses={
+        400: {
+            "description": "Unknown state or status name, or a transition the state machine "
+            "does not allow (for example skipping a state without `force_override`).",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid transition from DISCOVERED to RETIRED"}
+                }
+            },
+        },
+        403: {
+            "description": "Viewers and auditors are read-only, and only administrators may "
+            "use `force_override`.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Role not authorized to transition lifecycle state"}
+                }
+            },
+        },
+        404: {"description": "No such asset in this organization."},
+    },
+)
 def transition_lifecycle(
     asset_id: str,
     body: LifecycleTransitionBody,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """Move an asset to a new lifecycle state or governance status.
+
+    Lifecycle states are `DISCOVERED`, `ASSESSED`, `RECOMMENDED`, `MIGRATION_PLANNED`,
+    `MIGRATING`, `REPLACED` and `RETIRED`; governance statuses are `ACTIVE`, `BLOCKED`,
+    `DEFERRED` and `DEPRECATED`. Send either or both. Every change is validated against the
+    state machine and recorded in the asset's history.
+
+    Requires the `security_analyst` role or higher (`viewer` and `auditor` get `403`). A jump the
+    state machine forbids is rejected with `400` unless `force_override` is set, which needs the
+    `administrator` role and a `reason`.
+    """
     asset = db.scalar(
         select(Asset).where(Asset.id == asset_id, Asset.organization_id == user.organization_id)
     )
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
-        
+
     from backend.app.services.lifecycle_service import LifecycleService
     from lifecycle_engine import GovernanceStatus, LifecycleState, TransitionRequest
-    
+
     svc = LifecycleService()
     try:
         t_state = LifecycleState(body.target_state.upper()) if body.target_state else None
@@ -180,16 +242,16 @@ def transition_lifecycle(
                 source="API",
                 is_automated=False,
                 actor_role=user.role,
-                force_override=body.force_override
+                force_override=body.force_override,
             ),
-            actor=user
+            actor=user,
         )
         db.commit()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
-        
+
     return {
         "lifecycle_state": asset.lifecycle_state,
         "governance_status": asset.governance_status,
-        "lifecycle_updated_at": asset.lifecycle_updated_at
+        "lifecycle_updated_at": asset.lifecycle_updated_at,
     }

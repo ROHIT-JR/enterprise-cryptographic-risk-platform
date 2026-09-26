@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -42,8 +42,11 @@ def get_current_user(
 
 def require_permissions(*permissions: Permission) -> Callable[..., User]:
     required = set(permissions)
+    # Declared as security scopes so the OpenAPI spec (and Swagger UI) shows, per operation,
+    # which permission a caller needs; enforcement is still the has_permissions check below.
+    scopes = sorted(permission.value for permission in required)
 
-    def dependency(user: User = Depends(get_current_user)) -> User:
+    def dependency(user: User = Security(get_current_user, scopes=scopes)) -> User:
         if not has_permissions(user.role, required):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

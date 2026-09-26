@@ -9,6 +9,18 @@ class ProjectCreate(BaseModel):
     description: str | None = Field(default=None, max_length=2_000)
     criticality: Literal["low", "medium", "high", "critical"] = "medium"
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "Payments platform",
+                    "description": "Card-processing services and their TLS endpoints",
+                    "criticality": "critical",
+                }
+            ]
+        }
+    )
+
 
 class ProjectResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

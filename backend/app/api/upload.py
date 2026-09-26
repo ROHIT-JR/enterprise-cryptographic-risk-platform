@@ -34,7 +34,7 @@ from backend.app.services.scan_service import create_scan, get_or_create_project
 from backend.app.services.tenant_service import resolve_organization_id
 from scanners import ScanSource
 
-router = APIRouter(prefix="/scans", tags=["scans"])
+router = APIRouter(prefix="/scans", tags=["Discovery"])
 
 
 @router.post(
@@ -51,6 +51,13 @@ async def scan_repository(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Scan:
+    """Upload a ZIP archive of a repository and start a discovery scan.
+
+    Returns `202` with a queued scan; the archive is analyzed in the background. Follow
+    `GET /scans/{scan_id}/stream` for live progress, or poll `GET /scans/{scan_id}` until the
+    status is `completed` or `failed`. Uploads must be ZIP archives and are limited by
+    `ECDAT_MAX_UPLOAD_BYTES` (50 MiB by default).
+    """
     filename = Path(file.filename or "repository.zip").name
     if Path(filename).suffix.lower() != ".zip":
         raise HTTPException(status_code=415, detail="Repository uploads must be ZIP archives")
@@ -119,6 +126,12 @@ def scan_docker(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Scan:
+    """Start a discovery scan of a container image.
+
+    Returns `202` with a queued scan. The image is inspected in the background; follow
+    `GET /scans/{scan_id}/stream` or poll `GET /scans/{scan_id}` for progress. Requires the
+    Docker plugin (`ECDAT_DOCKER_ENABLED`).
+    """
     organization_id = resolve_organization_id(db, user)
     project = get_or_create_project(
         db,
@@ -158,6 +171,12 @@ def scan_tls(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Scan:
+    """Start a discovery scan of a TLS endpoint.
+
+    Returns `202` with a queued scan. The handshake is performed in the background; follow
+    `GET /scans/{scan_id}/stream` or poll `GET /scans/{scan_id}` for progress. Private and
+    loopback destinations are rejected unless `ECDAT_TLS_ALLOW_PRIVATE_TARGETS` is enabled.
+    """
     organization_id = resolve_organization_id(db, user)
     project = get_or_create_project(
         db,
@@ -190,8 +209,9 @@ def list_scans(
     project_id: str | None = None,
     limit: int = Query(25, ge=1, le=100),
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_permissions(Permission.VIEW_SCANS)),
 ) -> list[Scan]:
+    """List this organization's scans, newest first, optionally filtered by project."""
     statement = select(Scan)
     if isinstance(user, User):
         statement = statement.where(Scan.organization_id == user.organization_id)
@@ -204,8 +224,14 @@ def list_scans(
 def get_scan(
     scan_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_permissions(Permission.VIEW_SCANS)),
 ) -> Scan:
+    """Return one scan with its status, progress and summary.
+
+    A scan moves `queued` → `running` → `completed` or `failed`, and `progress` climbs from 0 to
+    100. Poll this after starting a scan, or use `GET /scans/{scan_id}/stream` to be pushed each
+    stage as it happens.
+    """
     scan = db.get(Scan, scan_id)
     if not scan or (isinstance(user, User) and scan.organization_id != user.organization_id):
         raise HTTPException(status_code=404, detail="Scan not found")
@@ -220,7 +246,7 @@ def _sse_event(payload: dict[str, Any]) -> str:
 async def stream_scan_progress(
     scan_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_permissions(Permission.VIEW_SCANS)),
 ) -> StreamingResponse:
     """Live scan progress as Server-Sent Events.
 
@@ -273,8 +299,12 @@ async def stream_scan_progress(
 def get_cbom(
     scan_id: str,
     db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_permissions(Permission.VIEW_SCANS)),
 ) -> CBOMResponse:
+    """Return the cryptographic bill of materials produced by a completed scan.
+
+    Returns `409` while the scan is still running, because the CBOM is written when it completes.
+    """
     scan = db.get(Scan, scan_id)
     if not scan or (isinstance(user, User) and scan.organization_id != user.organization_id):
         raise HTTPException(status_code=404, detail="Scan not found")

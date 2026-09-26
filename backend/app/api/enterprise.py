@@ -16,7 +16,7 @@ from backend.app.models import (
 from backend.app.schemas.enterprise import AuditLogResponse, EnterpriseOverview
 from backend.app.services.audit_service import record_audit
 
-router = APIRouter(prefix="/enterprise", tags=["enterprise dashboard"])
+router = APIRouter(prefix="/enterprise", tags=["Enterprise"])
 
 
 @router.get("/overview", response_model=EnterpriseOverview)
@@ -25,6 +25,13 @@ def enterprise_overview(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> EnterpriseOverview:
+    """Return organization-wide totals for the administrator dashboard.
+
+    Counts organizations, users, projects, scans, assets, critical risks and assets in migration,
+    alongside the most recent audit events. Platform admins may pass `organization_id` to view
+    another organization's overview; every such cross-org view is itself recorded in that
+    organization's audit trail.
+    """
     organization_id = resolve_org_id(user, organization_id)
     if organization_id != user.organization_id:
         record_audit(

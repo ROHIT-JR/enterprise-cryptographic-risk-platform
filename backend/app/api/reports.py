@@ -11,7 +11,7 @@ from backend.app.models import User
 from backend.app.services.audit_service import record_audit
 from backend.app.services.report_service import ReportService, ReportType
 
-router = APIRouter(prefix="/reports", tags=["reports"])
+router = APIRouter(prefix="/reports", tags=["Enterprise"])
 
 ReportFormat = Literal["json", "pdf", "cbom", "cbom-pdf"]
 
