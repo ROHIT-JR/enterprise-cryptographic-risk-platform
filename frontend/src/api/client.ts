@@ -182,9 +182,24 @@ export const authApi = {
 };
 
 export const usersApi = {
-  list: async () => (await api.get<AuthUser[]>("/users")).data,
-  create: async (payload: { username: string; email: string; password: string; role: UserRole }) =>
-    (await api.post<AuthUser>("/users", payload)).data,
+  // organizationId is only ever honored by the backend when the caller is
+  // the platform admin — see backend/app/auth/dependencies.py:resolve_org_id.
+  // Sending it as an ordinary org admin is silently ignored server-side.
+  list: async (organizationId?: string) =>
+    (await api.get<AuthUser[]>("/users", { params: { organization_id: organizationId } })).data,
+  create: async (payload: {
+    username: string;
+    email: string;
+    password: string;
+    role: UserRole;
+    organization_id?: string;
+  }) => (await api.post<AuthUser>("/users", payload)).data,
+};
+
+export const organizationsApi = {
+  list: async () => (await api.get<Organization[]>("/organizations")).data,
+  create: async (payload: { name: string; industry?: string }) =>
+    (await api.post<Organization>("/organizations", payload)).data,
 };
 
 export const enterpriseApi = {
