@@ -17,6 +17,7 @@ from scanners.base import (
 )
 from scanners.docker_scanner import DockerfileAnalyzer
 from scanners.exceptions import InvalidScanTargetError
+from scanners.lexical import find_import_aliases, logical_chunks, resolve_aliases
 from scanners.patterns import (
     ALGORITHM_PATTERNS,
     DEPENDENCY_LIBRARY_NAMES,
@@ -164,17 +165,28 @@ class RepositoryScanner(ScannerPlugin):
     def _scan_lines(self, relative: str, text: str) -> list[DiscoveredAsset]:
         findings: list[DiscoveredAsset] = []
         language = self._language(relative)
-        for line_number, raw_line in enumerate(text.splitlines(), start=1):
-            evidence = raw_line.strip()
-            if not evidence or evidence.startswith(("//", "*")):
+        raw_lines = text.splitlines()
+        # Two structural fixes (see scanners/lexical.py): join a statement whose
+        # arguments spread across lines before matching, and resolve an aliased
+        # import (`import hashlib as h`) to its canonical name for matching only —
+        # the evidence shown below is always the user's own, unmodified line(s).
+        aliases = find_import_aliases(raw_lines, language)
+        for start, end in logical_chunks(raw_lines, language):
+            first_line = raw_lines[start].strip()
+            if not first_line or first_line.startswith(("//", "*")):
                 continue
-            if evidence.startswith("#") and not evidence.startswith("#include"):
+            if first_line.startswith("#") and not first_line.startswith("#include"):
                 continue
+            evidence = " ".join(line.strip() for line in raw_lines[start : end + 1]).strip()
+            if not evidence:
+                continue
+            match_text = resolve_aliases(evidence, aliases)
             clipped = evidence[:240]
+            line_label = str(start + 1) if end == start else f"{start + 1}-{end + 1}"
             for pattern in (*ALGORITHM_PATTERNS, *LIBRARY_PATTERNS):
-                if not pattern.expression.search(evidence):
+                if not pattern.expression.search(match_text):
                     continue
-                name = infer_algorithm_name(pattern, evidence)
+                name = infer_algorithm_name(pattern, match_text)
                 findings.append(
                     DiscoveredAsset(
                         asset_type=pattern.asset_type,
@@ -182,12 +194,13 @@ class RepositoryScanner(ScannerPlugin):
                         algorithm=name
                         if pattern.asset_type in {"algorithm", "protocol"}
                         else None,
-                        location=f"{relative}:{line_number}",
+                        location=f"{relative}:{line_label}",
                         evidence=clipped,
                         confidence=pattern.confidence,
                         details={
                             "file": relative,
-                            "line": line_number,
+                            "line": start + 1,
+                            "end_line": end + 1,
                             "language": language,
                             "detector": "pattern",
                         },
