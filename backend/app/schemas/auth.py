@@ -38,6 +38,7 @@ class UserResponse(BaseModel):
     role: str
     organization_id: str
     is_active: bool
+    is_platform_admin: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}
