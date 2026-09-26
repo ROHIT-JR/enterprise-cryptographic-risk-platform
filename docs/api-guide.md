@@ -239,6 +239,7 @@ Run it as a shared service: organizations and users, the audit trail, executive 
 | `POST /api/v1/organizations` | Create a new organization. | Any signed-in user |
 | `GET /api/v1/organizations/current` | Return the caller's organization, including its industry and settings. | Any signed-in user |
 | `PUT /api/v1/organizations/current` | Update the caller's organization. | `administrator` |
+| `DELETE /api/v1/organizations/{organization_id}` | Permanently delete an organization and everything in it. | Any signed-in user |
 | `GET /api/v1/reports/{report_type}` | Export a report. | `auditor` and above |
 | `GET /api/v1/users` | List the users in the caller's organization. | `administrator` |
 | `POST /api/v1/users` | Add a user to the caller's organization with one of the four roles. | `administrator` |

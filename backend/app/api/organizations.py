@@ -75,6 +75,10 @@ def delete_organization(
     admin: User = Depends(require_platform_admin),
     db: Session = Depends(get_db),
 ) -> None:
+    """Permanently delete an organization and everything in it. Platform admins only;
+    requires typing the organization's exact name as `confirm_name`, and refuses to
+    delete the caller's own organization.
+    """
     if organization_id == admin.organization_id:
         raise HTTPException(status_code=400, detail="Cannot delete your own organization")
     organization = db.get(Organization, organization_id)
