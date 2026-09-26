@@ -9,164 +9,23 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-React%20%2B%20Vite-3178C6?logo=typescript&logoColor=white)](frontend/package.json)
 [![Docker Compose](https://img.shields.io/badge/deploy-docker%20compose-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
 
-Find every cryptographic algorithm in an enterprise's codebase, containers, and TLS endpoints — then know exactly which ones a quantum computer breaks, which systems that takes down with them, and what order to migrate them in.
+Find every cryptographic algorithm in an enterprise's codebase, containers, and TLS endpoints — know exactly which ones a quantum computer breaks, which systems that takes down with them, and in what order to migrate them.
 
 **🔗 Live demo: [ecdat-x.pages.dev](https://ecdat-x.pages.dev)** — access is free. Email **ecdatxadmin01@gmail.com** to have an organization and user account created for you.
 
-- 🔍 **Discover** — scan repositories, Docker images, and live TLS endpoints for RSA, ECC, AES, hashing, and 15+ cryptographic libraries, with file/line evidence for every finding
-- ⚛️ **Quantify quantum risk** — a six-factor explainable score (quantum vulnerability, harvest-now-decrypt-later exposure, blast radius, business criticality, migration complexity, evidence confidence) and the Mosca inequality (X + Y > Z) answering "do we need to start migrating *now*?"
+---
+
+## Overview
+
+Enterprises don't know where cryptography lives in their own systems, which makes planning a post-quantum migration close to impossible. ECDAT-X scans source code, container images, and live TLS endpoints; builds an evidence-backed inventory of every cryptographic primitive it finds; scores each one for quantum risk; and produces a dependency-aware migration roadmap to post-quantum algorithms — with the audit trail, access control, and reporting an enterprise security team actually needs to act on it.
+
+## What it does
+
+- 🔍 **Discover** — scan repositories, Docker images, and live TLS endpoints for RSA, ECC, AES, hashing, and cryptographic library usage, with exact file/line evidence for every finding
+- ⚛️ **Quantify quantum risk** — a six-factor explainable score (quantum vulnerability, harvest-now-decrypt-later exposure, blast radius, business criticality, migration complexity, evidence confidence) plus the Mosca inequality (X + Y > Z) answering "do we need to start migrating *now*?"
 - 🗺️ **Plan the migration** — TOPSIS-ranked ML-KEM/ML-DSA recommendations and a dependency-aware, wave-sequenced roadmap that migrates trust anchors before the applications that depend on them
 - 📄 **Prove compliance** — CycloneDX 1.6 CBOM export, branded executive/technical PDF reports, and a live India National Quantum Mission (NQM) phase-readiness dashboard
-
-## Quick start
-
-```bash
-git clone https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform.git
-cd enterprise-cryptographic-risk-platform
-cp .env.example .env && docker compose up -d
-```
-
-Open <http://localhost:5173> once `docker compose ps` shows every service `healthy` (the first build takes a few minutes). The SecureBank demo estate is seeded automatically — log in and explore, or see [Run the complete application with Docker](#run-the-complete-application-with-docker) below for the Docker-socket permission step most Linux hosts need.
-
-## What ECDAT-X does
-
-ECDAT-X gives security teams an evidence-backed map of where cryptography exists, what depends on it, and why it matters. Phase 1.5 accepts repository ZIPs, Docker image references, and TLS endpoints; normalizes discoveries into an inventory and CBOM; projects relationships into Neo4j; and calculates explainable rule-based risk.
-
-Phase 2 adds a cryptographic intelligence layer that answers how dangerous a finding is, which
-systems are affected, what must migrate first, and which post-quantum alternative fits the
-environment. It preserves every Phase 1.5 scanner and persistence contract.
-
-Phase 3 turns the platform into an organization-isolated enterprise service with JWT
-authentication, role-based access, audit trails, exportable reports, production deployment assets,
-security CI, and a public scanner extension contract. Discovery and intelligence remain intact.
-
-> ECDAT-X is a security administration system. Use the production profile, TLS termination,
-> external secrets, and restricted scanner workers before exposing it beyond a trusted network.
-
-## Phase 3 enterprise platform
-
-- JWT access tokens, rotating refresh tokens, and salted scrypt password hashing
-- Administrator, security analyst, auditor, and viewer permissions
-- Organization isolation for projects, scans, assets, risks, and migration plans
-- Audit history, plus branded PDF/JSON exports: one-page executive summary, multi-page technical
-  report, inventory, quantum-risk, migration, and CycloneDX 1.6 CBOM
-- Admin, security-operations, and auditor dashboard experiences
-- Stable scanner plugin interface and registry (see [Scanner development](docs/scanner-development.md))
-- Full component health, API/proxy rate limits, hardened headers, and exact-origin CORS
-- Alembic migrations, production Compose, internal data networks, and Nginx reverse proxy
-- Test, build, dependency, secret, and Trivy GitHub Actions
-- Apache-2.0 licensing and contributor/security/community governance
-
-## Phase 1.5 capabilities
-
-- Plugin-based repository, Docker, and TLS discovery
-- Python, Java, JavaScript/TypeScript, and C/C++ crypto-pattern detection
-- Dependency-manifest and configuration evidence
-- Secure ZIP extraction with traversal, symlink, file-count, and expanded-size limits
-- Container package/OpenSSL inspection with an isolated runtime probe
-- TLS protocol, cipher, certificate, and public-key collection with SSRF controls
-- PostgreSQL cryptographic inventory and scan history
-- CycloneDX 1.6 CBOM (JSON, plus a human-readable PDF companion) with per-component risk scores
-- Neo4j topology with a PostgreSQL graph fallback
-- Deterministic algorithm + dependency + criticality risk scoring
-- React dashboard, upload center, asset explorer, React Flow graph, and risk analysis
-- SecureBank Enterprise demo estate for immediate evaluation
-
-## Phase 2 cryptographic intelligence
-
-- Multi-channel evidence correlation across source, Docker, TLS, certificates, and libraries
-- Configurable quantum-vulnerability knowledge in `risk_engine/algorithm_risks.json`
-- Harvest Now, Decrypt Later analysis using sensitivity, lifetime, exposure, and algorithm risk
-- Neo4j-backed dependency degree, blast radius, and critical-path impact with PostgreSQL fallback
-- Assignable business ownership, criticality, retention, downtime, and compatibility context
-- Migration complexity scoring for dependencies, legacy technology, downtime, and compatibility
-- Normalized 0–100 final risk with a complete six-factor explanation
-- Constraint-aware ML-KEM and ML-DSA recommendations with hybrid transition strategies
-- Dependency-aware roadmap waves that migrate primitives, shared libraries, then applications
-- Quantum Risk, Asset Intelligence, Blast Radius, Migration Planner, and PQC dashboard pages
-
-The SecureBank Phase 2 scenario demonstrates a shared RSA-2048 certificate protecting 43 systems,
-20-year customer-data retention, a final risk score of 94, and a three-wave PQC migration plan.
-
-## ECDAT-X intelligence architecture
-
-```mermaid
-flowchart LR
-    DISCOVERY[Phase 1.5 discovery] --> INVENTORY[(Normalized inventory)]
-    INVENTORY --> EVIDENCE[Evidence intelligence]
-    INVENTORY --> QUANTUM[Quantum classification]
-    INVENTORY --> HNDL[HNDL analysis]
-    INVENTORY --> GRAPH[Dependency centrality]
-    INVENTORY --> BUSINESS[Business context]
-    EVIDENCE --> FINAL[Final risk engine]
-    QUANTUM --> FINAL
-    HNDL --> FINAL
-    GRAPH --> FINAL
-    BUSINESS --> FINAL
-    COMPLEXITY[Migration complexity] --> FINAL
-    FINAL --> PQC[PQC recommendations]
-    GRAPH --> ROADMAP[Migration roadmap]
-    PQC --> ROADMAP
-```
-
-### Risk scoring methodology
-
-The ECDAT score is a weighted, normalized sum: quantum vulnerability 30%, HNDL exposure 20%,
-dependency centrality 15%, business criticality 15%, migration complexity 10%, and evidence
-confidence 10%. Scores of 0–30 are Low, 31–60 Medium, 61–80 High, and 81–100 Critical. Every
-response includes the component contributions and plain-language reasons.
-
-### Migration workflow
-
-1. Confirm a finding through independent evidence channels.
-2. Classify quantum vulnerability and HNDL exposure.
-3. Calculate the affected application blast radius.
-4. Apply business and operational migration constraints.
-5. Select ML-KEM, ML-DSA, or a hybrid TLS strategy.
-6. Sequence trust anchors and primitives before shared libraries and applications.
-
-See [Phase 2 architecture](docs/phase2-architecture.md) for the model, persistence, API, and
-roadmap contracts.
-
-## How repository discovery works
-
-The upload flow securely extracts a ZIP into an isolated job directory, enforces archive and file
-limits, and dispatches the source scanner through the common plugin registry. The scanner examines
-supported source files line by line, records the exact file, line, evidence, confidence, and
-language, then correlates dependency manifests and Dockerfile declarations. The orchestrator
-normalizes findings into PostgreSQL, scores every asset, generates the ECDAT-CBOM, and updates the
-Neo4j projection. If Neo4j is offline, graph responses automatically fall back to PostgreSQL.
-
-| Category | Detected examples |
-|---|---|
-| Symmetric crypto | AES-128/192/256, DES, 3DES |
-| Public-key crypto | RSA, ECC/ECDSA/ECDH, Diffie-Hellman |
-| Hashing and MAC | SHA-1, SHA-256/384/512, SHA-3, HMAC |
-| Libraries | OpenSSL, PyOpenSSL, Bouncy Castle, Crypto++, libsodium, PyCryptodome, Python cryptography, Node.js crypto |
-| Configuration | TLS 1.2/1.3 and configured certificates |
-| Containers | Base image plus declared OpenSSL and cryptographic packages |
-
-### Try the SecureBank repository
-
-```bash
-cd sample_enterprise
-zip -r secure-bank.zip secure-bank
-```
-
-Open <http://localhost:5173/upload>, choose `secure-bank.zip`, and start the repository scan. The
-progress card moves through Scanning, Analyzing, Generating CBOM, and Completed. The result contains
-evidence similar to:
-
-```json
-{
-  "type": "algorithm",
-  "name": "RSA-2048",
-  "location": "secure-bank/authentication-service/auth.py:9",
-  "evidence": "RSA.generate(2048)",
-  "confidence": 0.96,
-  "details": {"language": "python"}
-}
-```
+- 🏢 **Govern access at scale** — organization-isolated tenants, four-tier RBAC, a platform-admin console that can provision organizations and audit them cross-tenant, and a full audit trail on every sensitive action
 
 ## Architecture
 
@@ -188,18 +47,130 @@ flowchart LR
     API --> NEO
 ```
 
-PostgreSQL is authoritative for projects, scans, assets, relationships, and risk findings. Neo4j is a rebuildable projection; if Neo4j is unavailable, the graph API continues from PostgreSQL.
+PostgreSQL is authoritative for organizations, projects, scans, assets, relationships, risk findings, and the audit trail. Neo4j is a rebuildable projection of the asset dependency graph; if Neo4j is unavailable, graph queries automatically fall back to PostgreSQL, so the platform degrades gracefully rather than failing.
 
-The complete system architecture, the upload-to-report data flow, the risk-scoring methodology,
-the TOPSIS decision, and the database schema are drawn in [Architecture](docs/architecture.md).
-For everything else:
+```mermaid
+flowchart LR
+    DISCOVERY[Discovery scanners] --> INVENTORY[(Normalized inventory)]
+    INVENTORY --> EVIDENCE[Evidence intelligence]
+    INVENTORY --> QUANTUM[Quantum classification]
+    INVENTORY --> HNDL[HNDL analysis]
+    INVENTORY --> GRAPH[Dependency centrality]
+    INVENTORY --> BUSINESS[Business context]
+    EVIDENCE --> FINAL[Final risk engine]
+    QUANTUM --> FINAL
+    HNDL --> FINAL
+    GRAPH --> FINAL
+    BUSINESS --> FINAL
+    COMPLEXITY[Migration complexity] --> FINAL
+    FINAL --> PQC[PQC recommendations]
+    GRAPH --> ROADMAP[Migration roadmap]
+    PQC --> ROADMAP
+```
 
-- [API guide](docs/api-guide.md): sign in, scan, read results, handle errors, with working commands.
-  The live, interactive reference is at <http://localhost:8000/docs> (or `/redoc`).
-- [Development guide](docs/development.md): setup without Docker, every configuration variable,
-  migrations, tests, and troubleshooting.
-- [Scanner development](docs/scanner-development.md): write a new scanner.
-- [Enterprise API reference](docs/api-reference.md) and [Discovery API](docs/api.md): older summaries.
+The full system architecture, the upload-to-report data flow, the risk-scoring methodology, the TOPSIS decision, and the database schema are drawn in [docs/architecture.md](docs/architecture.md). The intelligence engine's internals (evidence fusion, HNDL model, dependency centrality, business-context weighting) are documented in [docs/phase2-architecture.md](docs/phase2-architecture.md).
+
+### Risk scoring methodology
+
+Every finding gets a weighted, normalized 0–100 score: quantum vulnerability 30%, harvest-now-decrypt-later exposure 20%, dependency centrality 15%, business criticality 15%, migration complexity 10%, and evidence confidence 10%. Scores of 0–30 are Low, 31–60 Medium, 61–80 High, and 81–100 Critical. Every API response includes the component contributions and plain-language reasons — nothing is a black box.
+
+### Migration workflow
+
+1. Confirm a finding through independent evidence channels.
+2. Classify quantum vulnerability and HNDL exposure.
+3. Calculate the affected application's blast radius.
+4. Apply business and operational migration constraints.
+5. Select ML-KEM, ML-DSA, or a hybrid TLS strategy via TOPSIS multi-criteria ranking.
+6. Sequence trust anchors and shared primitives before the applications that depend on them.
+
+## How discovery works
+
+The upload flow securely extracts a repository archive (or fetches one directly from a public GitHub URL) into an isolated job directory, enforces archive and file limits, and dispatches the source scanner through the plugin registry. The scanner parses supported source files — including constructs split across multiple lines or hidden behind an import alias — and records the exact file, line, evidence, confidence, and language for every match, then correlates dependency manifests and Dockerfile declarations. The orchestrator normalizes findings into PostgreSQL, scores every asset, generates the CycloneDX CBOM, and updates the Neo4j projection.
+
+| Category | Detected examples |
+|---|---|
+| Symmetric crypto | AES-128/192/256, DES, 3DES, RC4 |
+| Public-key crypto | RSA, ECC/ECDSA/ECDH, Diffie-Hellman |
+| Hashing and MAC | MD5, SHA-1, SHA-256/384/512, SHA-3, HMAC |
+| Libraries | OpenSSL, Bouncy Castle, Crypto++, libsodium, PyCryptodome, Python `cryptography`, Node.js `crypto` |
+| Configuration | TLS 1.2/1.3, configured certificates, hardcoded key material |
+| Containers | Base image plus declared OpenSSL and cryptographic packages |
+
+Source scanning covers Python, Java, JavaScript/TypeScript, and C/C++. Ongoing research toward broader language coverage and a sourced, cross-checked algorithm catalog lives in [docs/research](docs/research).
+
+<details>
+<summary>Try it against the bundled sample fixture</summary>
+
+```bash
+cd sample_enterprise
+zip -r secure-bank.zip secure-bank
+```
+
+Open <http://localhost:5173/upload>, choose `secure-bank.zip`, and start a repository scan. The result includes evidence like:
+
+```json
+{
+  "type": "algorithm",
+  "name": "RSA-2048",
+  "location": "secure-bank/authentication-service/auth.py:9",
+  "evidence": "RSA.generate(2048)",
+  "confidence": 0.96,
+  "details": {"language": "python"}
+}
+```
+
+</details>
+
+## Enterprise access control
+
+- JWT access tokens, rotating refresh tokens, and salted scrypt password hashing
+- Four roles per organization — **administrator**, **security analyst**, **auditor**, **viewer** — each with a genuinely different UI and API surface, not just a hidden nav item
+- Organization isolation for projects, scans, assets, risks, migration plans, and the audit trail
+- A separate **platform-admin** capability (not a role — a dedicated flag) that can provision new organizations, audit any organization's activity, and view another organization's dashboard read-only — every cross-organization access is itself written to that organization's own audit trail
+- A hidden, out-of-band platform-admin login, never exposed through public self-registration
+- Branded PDF/JSON exports: executive summary, technical report, inventory, quantum-risk, migration, and CycloneDX 1.6 CBOM
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, Tailwind |
+| Backend | FastAPI, SQLAlchemy 2.0, Pydantic v2, Alembic |
+| Primary datastore | PostgreSQL |
+| Graph datastore | Neo4j (optional, with a PostgreSQL fallback) |
+| Auth | JWT (access + rotating refresh tokens), scrypt password hashing |
+| CBOM | CycloneDX 1.6 |
+| CI | GitHub Actions — tests, lint, security scanning (Trivy, gitleaks), Dependabot |
+| Deployment | Docker Compose (local), Render + Cloudflare Pages + Neon + Neo4j AuraDB (production, all free-tier) |
+
+## Repository layout
+
+```text
+backend/           FastAPI application, persistence models, APIs, orchestration
+frontend/          React/Vite/Tailwind analyst dashboard
+scanners/          Scanner plugin contracts and built-in discovery plugins
+cbom_engine/       CycloneDX CBOM generator
+knowledge_graph/   Neo4j projection and graph contracts
+risk_engine/       Risk scoring and cryptographic intelligence engines
+migration_engine/  PQC selection and dependency-aware roadmap generation
+lifecycle_engine/  Asset lifecycle state machine and governance status
+benchmarks/        PQC algorithm performance benchmarking
+sample_enterprise/ Uploadable mixed-language discovery fixture
+tests/             Backend, scanner, CBOM, risk, and API-contract tests
+docs/              Architecture, API, development, deployment, and research
+```
+
+The demo dataset itself (a fictional "SecureBank" estate) lives in a separate repository, [ecdat-x-demo-seed](https://github.com/ROHIT-JR/ecdat-x-demo-seed), installed only as a dev dependency so the production image never bundles synthetic data.
+
+## Quick start
+
+```bash
+git clone https://github.com/ROHIT-JR/enterprise-cryptographic-risk-platform.git
+cd enterprise-cryptographic-risk-platform
+cp .env.example .env && docker compose up -d
+```
+
+Open <http://localhost:5173> once `docker compose ps` shows every service `healthy` (the first build takes a few minutes). The demo estate is seeded automatically — log in and explore, or see [Run the complete application with Docker](#run-the-complete-application-with-docker) below for the Docker-socket permission step most Linux hosts need.
 
 ## Requirements
 
@@ -210,8 +181,7 @@ For everything else:
 
 ## Run the complete application with Docker
 
-No cloud account or external database is required. Docker Compose starts PostgreSQL, Neo4j,
-FastAPI, and the Vite frontend, then seeds the SecureBank demonstration on first startup.
+No cloud account or external database is required. Docker Compose starts PostgreSQL, Neo4j, FastAPI, and the Vite frontend, then seeds the demo estate on first startup.
 
 ### First-time setup
 
@@ -227,26 +197,13 @@ docker compose ps
 curl -fsS http://localhost:8000/health
 ```
 
-If the repository is already cloned, start from its root instead:
-
-```bash
-cd '/path/to/enterprise-cryptographic-risk-platform'
-cp -n .env.example .env
-sed -i "s/^DOCKER_GID=.*/DOCKER_GID=$(stat -c '%g' /var/run/docker.sock)/" .env
-docker compose up --build -d --wait --wait-timeout 240
-docker compose ps
-curl -fsS http://localhost:8000/health
-```
-
-The first build can take several minutes. Startup is complete when PostgreSQL, Neo4j, the backend,
-and the frontend are all reported as `healthy`.
+The first build can take several minutes. Startup is complete when PostgreSQL, Neo4j, the backend, and the frontend are all reported as `healthy`.
 
 ### Recurring startup
 
-The database and demo data remain in Docker volumes. For later sessions, run:
+The database and demo data remain in Docker volumes. For later sessions:
 
 ```bash
-cd '/path/to/enterprise-cryptographic-risk-platform'
 docker compose up -d --wait --wait-timeout 240
 docker compose ps
 ```
@@ -270,17 +227,14 @@ docker compose ps -a
 docker compose logs --tail=200 postgres neo4j backend frontend
 ```
 
-Reset the local demo only when persisted data is no longer needed. This permanently deletes the
-local ECDAT-X PostgreSQL, Neo4j, scan, and frontend dependency volumes:
+Reset the local demo only when persisted data is no longer needed — this permanently deletes the local PostgreSQL, Neo4j, scan, and frontend dependency volumes:
 
 ```bash
 docker compose down -v --remove-orphans
 docker compose up --build -d --wait --wait-timeout 240
 ```
 
-Local demo users share the `ECDAT_DEMO_PASSWORD` value from `.env`: `securebank-admin`,
-`security-analyst`, and `security-auditor`, in organization `SecureBank`. Replace or disable these
-accounts outside the local demo.
+Local demo users share the `ECDAT_DEMO_PASSWORD` value from `.env`. Replace or disable these accounts outside the local demo.
 
 ## Local access
 
@@ -292,7 +246,7 @@ accounts outside the local demo.
 - Neo4j Browser: <http://localhost:7474>
 - Neo4j Bolt: `localhost:7687`
 
-The built-in credentials are for local development only. Copy `.env.example` to `.env` and replace them before using the stack on a shared machine. Set `ECDAT_SEED_DEMO=false` for an empty inventory. The demo estate itself lives in the separate [ecdat-x-demo-seed](https://github.com/ROHIT-JR/ecdat-x-demo-seed) repository, installed only as a dev dependency (`backend/requirements-dev.txt`) so the production image never bundles synthetic data.
+The built-in credentials are for local development only. Copy `.env.example` to `.env` and replace them before using the stack on a shared machine. Set `ECDAT_SEED_DEMO=false` for an empty inventory.
 
 Docker discovery needs access to the host Docker socket. Determine its group ID with `stat -c '%g' /var/run/docker.sock` and set `DOCKER_GID` in `.env` if it differs from `999`. Treat socket access as privileged and isolate the backend host accordingly.
 
@@ -326,7 +280,7 @@ ruff check backend scanners cbom_engine knowledge_graph graph_analysis lifecycle
 cd frontend && npm run typecheck && npm run test -- --run && npm run build
 ```
 
-The repository includes GitHub Actions for the same backend and frontend checks plus Dependabot coverage for Python, npm, and Docker dependencies.
+GitHub Actions runs the same backend and frontend checks on every PR, plus Trivy image scanning, gitleaks secret scanning, and Dependabot coverage for Python, npm, and Docker dependencies.
 
 ## API surface
 
@@ -336,7 +290,8 @@ The repository includes GitHub Actions for the same backend and frontend checks 
 | Full platform health | `GET /health/full` |
 | Login / refresh | `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh` |
 | Dashboard summary | `GET /api/v1/dashboard` |
-| Repository discovery | `POST /api/v1/scans/repository` |
+| Repository discovery (upload) | `POST /api/v1/scans/repository` |
+| Repository discovery (GitHub URL) | `POST /api/v1/scans/repository-url` |
 | Docker discovery | `POST /api/v1/scans/docker` |
 | TLS discovery | `POST /api/v1/scans/tls` |
 | Scan status | `GET /api/v1/scans/{scan_id}` |
@@ -344,64 +299,43 @@ The repository includes GitHub Actions for the same backend and frontend checks 
 | Asset inventory | `GET /api/v1/assets` |
 | Risk findings | `GET /api/v1/risks` |
 | Knowledge graph | `GET /api/v1/graph` |
-
-Phase 1.5 compatibility aliases are also available at `POST /api/upload/repository`,
-`GET /api/assets`, `GET /api/cbom/{project_id}`, `GET /api/risk`, and `GET /api/graph`.
-
-| Phase 2 workflow | Endpoint |
-|---|---|
 | Final quantum risk | `GET /api/v1/intelligence/risk` |
 | HNDL exposure | `GET /api/v1/intelligence/hndl` |
 | Blast radius | `GET /api/v1/intelligence/blast-radius` |
-| Business context | `PUT /api/v1/intelligence/business-context/{asset_id}` |
 | PQC recommendations | `GET /api/v1/migration/recommendations` |
 | Migration roadmap | `GET /api/v1/migration/roadmap` |
+| Organizations (platform admin) | `GET/POST/DELETE /api/v1/organizations` |
+| Users | `GET/POST /api/v1/users` |
+| Audit trail | `GET /api/v1/audit-logs` |
 
-Interactive OpenAPI documentation is exposed at `/docs`. Enterprise examples and response
-contracts are in [docs/api-reference.md](docs/api-reference.md); discovery-specific contracts are
-in [docs/api.md](docs/api.md).
+Interactive OpenAPI documentation is exposed at `/docs`. The full endpoint reference, request/response contracts, and error formats are in [docs/api-guide.md](docs/api-guide.md).
 
-## Repository layout
+## Documentation
 
-```text
-backend/          FastAPI application, persistence models, APIs, orchestration
-frontend/         React/Vite/Tailwind analyst dashboard
-scanners/         Scanner plugin contracts and built-in discovery plugins
-cbom_engine/      ECDAT-CBOM generator
-knowledge_graph/  Neo4j projection and graph contracts
-risk_engine/      Phase 1 compatibility rules and Phase 2 intelligence engines
-migration_engine/ PQC selection and dependency-aware roadmap generation
-sample_enterprise/ Uploadable mixed-language SecureBank discovery fixture
-tests/            Backend, scanner, CBOM, risk, and API-contract tests
-docs/             Architecture, API, development, and security guidance
-```
+- [Architecture](docs/architecture.md) — full system design, data flow, and database schema
+- [API guide](docs/api-guide.md) — sign in, scan, read results, handle errors, with working commands
+- [Development guide](docs/development.md) — setup without Docker, every configuration variable, migrations, tests, troubleshooting
+- [Scanner development](docs/scanner-development.md) — write a new scanner plugin
+- [Deployment](docs/deployment.md) — production deployment reference
+- [Security model](docs/security-model.md) and [security policy](docs/security.md)
+- [Research](docs/research) — sourced crypto-algorithm catalog, PQC benchmark data, compliance migration deadlines
+
+## Deployment
+
+Production runs on a genuinely free-tier stack: **Render** (backend, Docker-based web service, auto-deploys on push to `main`), **Cloudflare Pages** (frontend, auto-deploys on push to `main`), **Neon** (serverless PostgreSQL), and **Neo4j AuraDB Free**. See [docs/deployment.md](docs/deployment.md) for the full reference, and `render.yaml` for the backend Blueprint. Every secret-bearing setting is set through each platform's own encrypted environment store — nothing sensitive is committed to this repository.
+
+For self-hosted enterprise deployment, `deployment/docker-compose.prod.yml` and `deployment/nginx.conf` provide a production Compose profile with TLS termination and internal-only data networks.
 
 ## Screenshots
 
 ![ECDAT-X dashboard](docs/screenshots/dashboard.png)
 
-The dashboard is responsive and includes dedicated views for upload progress, inventory evidence, dependency topology, and risk factor composition.
-
-| View | |
-|---|---|
-| Blast Radius graph | _screenshot pending — capture from `/blast-radius` after a scan completes_ |
-| Migration Planner | _screenshot pending — capture from `/migration` with a seeded project_ |
-| Risk Analysis | _screenshot pending — capture from `/risks`_ |
-
-> These three are placeholders rather than fabricated images. Run the app locally, navigate to each route, and drop the PNGs into `docs/screenshots/` with matching filenames (`blast-radius.png`, `migration-planner.png`, `risk-analysis.png`) to complete this section.
-
-## Deployment notes
-
-- **Local first:** `docker-compose.yml` is the primary Phase 1 deployment and runs all four services on the developer machine.
-- **Future hosting:** the Dockerfiles retain separate development and production stages; override `VITE_API_URL`, database URLs, and credentials in the target environment.
-- **Secrets:** `.env` files are ignored. Only non-secret templates and local development defaults are committed.
-- **Private TLS targets:** disabled by default. Enable only for a controlled internal deployment.
-- **Enterprise deployment:** use `deployment/docker-compose.prod.yml`; see [deployment](docs/deployment.md).
-- **Authentication:** all application APIs require JWT authentication; health and authentication
-  bootstrap endpoints remain public.
+The dashboard is responsive and includes dedicated views for upload progress, inventory evidence, dependency topology, risk factor composition, migration planning, and platform administration.
 
 ## Extension points
 
-The plugin contract ([how to write a scanner](docs/scanner-development.md)) supports future AWS, Azure, Kubernetes, and HSM scanners. Production images are
-cloud-portable without forcing a provider. A shared job queue and distributed rate limiter are the
-next scale upgrades; automated migration execution and an AI assistant remain outside this release.
+The scanner plugin contract ([how to write a scanner](docs/scanner-development.md)) supports adding new language detectors and future AWS, Azure, Kubernetes, and HSM discovery scanners without touching the orchestrator. Production images are cloud-portable without forcing a provider.
+
+## Contributing & security
+
+See [docs/contributing.md](docs/contributing.md) for contribution guidelines and [docs/security.md](docs/security.md) to report a vulnerability. Licensed under [Apache-2.0](LICENSE).
