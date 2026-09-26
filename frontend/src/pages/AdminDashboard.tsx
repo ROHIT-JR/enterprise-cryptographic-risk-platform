@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import {
   Activity,
+  AlertTriangle,
   Building2,
   Crown,
   Database,
@@ -8,6 +9,7 @@ import {
   History,
   Network,
   PlusCircle,
+  Trash2,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -65,6 +67,10 @@ export function AdminDashboard() {
   const [creatingOrg, setCreatingOrg] = useState(false);
   const [orgCreateError, setOrgCreateError] = useState<string | null>(null);
 
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   if (loading) return <PageSkeleton rows={3} />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
 
@@ -113,6 +119,22 @@ export function AdminDashboard() {
       setOrgCreateError(apiErrorMessage(reason));
     } finally {
       setCreatingOrg(false);
+    }
+  }
+
+  async function deleteViewedOrganization() {
+    if (!viewOrgId || !viewedOrg) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await organizationsApi.remove(viewOrgId, deleteConfirmName);
+      setDeleteConfirmName("");
+      setViewOrgId(null);
+      await reloadOrganizations();
+    } catch (reason) {
+      setDeleteError(apiErrorMessage(reason));
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -227,6 +249,48 @@ export function AdminDashboard() {
               {highestPrivilegedUser.role.replace("_", " ")}
             </span>
           </div>
+        </Card>
+      )}
+
+      {isCrossOrgView && (
+        <Card className="p-5" style={{ borderColor: "var(--risk-critical)" }}>
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4" style={{ color: "var(--risk-critical)" }} strokeWidth={1.75} />
+            <p className="text-sm font-bold" style={{ color: "var(--risk-critical)" }}>
+              Danger zone — delete {viewedOrg?.name ?? "this organization"}
+            </p>
+          </div>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+            This permanently deletes the organization and everything it owns — every user, project,
+            scan, asset, finding, and audit entry. This cannot be undone. Type the organization's
+            exact name to confirm.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <input
+              className="field font-medium sm:w-72"
+              placeholder={viewedOrg?.name ?? "Organization name"}
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn-primary"
+              style={{ background: "var(--risk-critical)" }}
+              disabled={deleting || deleteConfirmName !== viewedOrg?.name}
+              onClick={() => void deleteViewedOrganization()}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>{deleting ? "Deleting..." : "Delete organization"}</span>
+            </button>
+          </div>
+          {deleteError && (
+            <p
+              className="mt-3 rounded-lg border p-2.5 font-mono text-[11px]"
+              style={{ borderColor: "var(--risk-critical)", background: "color-mix(in srgb, var(--risk-critical) 8%, transparent)", color: "var(--risk-critical)" }}
+            >
+              {deleteError}
+            </p>
+          )}
         </Card>
       )}
 

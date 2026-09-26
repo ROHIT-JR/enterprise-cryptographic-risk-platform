@@ -200,6 +200,11 @@ export const organizationsApi = {
   list: async () => (await api.get<Organization[]>("/organizations")).data,
   create: async (payload: { name: string; industry?: string }) =>
     (await api.post<Organization>("/organizations", payload)).data,
+  // Backend re-checks confirmName against the organization's actual name
+  // server-side — the client-side confirmation is a UX convenience, not the
+  // real guard.
+  remove: async (organizationId: string, confirmName: string) =>
+    api.delete(`/organizations/${organizationId}`, { data: { confirm_name: confirmName } }),
 };
 
 export const enterpriseApi = {

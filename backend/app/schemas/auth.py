@@ -84,3 +84,10 @@ class OrganizationCreate(BaseModel):
     @classmethod
     def normalize_name(cls, value: str) -> str:
         return " ".join(value.split())
+
+
+class OrganizationDeleteRequest(BaseModel):
+    """Requires the caller to retype the organization's exact name, since
+    deleting it cascades away every user, asset, scan, and finding it owns."""
+
+    confirm_name: str = Field(min_length=1, max_length=160)

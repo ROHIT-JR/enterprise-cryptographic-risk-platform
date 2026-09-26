@@ -6,7 +6,11 @@ from backend.app.api.assets import list_assets
 from backend.app.api.audit import list_audit_logs
 from backend.app.api.dashboard import dashboard
 from backend.app.api.enterprise import enterprise_overview
-from backend.app.api.organizations import create_organization, list_organizations
+from backend.app.api.organizations import (
+    create_organization,
+    delete_organization,
+    list_organizations,
+)
 from backend.app.api.risk import list_risks
 from backend.app.api.users import create_user, list_users
 from backend.app.auth.dependencies import require_platform_admin, resolve_org_id
@@ -14,7 +18,12 @@ from backend.app.auth.permissions import Role
 from backend.app.auth.service import AuthenticationService
 from backend.app.database import SessionLocal
 from backend.app.models import AuditLog, Organization, User
-from backend.app.schemas.auth import OrganizationCreate, RegisterRequest, UserCreate
+from backend.app.schemas.auth import (
+    OrganizationCreate,
+    OrganizationDeleteRequest,
+    RegisterRequest,
+    UserCreate,
+)
 
 PASSWORD = "Correct-Horse-Battery-2026"
 
@@ -214,3 +223,80 @@ def test_platform_admin_view_as_org_reads_are_scoped_and_audit_logged():
         own_board = dashboard(db=db, user=ordinary_admin, organization_id=target_org.id)
         assert own_board is not None
         assert _count_entries() == 6
+
+
+def test_platform_admin_cannot_delete_own_organization():
+    with SessionLocal() as db:
+        platform_admin = _make_platform_admin(db)
+        with pytest.raises(HTTPException) as excinfo:
+            delete_organization(
+                platform_admin.organization_id,
+                OrganizationDeleteRequest(confirm_name="Platform Test Org"),
+                admin=platform_admin,
+                db=db,
+            )
+        assert excinfo.value.status_code == 400
+
+
+def test_delete_organization_requires_exact_name_confirmation():
+    with SessionLocal() as db:
+        platform_admin = _make_platform_admin(db)
+        target_org = create_organization(
+            OrganizationCreate(name="Doomed Org"), admin=platform_admin, db=db
+        )
+        with pytest.raises(HTTPException) as excinfo:
+            delete_organization(
+                target_org.id,
+                OrganizationDeleteRequest(confirm_name="wrong name"),
+                admin=platform_admin,
+                db=db,
+            )
+        assert excinfo.value.status_code == 400
+        assert db.get(Organization, target_org.id) is not None
+
+
+def test_delete_organization_cascades_and_is_audited_under_the_admins_own_org():
+    with SessionLocal() as db:
+        platform_admin = _make_platform_admin(db)
+        target_org = create_organization(
+            OrganizationCreate(name="Doomed Org For Real"), admin=platform_admin, db=db
+        )
+        member = create_user(
+            UserCreate(
+                username="doomed-analyst",
+                email="doomed-analyst@example.test",
+                password=PASSWORD,
+                role=Role.SECURITY_ANALYST,
+                organization_id=target_org.id,
+            ),
+            administrator=platform_admin,
+            db=db,
+        )
+
+        delete_organization(
+            target_org.id,
+            OrganizationDeleteRequest(confirm_name="Doomed Org For Real"),
+            admin=platform_admin,
+            db=db,
+        )
+
+        assert db.get(Organization, target_org.id) is None
+        assert db.get(User, member.id) is None
+        assert (
+            db.scalar(select(AuditLog).where(AuditLog.organization_id == target_org.id)) is None
+        )
+        deletion_entry = db.scalar(
+            select(AuditLog).where(AuditLog.action == "organization.deleted")
+        )
+        assert deletion_entry is not None
+        assert deletion_entry.organization_id == platform_admin.organization_id
+        assert deletion_entry.event_metadata["deleted_organization_id"] == target_org.id
+
+        with pytest.raises(HTTPException) as excinfo:
+            delete_organization(
+                "not-a-real-org-id",
+                OrganizationDeleteRequest(confirm_name="whatever"),
+                admin=platform_admin,
+                db=db,
+            )
+        assert excinfo.value.status_code == 404
