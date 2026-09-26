@@ -8,7 +8,7 @@ neo4j==6.3.0
 python-multipart==0.0.32
 cryptography==50.0.1
 alembic==1.20.0
-networkx==3.4.2
+networkx==3.7
 numpy==2.2.3
 scipy==1.18.1
 reportlab==5.0.1
