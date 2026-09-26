@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { RoleProtectedRoute } from "./auth/RoleProtectedRoute";
 import { Layout } from "./components/Layout";
 import { LoadingState } from "./components/ui";
 
@@ -17,6 +18,7 @@ const MigrationPlanner = lazy(() => import("./pages/MigrationPlanner").then((mod
 const PQCRecommendations = lazy(() => import("./pages/PQCRecommendations").then((module) => ({ default: module.PQCRecommendations })));
 const PQCBenchmarks = lazy(() => import("./pages/PQCBenchmarks").then((module) => ({ default: module.PQCBenchmarks })));
 const Login = lazy(() => import("./pages/Login").then((module) => ({ default: module.Login })));
+const AdminGateway = lazy(() => import("./pages/AdminGateway").then((module) => ({ default: module.AdminGateway })));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then((module) => ({ default: module.AdminDashboard })));
 const SecurityOperations = lazy(() => import("./pages/SecurityOperations").then((module) => ({ default: module.SecurityOperations })));
 const AuditorView = lazy(() => import("./pages/AuditorView").then((module) => ({ default: module.AuditorView })));
@@ -31,24 +33,35 @@ export default function App() {
         <Suspense fallback={<div className="min-h-screen bg-ink-950"><LoadingState /></div>}>
           <Routes>
             <Route path="login" element={<Login />} />
+            <Route path="control-97addeadb40d2c9b" element={<AdminGateway />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
-            <Route path="upload" element={<UploadCenter />} />
             <Route path="assets" element={<AssetExplorer />} />
             <Route path="graph" element={<KnowledgeGraph />} />
             <Route path="risks" element={<RiskAnalysis />} />
             <Route path="quantum-risk" element={<QuantumRiskDashboard />} />
             <Route path="intelligence" element={<AssetIntelligence />} />
             <Route path="blast-radius" element={<BlastRadius />} />
-            <Route path="migration" element={<MigrationPlanner />} />
-            <Route path="pqc" element={<PQCRecommendations />} />
             <Route path="benchmarks" element={<PQCBenchmarks />} />
-            <Route path="admin" element={<AdminDashboard />} />
-            <Route path="operations" element={<SecurityOperations />} />
-            <Route path="audit" element={<AuditorView />} />
             <Route path="validation" element={<ValidationDashboard />} />
             <Route path="compliance" element={<ComplianceDashboard />} />
+
+            <Route element={<RoleProtectedRoute allowed={["administrator", "security_analyst"]} />}>
+              <Route path="upload" element={<UploadCenter />} />
+              <Route path="migration" element={<MigrationPlanner />} />
+              <Route path="pqc" element={<PQCRecommendations />} />
+              <Route path="operations" element={<SecurityOperations />} />
+            </Route>
+
+            <Route element={<RoleProtectedRoute allowed={["administrator", "auditor"]} />}>
+              <Route path="audit" element={<AuditorView />} />
+            </Route>
+
+            <Route element={<RoleProtectedRoute allowed={["administrator"]} />}>
+              <Route path="admin" element={<AdminDashboard />} />
+            </Route>
+
             <Route path="*" element={<NotFound />} />
               </Route>
             </Route>

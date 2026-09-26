@@ -290,7 +290,7 @@ accounts outside the local demo.
 - Neo4j Browser: <http://localhost:7474>
 - Neo4j Bolt: `localhost:7687`
 
-The built-in credentials are for local development only. Copy `.env.example` to `.env` and replace them before using the stack on a shared machine. Set `ECDAT_SEED_DEMO=false` for an empty inventory.
+The built-in credentials are for local development only. Copy `.env.example` to `.env` and replace them before using the stack on a shared machine. Set `ECDAT_SEED_DEMO=false` for an empty inventory. The demo estate itself lives in the separate [ecdat-x-demo-seed](https://github.com/ROHIT-JR/ecdat-x-demo-seed) repository, installed only as a dev dependency (`backend/requirements-dev.txt`) so the production image never bundles synthetic data.
 
 Docker discovery needs access to the host Docker socket. Determine its group ID with `stat -c '%g' /var/run/docker.sock` and set `DOCKER_GID` in `.env` if it differs from `999`. Treat socket access as privileged and isolate the backend host accordingly.
 
@@ -302,7 +302,7 @@ Backend:
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r backend/requirements-dev.txt
-DATABASE_URL=sqlite+pysqlite:///./ecdat.db ECDAT_NEO4J_ENABLED=false python -m backend.app.seed
+DATABASE_URL=sqlite+pysqlite:///./ecdat.db ECDAT_NEO4J_ENABLED=false python -m ecdat_x_demo_seed.seed
 DATABASE_URL=sqlite+pysqlite:///./ecdat.db ECDAT_NEO4J_ENABLED=false uvicorn backend.app.main:app --reload
 ```
 
@@ -369,7 +369,6 @@ cbom_engine/      ECDAT-CBOM generator
 knowledge_graph/  Neo4j projection and graph contracts
 risk_engine/      Phase 1 compatibility rules and Phase 2 intelligence engines
 migration_engine/ PQC selection and dependency-aware roadmap generation
-sample_data/      Seed data used by the built-in dashboard demo
 sample_enterprise/ Uploadable mixed-language SecureBank discovery fixture
 tests/            Backend, scanner, CBOM, risk, and API-contract tests
 docs/             Architecture, API, development, and security guidance

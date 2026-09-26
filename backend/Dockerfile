@@ -29,17 +29,23 @@ COPY graph_analysis /app/graph_analysis
 COPY lifecycle_engine /app/lifecycle_engine
 COPY benchmarks /app/benchmarks
 COPY config /app/config
-COPY sample_data /app/sample_data
 COPY alembic.ini /app/alembic.ini
 COPY backend/migrations /app/backend/migrations
 
-RUN mkdir -p /app/scan-data && chown -R ecdat:ecdat /app
+RUN mkdir -p /app/scan-data && chown -R ecdat:ecdat /app && chmod +x /app/backend/start.sh
 
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/full', timeout=3)"
 
 FROM base AS development
+
+# git is needed to pip-install ecdat-x-demo-seed's git+https source below; the
+# production stage never installs requirements-dev.txt, so it never needs git
+# and never bundles the demo-seed package or the synthetic data it carries.
+RUN apt-get update && apt-get install --no-install-recommends -y git && rm -rf /var/lib/apt/lists/*
+COPY backend/requirements-dev.txt /tmp/requirements-dev.txt
+RUN python -m pip install -r /tmp/requirements-dev.txt
 
 USER ecdat
 CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

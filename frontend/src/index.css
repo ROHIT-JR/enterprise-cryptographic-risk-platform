@@ -1,45 +1,141 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+/* ===================================================================
+   Design tokens (issue #66) - single source of truth for color.
+   Every component/page should read these CSS variables (directly via
+   style={{...}} or through the Tailwind aliases in tailwind.config.js)
+   instead of hardcoding hex or zinc/indigo utility classes.
+   Declared inside @layer base (a layer Tailwind v4 itself declares via
+   "@layer theme, base, components, utilities;") per the documented
+   Tailwind v4 pattern for custom theme variables.
+   =================================================================== */
+@layer base {
 :root {
   color-scheme: light;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  background: #fafafa;
+
+  --bg-app: #fafafa;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-topbar: #ffffff;
+  --bg-hover: rgba(0, 0, 0, 0.04);
+  --bg-active: rgba(0, 0, 0, 0.06);
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+
+  --text-primary: #09090b;
+  --text-secondary: #3f3f46;
+  --text-muted: #71717a;
+  --text-on-accent: #ffffff;
+
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef2ff;
+
+  --risk-critical: #dc2626;
+  --risk-high: #ea580c;
+  --risk-medium: #d97706;
+  --risk-low: #16a34a;
+  --q-safe: #16a34a;
+
+  /* Decorative asset-type tints (graph node coloring — not risk-semantic). */
+  --tint-library: #9333ea;
+  --tint-protocol: #0d9488;
+  --tint-certificate: #b45309;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-app: #08090b;
+  --bg-card: #121316;
+  --bg-sidebar: #0c0d0e;
+  --bg-topbar: #0c0d0e;
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-active: rgba(255, 255, 255, 0.1);
+
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --text-primary: #f4f4f5;
+  --text-secondary: #d4d4d8;
+  --text-muted: #8b8b93;
+  --text-on-accent: #ffffff;
+
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --accent-soft: rgba(129, 140, 248, 0.12);
+
+  /* Risk colors stay recognizable across themes; only lightened slightly
+     for AA contrast against the dark surfaces above. */
+  --risk-critical: #f87171;
+  --risk-high: #fb923c;
+  --risk-medium: #fbbf24;
+  --risk-low: #4ade80;
+  --q-safe: #4ade80;
+
+  --tint-library: #c084fc;
+  --tint-protocol: #2dd4bf;
+  --tint-certificate: #fbbf24;
+}
+} /* end @layer base (design tokens) */
+
 * { box-sizing: border-box; }
-html { background: #fafafa; }
+html { background: var(--bg-app); }
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  color: #09090b;
-  background: #fafafa;
+  color: var(--text-primary);
+  background: var(--bg-app);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
+  transition: background-color 150ms ease, color 150ms ease;
 }
 
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
-::selection { background: #e0e7ff; color: #312e81; }
+::selection { background: var(--accent-soft); color: var(--accent-hover); }
 
 @layer components {
   /* Linear / Vercel stark technical input */
   .field {
-    @apply w-full rounded border border-zinc-200 bg-white px-3 py-1.5 text-xs text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900;
+    @apply w-full rounded border px-3 py-1.5 text-xs outline-none transition;
+    background: var(--bg-card);
+    border-color: var(--border);
+    color: var(--text-primary);
   }
-  
-  /* Primary Technical Action Button */
+  .field::placeholder { color: var(--text-muted); }
+  .field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  /* Primary Technical Action Button — every button gets the same
+     lift-on-hover/press-on-click feedback baked in, not opt-in. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded bg-indigo-600 px-3.5 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-500 active:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded px-3.5 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40;
+    background: var(--accent);
+    color: var(--text-on-accent);
+    transition: background-color 150ms ease, transform 100ms ease, box-shadow 200ms ease;
   }
-  
-  /* Secondary / Ghost button */
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.98); transition-duration: 60ms; }
+
+  /* Secondary / Ghost button — same feedback contract as .btn-primary. */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-800 transition hover:bg-zinc-50 hover:text-zinc-950 active:bg-zinc-100 disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded border px-3 py-1.5 text-xs font-medium disabled:opacity-40;
+    background: var(--bg-card);
+    border-color: var(--border);
+    color: var(--text-secondary);
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 100ms ease;
   }
+  .btn-secondary:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); transform: translateY(-1px); }
+  .btn-secondary:active:not(:disabled) { transform: translateY(0) scale(0.98); transition-duration: 60ms; }
 
   /* Segmented control tab */
   .segment-tab {
@@ -47,35 +143,89 @@ button, a { -webkit-tap-highlight-color: transparent; }
   }
 }
 
+/* ===================================================================
+   Micro-interaction / animation system (issue #67) — the single shared
+   contract every clickable element and loading state uses. No component
+   should hand-roll its own hover/click transition outside this block.
+   =================================================================== */
+@layer components {
+  /* Every clickable surface: buttons, nav items, table row actions,
+     dropdown triggers, card CTAs. */
+  .interactive {
+    transition: background-color 150ms ease, border-color 150ms ease, transform 100ms ease, box-shadow 200ms ease;
+  }
+  .interactive:hover { transform: translateY(-1px); }
+  .interactive:active { transform: translateY(0) scale(0.98); transition-duration: 60ms; }
+
+  /* Cards: lift + accent border glow on hover. */
+  .card-hover { transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease; }
+  .card-hover:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Sidebar/nav active state — an instant fill, not a transitioned one. */
+  .nav-active { background: var(--bg-active); border-radius: 0.5rem; }
+
+  /* Page-level entrance. */
+  .page-enter { animation: fadeIn 0.25s ease-out; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Staggered children — e.g. a KPI card grid appearing one-by-one. */
+  .stagger > * { animation: fadeIn 0.3s ease-out both; }
+  .stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger > *:nth-child(6) { animation-delay: 250ms; }
+  .stagger > *:nth-child(7) { animation-delay: 300ms; }
+  .stagger > *:nth-child(8) { animation-delay: 350ms; }
+
+  /* Skeleton shimmer for loading states. */
+  .shimmer {
+    background: linear-gradient(90deg, transparent 0%, var(--bg-hover) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+}
+
 /* Minimalist technical scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { border-radius: 3px; background: #d4d4d8; }
-::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+::-webkit-scrollbar-thumb { border-radius: 3px; background: var(--border-strong); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ReactFlow overrides — Stark Light SOC theme */
-.graph-controls { overflow: hidden; border: 1px solid #e4e4e7 !important; border-radius: 4px !important; box-shadow: 0 1px 2px rgba(0,0,0,.05) !important; }
-.graph-controls button { border-bottom-color: #f4f4f5 !important; background: #ffffff !important; fill: #52525b !important; }
-.graph-controls button:hover { background: #f4f4f5 !important; }
-.graph-minimap { overflow: hidden; border: 1px solid #e4e4e7; border-radius: 4px; background: #fafafa !important; }
+/* ReactFlow overrides — theme-aware via tokens */
+.graph-controls { overflow: hidden; border: 1px solid var(--border) !important; border-radius: 8px !important; box-shadow: 0 1px 2px rgba(0,0,0,.05) !important; }
+.graph-controls button { border-bottom-color: var(--border) !important; background: var(--bg-card) !important; fill: var(--text-muted) !important; }
+.graph-controls button:hover { background: var(--bg-hover) !important; }
+.graph-minimap { overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-app) !important; }
 .react-flow__attribution { display: none; }
-.react-flow__background { background: #fafafa !important; }
+.react-flow__background { background: var(--bg-app) !important; }
 
 /* Tabular nums */
 .tabular-nums { font-variant-numeric: tabular-nums; }
 
 /* Blast radius propagation animations */
 @keyframes pulse-glow-red {
-  0%, 100% { box-shadow: 0 0 0 1px #dc2626; }
-  50%       { box-shadow: 0 0 0 3px rgba(220,38,38,0.25); }
+  0%, 100% { box-shadow: 0 0 0 1px var(--risk-critical); }
+  50%       { box-shadow: 0 0 0 3px color-mix(in srgb, var(--risk-critical) 25%, transparent); }
 }
 @keyframes pulse-glow-orange {
-  0%, 100% { box-shadow: 0 0 0 1px #ea580c; }
-  50%       { box-shadow: 0 0 0 3px rgba(234,88,12,0.20); }
+  0%, 100% { box-shadow: 0 0 0 1px var(--risk-high); }
+  50%       { box-shadow: 0 0 0 3px color-mix(in srgb, var(--risk-high) 20%, transparent); }
 }
 @keyframes pulse-glow-amber {
-  0%, 100% { box-shadow: 0 0 0 1px #d97706; }
-  50%       { box-shadow: 0 0 0 3px rgba(217,119,6,0.18); }
+  0%, 100% { box-shadow: 0 0 0 1px var(--risk-medium); }
+  50%       { box-shadow: 0 0 0 3px color-mix(in srgb, var(--risk-medium) 18%, transparent); }
 }
 @keyframes edge-flow {
   0%   { stroke-dashoffset: 20; }
@@ -95,6 +245,14 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .animate-pulse-glow-amber  { animation: pulse-glow-amber 1.2s ease-in-out infinite 0.3s; }
 .animate-slide-in-right    { animation: slide-in-right 0.2s ease-out forwards; }
 .animate-fade-in           { animation: fade-in 0.15s ease-out forwards; }
+
+/* Mobile sidebar sheet (issue #73) — a full off-canvas slide from the left
+   edge, distinct from .animate-slide-in-right's small 12px nudge above. */
+@keyframes sheet-slide-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+.animate-sheet-slide-in { animation: sheet-slide-in 220ms cubic-bezier(0.32, 0.72, 0, 1) forwards; }
 
 /* HNDL timeline animations */
 @keyframes data-packet {

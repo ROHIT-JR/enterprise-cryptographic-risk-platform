@@ -3,11 +3,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from backend.app.api.serializers import serialize_risk
-from backend.app.auth.dependencies import get_current_user
+from backend.app.auth.dependencies import get_current_user, resolve_org_id
 from backend.app.database import get_db
 from backend.app.models import Asset, Project, RiskFinding, User
 from backend.app.schemas.common import DistributionItem
 from backend.app.schemas.risk import RiskPage
+from backend.app.services.audit_service import record_audit
 
 router = APIRouter(prefix="/risks", tags=["Intelligence"])
 
@@ -18,6 +19,7 @@ def list_risks(
     severity: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
+    organization_id: str | None = Query(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> RiskPage:
@@ -28,7 +30,17 @@ def list_risks(
     """
     filters = []
     if isinstance(user, User):
-        filters.append(RiskFinding.organization_id == user.organization_id)
+        target_org_id = resolve_org_id(user, organization_id)
+        if target_org_id != user.organization_id:
+            record_audit(
+                db,
+                action="risks.viewed_cross_org",
+                organization_id=target_org_id,
+                user=user,
+                metadata={"viewed_by_platform_admin": user.id},
+            )
+            db.commit()
+        filters.append(RiskFinding.organization_id == target_org_id)
     if project_id:
         filters.append(RiskFinding.project_id == project_id)
     if severity:

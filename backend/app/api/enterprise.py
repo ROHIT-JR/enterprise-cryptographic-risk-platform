@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend.app.auth.dependencies import get_current_user
+from backend.app.auth.dependencies import get_current_user, resolve_org_id
 from backend.app.database import get_db
 from backend.app.models import (
     Asset,
@@ -14,20 +14,34 @@ from backend.app.models import (
     User,
 )
 from backend.app.schemas.enterprise import AuditLogResponse, EnterpriseOverview
+from backend.app.services.audit_service import record_audit
 
 router = APIRouter(prefix="/enterprise", tags=["Enterprise"])
 
 
 @router.get("/overview", response_model=EnterpriseOverview)
 def enterprise_overview(
-    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    organization_id: str | None = Query(default=None),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> EnterpriseOverview:
     """Return organization-wide totals for the administrator dashboard.
 
     Counts organizations, users, projects, scans, assets, critical risks and assets in migration,
-    alongside the most recent audit events.
+    alongside the most recent audit events. Platform admins may pass `organization_id` to view
+    another organization's overview; every such cross-org view is itself recorded in that
+    organization's audit trail.
     """
-    organization_id = user.organization_id
+    organization_id = resolve_org_id(user, organization_id)
+    if organization_id != user.organization_id:
+        record_audit(
+            db,
+            action="enterprise_overview.viewed_cross_org",
+            organization_id=organization_id,
+            user=user,
+            metadata={"viewed_by_platform_admin": user.id},
+        )
+        db.commit()
     recent = list(
         db.scalars(
             select(AuditLog)

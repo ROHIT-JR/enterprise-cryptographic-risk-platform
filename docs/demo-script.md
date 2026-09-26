@@ -96,7 +96,7 @@ so the graph shows that service as directly dependent.
 application node per upload, so a same-org "N of 6 services affected"
 statistic needs either separate scans per service or a hand-modeled
 dependency graph (this is how the SecureBank demo achieves its blast-radius
-numbers — see `backend/app/seed.py::seed_securebank_demo`). If you want that
+numbers — see `seed_securebank_demo` in the [ecdat-x-demo-seed](https://github.com/ROHIT-JR/ecdat-x-demo-seed) repository). If you want that
 specific narrative beat for India Payments Platform too, upload each
 `services/*` subdirectory as its own project under the same organization
 first — then a shared library (e.g. Bouncy Castle, used by both the NPCI

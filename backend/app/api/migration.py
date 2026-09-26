@@ -17,6 +17,12 @@ from backend.app.schemas.intelligence import (
 
 router = APIRouter(prefix="/migration", tags=["Migration"])
 
+# Heuristic engineering-hours per complexity band. There is no historical
+# migration-duration dataset to fit this against, so it is a documented
+# estimate (same role as the blast-radius endpoint's `len(dependents) * 6`
+# heuristic) rather than a measured figure.
+_EFFORT_HOURS_BY_COMPLEXITY = {"low": 20, "medium": 48, "high": 80, "critical": 120}
+
 
 def _recommendation(
     plan: MigrationPlan,
@@ -34,6 +40,8 @@ def _recommendation(
         risk_score=analysis.final_score if analysis else None,
         reasons=plan.reasons,
         recommendation=plan.recommendation,
+        dependent_systems=analysis.dependent_systems if analysis else 0,
+        estimated_hours=_EFFORT_HOURS_BY_COMPLEXITY.get(plan.complexity.lower(), 48),
     )
 
 

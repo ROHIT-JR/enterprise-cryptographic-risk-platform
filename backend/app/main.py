@@ -45,11 +45,16 @@ async def lifespan(_: FastAPI):
     init_db()
     settings.scan_storage_path.mkdir(parents=True, exist_ok=True)
     if settings.seed_demo:
-        from backend.app.seed import seed_india_payments_demo_org, seed_securebank_demo
+        from ecdat_x_demo_seed import seed_india_payments_demo_org, seed_securebank_demo
 
         with SessionLocal() as db:
             seed_securebank_demo(db)
             seed_india_payments_demo_org(db)
+    if settings.admin_username and settings.admin_password:
+        from backend.app.services.admin_bootstrap import bootstrap_platform_admin
+
+        with SessionLocal() as db:
+            bootstrap_platform_admin(db, settings.admin_username, settings.admin_password)
     yield
 
 

@@ -56,6 +56,8 @@ services:
       ECDAT_CORS_ORIGINS: ${ECDAT_CORS_ORIGINS:-http://localhost:5173}
       ECDAT_TLS_ALLOW_PRIVATE_TARGETS: ${ECDAT_TLS_ALLOW_PRIVATE_TARGETS:-false}
       ECDAT_SEED_DEMO: ${ECDAT_SEED_DEMO:-true}
+      ECDAT_ADMIN_USERNAME: ${ECDAT_ADMIN_USERNAME:-}
+      ECDAT_ADMIN_PASSWORD: ${ECDAT_ADMIN_PASSWORD:-}
       ECDAT_SCAN_STORAGE_PATH: /app/scan-data
     volumes:
       - ./backend:/app/backend
@@ -64,8 +66,10 @@ services:
       - ./knowledge_graph:/app/knowledge_graph
       - ./risk_engine:/app/risk_engine
       - ./graph_analysis:/app/graph_analysis
+      - ./migration_engine:/app/migration_engine
       - ./lifecycle_engine:/app/lifecycle_engine
-      - ./sample_data:/app/sample_data:ro
+      - ./benchmarks:/app/benchmarks
+      - ./config:/app/config
       - scan_data:/app/scan-data
       - /var/run/docker.sock:/var/run/docker.sock
     group_add:

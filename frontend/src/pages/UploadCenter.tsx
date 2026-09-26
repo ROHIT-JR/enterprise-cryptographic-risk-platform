@@ -18,6 +18,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiErrorMessage, scansApi } from "../api/client";
 import { Card, PageHeader, StatusBadge } from "../components/ui";
+import { ScanProgressSteps, deriveScanStepsFromEvents } from "../components/ScanProgressSteps";
 import { useScanProgress } from "../hooks/useScanProgress";
 import type { Criticality, Scan } from "../types/api";
 
@@ -89,7 +90,7 @@ export function UploadCenter() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="page-enter space-y-8">
       <PageHeader
         eyebrow="Discovery Intake Console"
         title="Upload Center"
@@ -97,7 +98,7 @@ export function UploadCenter() {
       />
 
       {/* Unified Ingestion Control Panel */}
-      <Card className="overflow-hidden border-zinc-300 shadow-subtle">
+      <Card className="card-hover overflow-hidden border-zinc-300 shadow-subtle">
         {/* Scope Configuration Bar */}
         <div className="grid gap-3 border-b border-zinc-200 bg-zinc-50/70 p-4 md:grid-cols-[1fr_220px]">
           <div>
@@ -133,7 +134,7 @@ export function UploadCenter() {
           <button
             type="button"
             onClick={() => setSelectedKind("repository")}
-            className={`flex items-center gap-2 rounded px-3.5 py-2 font-mono text-xs font-semibold transition ${
+            className={`interactive flex items-center gap-2 rounded px-3.5 py-2 font-mono text-xs font-semibold ${
               selectedKind === "repository"
                 ? "bg-white text-zinc-950 shadow-xs border border-zinc-200/80"
                 : "text-zinc-600 hover:text-zinc-950"
@@ -145,7 +146,7 @@ export function UploadCenter() {
           <button
             type="button"
             onClick={() => setSelectedKind("docker")}
-            className={`flex items-center gap-2 rounded px-3.5 py-2 font-mono text-xs font-semibold transition ${
+            className={`interactive flex items-center gap-2 rounded px-3.5 py-2 font-mono text-xs font-semibold ${
               selectedKind === "docker"
                 ? "bg-white text-zinc-950 shadow-xs border border-zinc-200/80"
                 : "text-zinc-600 hover:text-zinc-950"
@@ -157,7 +158,7 @@ export function UploadCenter() {
           <button
             type="button"
             onClick={() => setSelectedKind("tls")}
-            className={`flex items-center gap-2 rounded px-3.5 py-2 font-mono text-xs font-semibold transition ${
+            className={`interactive flex items-center gap-2 rounded px-3.5 py-2 font-mono text-xs font-semibold ${
               selectedKind === "tls"
                 ? "bg-white text-zinc-950 shadow-xs border border-zinc-200/80"
                 : "text-zinc-600 hover:text-zinc-950"
@@ -191,13 +192,15 @@ export function UploadCenter() {
                   if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]);
                 }}
                 onClick={() => inputRef.current?.click()}
-                className={`relative flex min-h-[140px] cursor-pointer flex-col items-center justify-center rounded border border-dashed transition p-6 text-center ${
-                  dragActive
-                    ? "border-indigo-600 bg-indigo-50/40"
+                className="interactive relative flex min-h-[140px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed p-6 text-center"
+                style={{
+                  borderColor: dragActive ? "var(--accent)" : file ? "var(--risk-low)" : "var(--border-strong)",
+                  background: dragActive
+                    ? "var(--accent-soft)"
                     : file
-                      ? "border-emerald-600 bg-emerald-50/20"
-                      : "border-zinc-300 bg-zinc-50/60 hover:border-zinc-500 hover:bg-zinc-100/40"
-                }`}
+                      ? "color-mix(in srgb, var(--risk-low) 8%, transparent)"
+                      : "var(--bg-hover)",
+                }}
               >
                 <input
                   ref={inputRef}
@@ -207,30 +210,33 @@ export function UploadCenter() {
                   className="hidden"
                 />
 
-                <div className="flex h-9 w-9 items-center justify-center rounded border border-zinc-300 bg-white mb-2 shadow-xs text-zinc-800">
+                <div
+                  className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg border shadow-xs"
+                  style={{ borderColor: "var(--border)", background: "var(--bg-card)" }}
+                >
                   {file ? (
-                    <FileCode2 className="h-5 w-5 text-emerald-700" strokeWidth={1.75} />
+                    <FileCode2 className="h-5 w-5" style={{ color: "var(--risk-low)" }} strokeWidth={1.75} />
                   ) : (
-                    <UploadCloud className="h-5 w-5 text-zinc-700" strokeWidth={1.75} />
+                    <UploadCloud className="h-5 w-5" style={{ color: dragActive ? "var(--accent)" : "var(--text-secondary)" }} strokeWidth={1.75} />
                   )}
                 </div>
 
                 {file ? (
                   <div>
-                    <p className="font-mono text-xs font-bold text-zinc-950">{file.name}</p>
-                    <p className="font-mono text-[11px] text-zinc-600 mt-0.5">
+                    <p className="font-mono text-xs font-bold" style={{ color: "var(--text-primary)" }}>{file.name}</p>
+                    <p className="mt-0.5 font-mono text-[11px]" style={{ color: "var(--text-muted)" }}>
                       {(file.size / (1024 * 1024)).toFixed(2)} MB · Ready for AST parser ingestion
                     </p>
-                    <span className="inline-block mt-2 font-mono text-[10px] text-indigo-700 underline font-medium">
+                    <span className="mt-2 inline-block font-mono text-[10px] font-medium underline" style={{ color: "var(--accent)" }}>
                       Click to replace archive
                     </span>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-xs font-semibold text-zinc-900">
-                      Drag and drop repository archive here, or <span className="text-indigo-600 underline">browse</span>
+                    <p className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
+                      Drag and drop repository archive here, or <span className="underline" style={{ color: "var(--accent)" }}>browse</span>
                     </p>
-                    <p className="font-mono text-[11px] text-zinc-500 mt-1">
+                    <p className="mt-1 font-mono text-[11px]" style={{ color: "var(--text-muted)" }}>
                       Target formats: .ZIP (Max 50MB) · Parses Python, Java, JS/TS, Go, C/C++ source & manifests
                     </p>
                   </div>
@@ -378,13 +384,19 @@ export function UploadCenter() {
                 </span>
                 <span className="font-bold text-zinc-950">{liveProgress ?? scan.progress}%</span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 border border-zinc-200">
+              <div className="h-1.5 w-full overflow-hidden rounded-full border" style={{ background: "var(--bg-hover)", borderColor: "var(--border)" }}>
                 <div
-                  className="h-full bg-indigo-600 transition-all duration-500"
-                  style={{ width: `${liveProgress ?? scan.progress}%` }}
+                  className={`h-full transition-all duration-500 ${["queued", "running"].includes(scan.status) ? "shimmer" : ""}`}
+                  style={{ width: `${liveProgress ?? scan.progress}%`, background: "var(--accent)" }}
                 />
               </div>
             </div>
+
+            {/* Step-by-step progress (issue #67) — derived from the same
+                real SSE checkpoints as the log below, not a fixed demo timer. */}
+            {liveScanId && (
+              <ScanProgressSteps steps={deriveScanStepsFromEvents(liveEvents, liveProgress)} />
+            )}
 
             {/* Live Scan Log */}
             {liveEvents.length > 0 && (

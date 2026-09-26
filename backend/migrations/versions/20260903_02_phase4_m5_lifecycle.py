@@ -1,7 +1,7 @@
 """phase4_m5_lifecycle
 
 Revision ID: 20260903_02_phase4_m5_lifecycle
-Revises: 20260903_01_phase4_m4_optimizer
+Revises: 20260903_01_phase4_m4
 Create Date: 2026-09-03 11:00:00.000000
 
 """
@@ -18,43 +18,41 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # On a fresh database revision 20260829_01 already builds the *current* schema, so the
-    # lifecycle columns and table exist. Only databases created before this revision lack them.
-    inspector = sa.inspect(op.get_bind())
-    if "lifecycle_state" not in {c["name"] for c in inspector.get_columns("assets")}:
-        _add_asset_lifecycle_columns()
-    if "crypto_lifecycle_events" not in inspector.get_table_names():
-        _create_lifecycle_events_table()
+    # Migration 20260829_01 bootstraps the schema via Base.metadata.create_all(),
+    # which reflects whatever the *current* model classes declare — both the
+    # assets columns and the crypto_lifecycle_events table below already exist
+    # on a database that's never run these migrations before. Guard every
+    # add_column/create_table/create_index so this migration is idempotent for
+    # both a fresh database and an older one that predates this revision.
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    asset_columns = {col["name"] for col in inspector.get_columns("assets")}
+    asset_indexes = {idx["name"] for idx in inspector.get_indexes("assets")}
 
-
-def _add_asset_lifecycle_columns() -> None:
-    # SQLite has no ALTER COLUMN, so locking these to NOT NULL after backfilling has to go
-    # through Alembic's batch mode (it recreates the table on SQLite; it is a plain ALTER
-    # COLUMN, with no recreation, on backends that support it directly, such as Postgres).
-    with op.batch_alter_table("assets") as batch_op:
-        batch_op.add_column(sa.Column('lifecycle_state', sa.String(length=32), nullable=True))
-        batch_op.add_column(sa.Column('governance_status', sa.String(length=32), nullable=True))
-        batch_op.add_column(
-            sa.Column('lifecycle_updated_at', sa.DateTime(timezone=True), nullable=True)
-        )
+    # Asset table modifications
+    if "lifecycle_state" not in asset_columns:
+        op.add_column('assets', sa.Column('lifecycle_state', sa.String(length=32), nullable=True))
+    if "governance_status" not in asset_columns:
+        op.add_column('assets', sa.Column('governance_status', sa.String(length=32), nullable=True))
+    if "lifecycle_updated_at" not in asset_columns:
+        op.add_column('assets', sa.Column('lifecycle_updated_at', sa.DateTime(timezone=True), nullable=True))
 
     op.execute("UPDATE assets SET lifecycle_state = 'DISCOVERED' WHERE lifecycle_state IS NULL")
     op.execute("UPDATE assets SET governance_status = 'ACTIVE' WHERE governance_status IS NULL")
     op.execute("UPDATE assets SET lifecycle_updated_at = CURRENT_TIMESTAMP WHERE lifecycle_updated_at IS NULL")
 
-    with op.batch_alter_table("assets") as batch_op:
-        batch_op.alter_column('lifecycle_state', existing_type=sa.String(length=32), nullable=False)
-        batch_op.alter_column('governance_status', existing_type=sa.String(length=32), nullable=False)
-        batch_op.alter_column(
-            'lifecycle_updated_at', existing_type=sa.DateTime(timezone=True), nullable=False
-        )
+    op.alter_column('assets', 'lifecycle_state', nullable=False)
+    op.alter_column('assets', 'governance_status', nullable=False)
+    op.alter_column('assets', 'lifecycle_updated_at', nullable=False)
 
-    op.create_index(op.f('ix_assets_lifecycle_state'), 'assets', ['lifecycle_state'], unique=False)
-    op.create_index(op.f('ix_assets_governance_status'), 'assets', ['governance_status'], unique=False)
+    if op.f('ix_assets_lifecycle_state') not in asset_indexes:
+        op.create_index(op.f('ix_assets_lifecycle_state'), 'assets', ['lifecycle_state'], unique=False)
+    if op.f('ix_assets_governance_status') not in asset_indexes:
+        op.create_index(op.f('ix_assets_governance_status'), 'assets', ['governance_status'], unique=False)
 
+    if inspector.has_table('crypto_lifecycle_events'):
+        return
 
-
-def _create_lifecycle_events_table() -> None:
     # CryptoLifecycleEvent table creation
     op.create_table('crypto_lifecycle_events',
         sa.Column('id', sa.String(length=36), nullable=False),

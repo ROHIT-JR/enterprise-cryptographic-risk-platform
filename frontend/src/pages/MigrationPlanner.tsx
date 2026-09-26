@@ -1,26 +1,22 @@
-import { ArrowDown, ChevronDown, ChevronUp, Route, ShieldCheck, Info } from "lucide-react";
-import { useState } from "react";
+import { ArrowDown, ChevronDown, ChevronUp, Clock, Route, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
+import { useMemo, useState } from "react";
 import { migrationApi, apiErrorMessage } from "../api/client";
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge } from "../components/ui";
+import { Card, EmptyState, ErrorState, PageHeader, PageSkeleton, SeverityBadge } from "../components/ui";
+import { NumberTicker } from "../components/NumberTicker";
+import { GanttChart, computeWaveSchedule } from "../components/migration/GanttChart";
+import { CostOfDelay } from "../components/migration/CostOfDelay";
+import { TaskDetail } from "../components/migration/TaskDetail";
 import { useAsync } from "../hooks/useAsync";
 import type { MigrationRecommendation, Severity } from "../types/api";
 
-// Wave configuration — months + human light colors
-const WAVE_CONFIG = [
-  { wave: 1, start: 0,  end: 6,  color: "#0369a1", bg: "#f0f9ff", border: "#bae6fd", label: "Foundations" },
-  { wave: 2, start: 3,  end: 12, color: "#4f46e5", bg: "#eef2ff", border: "#c7d2fe", label: "Libraries" },
-  { wave: 3, start: 9,  end: 18, color: "#b45309", bg: "#fffbeb", border: "#fde68a", label: "Applications" },
-] as const;
+const CURRENT_YEAR = new Date().getFullYear();
+// Same "Moderate" scenario baseline used on the Quantum Risk Dashboard
+// (config/quantum_timeline.json), kept consistent across Phase 2 pages.
+const QDAY_YEAR = 2035;
 
-const TOTAL_MONTHS = 18;
-
-// Complexity → effort multiplier
-const EFFORT_HOURS: Record<string, number> = {
-  critical: 80,
-  high: 40,
-  medium: 20,
-  low: 8,
-};
+// Assumed engineer headcount for the schedule shown here — see
+// components/migration/GanttChart.tsx for the throughput this implies.
+const TEAM_SIZE = 2;
 
 function complexityToSeverity(c: string): Severity {
   if (c === "critical") return "critical";
@@ -29,235 +25,172 @@ function complexityToSeverity(c: string): Severity {
   return "low";
 }
 
-// ─────────────────────────────────────────────
-// Gantt Chart
-// ─────────────────────────────────────────────
-function GanttChart({ selectedWave, onSelectWave }: { selectedWave: number | null; onSelectWave: (w: number | null) => void }) {
-  return (
-    <Card className="p-5 md:p-6">
-      <p className="mb-1 text-base font-semibold text-slate-900">Migration Timeline</p>
-      <p className="mb-5 text-xs text-slate-500">3-wave dependency-aware migration roadmap · select a wave below to inspect tasks</p>
-
-      {/* Month axis */}
-      <div className="mb-2 flex pl-28">
-        {Array.from({ length: TOTAL_MONTHS }, (_, i) => i + 1).map((m) => (
-          <div key={m} className="flex-1 text-center text-[10px] font-medium text-slate-400">{m}</div>
-        ))}
-      </div>
-
-      {/* Bars */}
-      <div className="space-y-3">
-        {WAVE_CONFIG.map(({ wave, start, end, color, bg, border, label }) => {
-          const isSelected = selectedWave === wave;
-          const barLeft = (start / TOTAL_MONTHS) * 100;
-          const barWidth = ((end - start) / TOTAL_MONTHS) * 100;
-          return (
-            <div key={wave} className="flex items-center gap-3">
-              {/* Label */}
-              <button
-                className="w-28 shrink-0 text-left transition hover:opacity-80"
-                onClick={() => onSelectWave(isSelected ? null : wave)}
-              >
-                <p className="text-xs font-bold" style={{ color }}>Wave {wave}</p>
-                <p className="text-[11px] text-slate-500">{label}</p>
-              </button>
-              {/* Track */}
-              <div className="relative h-9 flex-1 rounded-lg border border-slate-200 bg-slate-50 overflow-hidden">
-                {/* Month grid lines */}
-                {Array.from({ length: TOTAL_MONTHS - 1 }, (_, i) => i + 1).map((m) => (
-                  <div
-                    key={m}
-                    className="absolute inset-y-0 w-px bg-slate-200/70"
-                    style={{ left: `${(m / TOTAL_MONTHS) * 100}%` }}
-                  />
-                ))}
-                {/* Bar */}
-                <button
-                  className="absolute inset-y-1 rounded-md border transition hover:opacity-95"
-                  style={{
-                    left: `${barLeft}%`,
-                    width: `${barWidth}%`,
-                    background: bg,
-                    borderColor: border,
-                    boxShadow: isSelected ? `0 0 0 2px ${color}` : "none",
-                  }}
-                  onClick={() => onSelectWave(isSelected ? null : wave)}
-                >
-                  <span className="flex h-full items-center justify-center text-xs font-semibold" style={{ color }}>
-                    Months {start + 1}–{end}
-                  </span>
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Month ruler */}
-      <div className="mt-4 pl-28">
-        <div className="relative h-1 w-full rounded-full bg-slate-200" />
-        <div className="mt-1.5 flex justify-between text-[11px] text-slate-400">
-          <span>Month 1</span><span>Month 6</span><span>Month 12</span><span>Month 18</span>
-        </div>
-      </div>
-
-      {/* Dependency arrows legend */}
-      <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500 border-t border-slate-100 pt-3">
-        <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 bg-sky-500" /> Wave 2 depends on Wave 1 foundations</span>
-        <span className="flex items-center gap-1.5"><span className="h-0.5 w-5 bg-indigo-500" /> Wave 3 depends on Wave 2 shared libraries</span>
-      </div>
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────
-// Wave detail panel
-// ─────────────────────────────────────────────
-function WaveDetailPanel({
-  waveNum,
-  items,
-}: {
-  waveNum: number;
-  items: MigrationRecommendation[];
-}) {
-  const cfg = WAVE_CONFIG.find((w) => w.wave === waveNum);
-  const totalEffort = items.reduce(
-    (sum, item) => sum + (EFFORT_HOURS[item.complexity] ?? 20),
-    0,
-  );
-  return (
-    <Card className="overflow-hidden animate-fade-in border-t-2" style={{ borderTopColor: cfg?.color }}>
-      <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 bg-slate-50/50">
-        <span
-          className="grid h-8 w-8 place-items-center rounded-lg text-xs font-bold"
-          style={{ background: cfg?.bg, color: cfg?.color, border: `1px solid ${cfg?.border}` }}
-        >
-          {waveNum}
-        </span>
-        <div>
-          <p className="font-semibold text-slate-900">Wave {waveNum}: {cfg?.label}</p>
-          <p className="text-xs text-slate-500">
-            {items.length} assets · ~{totalEffort} hours estimated effort · Window: Months {cfg?.start !== undefined ? cfg.start + 1 : "?"}–{cfg?.end}
-          </p>
-        </div>
-        <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
-          <Info className="h-4 w-4 text-blue-600" />
-          {waveNum === 2 ? "Requires Wave 1 completion" : waveNum === 3 ? "Requires Wave 2 completion" : "Foundation layer"}
-        </div>
-      </div>
-      <div className="divide-y divide-slate-100">
-        {items.slice(0, 12).map((item) => (
-          <div key={item.asset_id} className="grid gap-3 px-5 py-3.5 text-sm transition hover:bg-slate-50 md:grid-cols-[1fr_160px_1fr_110px_90px] md:items-center">
-            <div>
-              <p className="font-medium text-slate-800">{item.asset_name}</p>
-              <p className="mt-0.5 text-xs capitalize text-slate-400">{item.asset_type}</p>
-            </div>
-            <p className="font-mono text-xs text-slate-500">{item.current_algorithm}</p>
-            <div className="flex items-center gap-2 text-xs font-medium text-blue-700">
-              <ShieldCheck className="h-4 w-4 shrink-0 text-blue-600" />
-              {item.recommended_algorithm}
-            </div>
-            <SeverityBadge severity={complexityToSeverity(item.complexity)} />
-            <p className="text-xs text-slate-500">{EFFORT_HOURS[item.complexity] ?? 20}h est.</p>
-          </div>
-        ))}
-        {items.length > 12 && (
-          <div className="px-5 py-3 text-center text-xs text-slate-500 bg-slate-50">
-            +{items.length - 12} more assets in this wave
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-// ─────────────────────────────────────────────
-// Main page
-// ─────────────────────────────────────────────
 export function MigrationPlanner() {
   const { data, error, loading, reload } = useAsync(migrationApi.roadmap, []);
   const [selectedWave, setSelectedWave] = useState<number | null>(null);
   const [expandedWave, setExpandedWave] = useState<number | null>(null);
+  const [selectedTask, setSelectedTask] = useState<{ item: MigrationRecommendation; waveTitle: string } | null>(null);
 
-  if (loading) return <LoadingState label="Building dependency-aware migration waves" />;
+  const schedule = useMemo(() => (data ? computeWaveSchedule(data.waves) : []), [data]);
+  const totalHours = useMemo(() => (data ? data.waves.flatMap((w) => w.items).reduce((sum, i) => sum + i.estimated_hours, 0) : 0), [data]);
+  const durationMonths = schedule.at(-1)?.endMonth ?? 0;
+  const qDayMonth = Math.max(1, (QDAY_YEAR - CURRENT_YEAR) * 12);
+  const baseCompletionYear = CURRENT_YEAR + Math.ceil(durationMonths / 12);
+
+  const wave1QuickWins = useMemo(() => {
+    if (!data) return null;
+    const wave1 = data.waves.find((w) => w.wave === 1);
+    if (!wave1 || wave1.items.length === 0) return null;
+    const cheapest = [...wave1.items].sort((a, b) => a.estimated_hours - b.estimated_hours).slice(0, 3);
+    const hours = cheapest.reduce((sum, i) => sum + i.estimated_hours, 0);
+    return { count: cheapest.length, hours, assets: cheapest.map((i) => i.asset_name) };
+  }, [data]);
+
+  if (loading) return <PageSkeleton rows={5} />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
 
   return (
-    <div className="space-y-8">
+    <div className="page-enter space-y-8">
       <PageHeader
         eyebrow="Crypto-agility roadmap"
         title="Migration planner"
         description="Migrate trust anchors and shared security components before the applications that depend on them."
       />
 
-      {/* Gantt chart */}
-      <GanttChart selectedWave={selectedWave} onSelectWave={setSelectedWave} />
+      {/* Resource & Effort Summary */}
+      <section className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="card-hover p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>Total estimated effort</p>
+              <p className="tabular-nums mt-2 text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+                <NumberTicker end={totalHours} duration={1.1} suffix="h" />
+              </p>
+            </div>
+            <span className="rounded-lg p-2.5" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}><Clock className="h-5 w-5" /></span>
+          </div>
+        </Card>
+        <Card className="card-hover p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>Recommended team size</p>
+              <p className="tabular-nums mt-2 text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+                <NumberTicker end={TEAM_SIZE} duration={0.8} suffix=" engineers" />
+              </p>
+            </div>
+            <span className="rounded-lg p-2.5" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}><Users className="h-5 w-5" /></span>
+          </div>
+        </Card>
+        <Card className="card-hover p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>Estimated duration</p>
+              <p className="tabular-nums mt-2 text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+                <NumberTicker end={durationMonths} duration={1.1} suffix=" months" />
+              </p>
+            </div>
+            <span className="rounded-lg p-2.5" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}><Route className="h-5 w-5" /></span>
+          </div>
+        </Card>
+        <Card className="p-5" style={{ borderColor: "var(--risk-low)" }}>
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4" style={{ color: "var(--risk-low)" }} />
+            <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--risk-low)" }}>Wave 1 quick win</p>
+          </div>
+          {wave1QuickWins ? (
+            <p className="mt-2 text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              Migrate <strong style={{ color: "var(--text-primary)" }}>{wave1QuickWins.count} assets</strong> ({wave1QuickWins.assets.join(", ")}) —{" "}
+              <strong style={{ color: "var(--text-primary)" }}>{wave1QuickWins.hours}h</strong>, unblocks all of Wave 2.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs" style={{ color: "var(--text-muted)" }}>No Wave 1 assets identified yet.</p>
+          )}
+        </Card>
+      </section>
 
-      {/* Selected wave detail panel */}
-      {selectedWave !== null && (() => {
-        const wave = data.waves.find((w) => w.wave === selectedWave);
-        if (!wave) return null;
-        return <WaveDetailPanel waveNum={selectedWave} items={wave.items} />;
-      })()}
+      {/* Gantt chart */}
+      <Card className="p-5 md:p-6">
+        <p className="mb-1 text-base font-semibold" style={{ color: "var(--text-primary)" }}>Migration Timeline</p>
+        <p className="mb-5 text-xs" style={{ color: "var(--text-muted)" }}>
+          3-wave dependency-aware roadmap, scheduled from real per-asset effort estimates at a {TEAM_SIZE}-engineer team capacity · click a wave to inspect tasks
+        </p>
+        <GanttChart schedule={schedule} qDayMonth={qDayMonth} selectedWave={selectedWave} onSelectWave={setSelectedWave} />
+      </Card>
+
+      {/* Cost of Delay */}
+      <Card className="p-5 md:p-6">
+        <p className="mb-1 text-base font-semibold" style={{ color: "var(--text-primary)" }}>Cost of Delay</p>
+        <p className="mb-4 text-xs" style={{ color: "var(--text-muted)" }}>What waiting to start actually costs, in quantum exposure time</p>
+        <CostOfDelay currentYear={CURRENT_YEAR} baseCompletionYear={baseCompletionYear} qDayYear={QDAY_YEAR} />
+      </Card>
+
+      {/* Selected task detail */}
+      {selectedTask && (
+        <div className="page-enter">
+          <TaskDetail item={selectedTask.item} waveTitle={selectedTask.waveTitle} onClose={() => setSelectedTask(null)} />
+        </div>
+      )}
 
       {/* Wave cards */}
       {data.waves.length ? (
         <div className="space-y-4">
           {data.waves.map((wave, index) => {
-            const cfg = WAVE_CONFIG.find((w) => w.wave === wave.wave);
             const isExpanded = expandedWave === wave.wave;
-            const totalEffort = wave.items.reduce(
-              (sum, item) => sum + (EFFORT_HOURS[item.complexity] ?? 20),
-              0,
-            );
+            const waveHours = wave.items.reduce((sum, i) => sum + i.estimated_hours, 0);
+            const sched = schedule.find((s) => s.wave === wave.wave);
             return (
               <div key={wave.wave}>
                 <Card className="overflow-hidden">
                   <button
-                    className="flex w-full flex-col gap-3 border-b border-slate-100 px-5 py-4 text-left transition hover:bg-slate-50 md:flex-row md:items-center"
-                    style={{ borderLeftWidth: 3, borderLeftColor: cfg?.color }}
+                    className="interactive flex w-full flex-col gap-3 border-b px-5 py-4 text-left hover:bg-[var(--bg-hover)] md:flex-row md:items-center"
+                    style={{ borderColor: "var(--border)" }}
                     onClick={() => setExpandedWave(isExpanded ? null : wave.wave)}
                   >
                     <span
                       className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-sm font-bold"
-                      style={{ background: cfg?.bg, color: cfg?.color, border: `1px solid ${cfg?.border}` }}
+                      style={{ background: "var(--accent-soft)", color: "var(--accent)" }}
                     >
                       {wave.wave}
                     </span>
                     <div className="flex-1">
-                      <p className="font-semibold text-slate-900">Wave {wave.wave}: {wave.title}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{wave.reason}</p>
+                      <p className="font-semibold" style={{ color: "var(--text-primary)" }}>Wave {wave.wave}: {wave.title}</p>
+                      <p className="mt-0.5 text-xs" style={{ color: "var(--text-muted)" }}>{wave.reason}</p>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                    <div className="flex items-center gap-4 text-xs" style={{ color: "var(--text-muted)" }}>
                       <span>{wave.items.length} assets</span>
-                      <span>~{totalEffort}h</span>
-                      <span>Months {cfg?.start !== undefined ? cfg.start + 1 : "?"}–{cfg?.end}</span>
+                      <span>~{waveHours}h</span>
+                      <span>Months {sched ? sched.startMonth + 1 : "?"}–{sched?.endMonth}</span>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
                   </button>
 
                   {isExpanded && (
-                    <div className="divide-y divide-slate-100 animate-fade-in">
+                    <div className="page-enter divide-y" style={{ borderColor: "var(--border)" }}>
                       {wave.items.slice(0, 16).map((item) => (
-                        <div key={item.asset_id} className="grid gap-3 px-5 py-3.5 text-sm transition hover:bg-slate-50 md:grid-cols-[1fr_180px_1fr_110px] md:items-center">
+                        <button
+                          key={item.asset_id}
+                          onClick={() => setSelectedTask({ item, waveTitle: `Wave ${wave.wave}: ${wave.title}` })}
+                          className="interactive grid w-full gap-3 px-5 py-3.5 text-left text-sm hover:bg-[var(--bg-hover)] md:grid-cols-[1fr_180px_1fr_110px] md:items-center"
+                          style={{ borderColor: "var(--border)" }}
+                        >
                           <div>
-                            <p className="font-medium text-slate-800">{item.asset_name}</p>
-                            <p className="mt-0.5 text-xs capitalize text-slate-400">{item.asset_type}</p>
+                            <p className="font-medium" style={{ color: "var(--text-primary)" }}>{item.asset_name}</p>
+                            <p className="mt-0.5 text-xs capitalize" style={{ color: "var(--text-muted)" }}>{item.asset_type}</p>
                           </div>
-                          <p className="font-mono text-xs text-slate-500">{item.current_algorithm}</p>
-                          <div className="flex items-center gap-2 text-xs font-medium text-blue-700">
-                            <ShieldCheck className="h-4 w-4 text-blue-600" />{item.recommended_algorithm}
+                          <p className="font-mono text-xs" style={{ color: "var(--text-muted)" }}>{item.current_algorithm}</p>
+                          <div className="flex items-center gap-2 text-xs font-medium" style={{ color: "var(--accent)" }}>
+                            <ShieldCheck className="h-4 w-4" />{item.recommended_algorithm}
                           </div>
                           <SeverityBadge severity={complexityToSeverity(item.complexity)} />
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
                 </Card>
                 {index < data.waves.length - 1 && (
                   <div className="my-2 flex items-center justify-center gap-1.5">
-                    <ArrowDown className="h-4 w-4 text-slate-400" />
-                    <span className="text-[11px] text-slate-400">Wave {wave.wave + 1} sequencing follows</span>
+                    <ArrowDown className="h-4 w-4" style={{ color: "var(--text-muted)" }} />
+                    <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Wave {wave.wave + 1} sequencing follows</span>
                   </div>
                 )}
               </div>
@@ -268,8 +201,11 @@ export function MigrationPlanner() {
         <Card><EmptyState title="No migration roadmap" body="Quantum-vulnerable assets will appear here after intelligence analysis." /></Card>
       )}
 
-      <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3 text-sm text-blue-800">
-        <Route className="h-5 w-5 text-blue-600 shrink-0" />
+      <div
+        className="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm"
+        style={{ borderColor: "var(--accent)", background: "var(--accent-soft)", color: "var(--accent)" }}
+      >
+        <Sparkles className="h-5 w-5 shrink-0" />
         {data.total_assets} assets have been sequenced using dependency-aware ordering across {data.waves.length} migration waves.
       </div>
     </div>

@@ -1,10 +1,10 @@
 from pathlib import Path
 
+from ecdat_x_demo_seed import seed_india_payments_demo_org
 from sqlalchemy import select
 
 from backend.app.database import SessionLocal
 from backend.app.models import Organization, User
-from backend.app.seed import seed_india_payments_demo_org
 from scanners.repository import RepositoryScanner
 
 SAMPLE_ROOT = (

@@ -117,10 +117,29 @@ export interface GraphEdge {
   properties: Record<string, unknown>;
 }
 
+export interface GraphNodeRef {
+  id: string;
+  label: string;
+}
+
+export interface GraphStats {
+  total_nodes: number;
+  nodes_by_type: Record<string, number>;
+  total_edges: number;
+  most_connected: GraphNodeRef | null;
+  most_connected_degree: number;
+  top_centrality: GraphNodeRef | null;
+  top_centrality_score: number;
+  community_count: number;
+  quantum_vulnerable_count: number;
+  quantum_total_count: number;
+}
+
 export interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
   source: "neo4j" | "postgresql";
+  stats: GraphStats;
 }
 
 export interface IntelligenceItem {
@@ -159,6 +178,14 @@ export interface IntelligenceRiskData {
   items: IntelligenceItem[];
 }
 
+export interface BlastRadiusImpactSummary {
+  total_affected: number;
+  by_degree: Record<string, number>;
+  critical_systems: number;
+  estimated_effort_hours: number;
+  critical_path: string[];
+}
+
 export interface BlastRadiusData {
   asset_id: string | null;
   asset_name: string | null;
@@ -166,6 +193,7 @@ export interface BlastRadiusData {
   centrality_score: number;
   nodes: GraphNode[];
   edges: GraphEdge[];
+  impact_summary: BlastRadiusImpactSummary;
 }
 
 export interface MigrationRecommendation {
@@ -184,6 +212,8 @@ export interface MigrationRecommendation {
     metrics?: Record<string, string>;
     constraints?: string[];
   };
+  dependent_systems: number;
+  estimated_hours: number;
 }
 
 export interface MigrationRoadmap {
@@ -287,6 +317,7 @@ export interface AuthUser {
   role: UserRole;
   organization_id: string;
   is_active: boolean;
+  is_platform_admin: boolean;
   created_at: string;
 }
 

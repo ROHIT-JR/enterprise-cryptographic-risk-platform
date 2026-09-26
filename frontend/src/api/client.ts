@@ -14,6 +14,7 @@ import type {
   RiskPage,
   Scan,
   AuthUser,
+  UserRole,
   TokenResponse,
   Organization,
   AuditLog,
@@ -173,13 +174,6 @@ export const complianceApi = {
 export const authApi = {
   login: async (organization: string, username: string, password: string) =>
     (await api.post<TokenResponse>("/auth/login", { organization, username, password })).data,
-  register: async (payload: {
-    organization_name: string;
-    industry?: string;
-    username: string;
-    email: string;
-    password: string;
-  }) => (await api.post<TokenResponse>("/auth/register", payload)).data,
   me: async () => (await api.get<AuthUser>("/auth/me")).data,
   refresh: async (refreshToken: string) =>
     (await api.post<TokenResponse>("/auth/refresh", { refresh_token: refreshToken })).data,
@@ -187,11 +181,45 @@ export const authApi = {
     api.post("/auth/logout", { refresh_token: refreshToken }),
 };
 
+export const usersApi = {
+  // organizationId is only ever honored by the backend when the caller is
+  // the platform admin — see backend/app/auth/dependencies.py:resolve_org_id.
+  // Sending it as an ordinary org admin is silently ignored server-side.
+  list: async (organizationId?: string) =>
+    (await api.get<AuthUser[]>("/users", { params: { organization_id: organizationId } })).data,
+  create: async (payload: {
+    username: string;
+    email: string;
+    password: string;
+    role: UserRole;
+    organization_id?: string;
+  }) => (await api.post<AuthUser>("/users", payload)).data,
+};
+
+export const organizationsApi = {
+  list: async () => (await api.get<Organization[]>("/organizations")).data,
+  create: async (payload: { name: string; industry?: string }) =>
+    (await api.post<Organization>("/organizations", payload)).data,
+};
+
 export const enterpriseApi = {
-  overview: async () => (await api.get<EnterpriseOverview>("/enterprise/overview")).data,
+  // organizationId is only ever honored by the backend when the caller is
+  // the platform admin — see backend/app/auth/dependencies.py:resolve_org_id.
+  // Every cross-org fetch is recorded in that organization's own audit trail.
+  overview: async (organizationId?: string) =>
+    (
+      await api.get<EnterpriseOverview>("/enterprise/overview", {
+        params: { organization_id: organizationId },
+      })
+    ).data,
   organization: async () => (await api.get<Organization>("/organizations/current")).data,
   users: async () => (await api.get<AuthUser[]>("/users")).data,
-  audit: async () => (await api.get<AuditLog[]>("/audit-logs")).data,
+  // organizationId is only ever honored by the backend when the caller is
+  // the platform admin — see backend/app/auth/dependencies.py:resolve_org_id.
+  // Every cross-org fetch is recorded in that organization's own audit trail.
+  audit: async (organizationId?: string) =>
+    (await api.get<AuditLog[]>("/audit-logs", { params: { organization_id: organizationId } }))
+      .data,
   health: async () => (await axios.get<FullHealth>(`${apiOrigin}/health/full`)).data,
   report: async (type: ReportType, format: ReportFormat) =>
     (

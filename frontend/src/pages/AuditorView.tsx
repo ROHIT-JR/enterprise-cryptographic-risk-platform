@@ -1,12 +1,12 @@
 import { Download, FileCheck2, History } from "lucide-react";
 import { enterpriseApi, apiErrorMessage } from "../api/client";
-import { Card, ErrorState, LoadingState, PageHeader } from "../components/ui";
+import { Card, ErrorState, PageHeader, PageSkeleton } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
 import { relativeTime } from "../utils/format";
 
 export function AuditorView() {
   const { data, error, loading, reload } = useAsync(enterpriseApi.audit, []);
-  if (loading) return <LoadingState label="Loading audit evidence" />;
+  if (loading) return <PageSkeleton rows={4} />;
   if (error || !data) return <ErrorState message={apiErrorMessage(error)} retry={() => void reload()} />;
   async function download(type: "inventory" | "quantum-risk" | "migration", format: "json" | "pdf") {
     const blob = await enterpriseApi.report(type, format);
@@ -22,7 +22,7 @@ export function AuditorView() {
         title="Auditor view"
         description="Export evidence packages and inspect the organization-scoped immutable activity trail."
       />
-      <Card className="p-5">
+      <Card className="card-hover p-5">
         <div className="flex items-center gap-2.5">
           <FileCheck2 className="h-5 w-5 text-indigo-600" strokeWidth={1.75} />
           <p className="text-sm font-bold text-zinc-950">Enterprise reports</p>
@@ -53,7 +53,7 @@ export function AuditorView() {
           ))}
         </div>
       </Card>
-      <Card className="p-5">
+      <Card className="card-hover p-5">
         <div className="flex items-center gap-2.5">
           <History className="h-5 w-5 text-indigo-600" strokeWidth={1.75} />
           <p className="text-sm font-bold text-zinc-950">Audit history</p>

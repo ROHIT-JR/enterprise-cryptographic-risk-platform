@@ -4,3 +4,4 @@ pytest==9.1.1
 pytest-cov==7.1.0
 ruff==0.16.5
 cyclonedx-python-lib[json-validation]==11.12.0
+ecdat-x-demo-seed @ git+https://github.com/ROHIT-JR/ecdat-x-demo-seed.git

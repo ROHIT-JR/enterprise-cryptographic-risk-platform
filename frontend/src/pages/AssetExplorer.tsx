@@ -1,8 +1,32 @@
 import { ChevronLeft, ChevronRight, ExternalLink, FileSearch, Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiErrorMessage, assetsApi } from "../api/client";
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, SeverityBadge } from "../components/ui";
+import { Card, EmptyState, ErrorState, PageHeader, PageSkeleton, SeverityBadge } from "../components/ui";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuFieldTrigger,
+  DropdownMenuItem,
+} from "../components/DropdownMenu";
 import type { Asset, Severity } from "../types/api";
+
+const ASSET_TYPE_OPTIONS = [
+  { value: "", label: "All asset types" },
+  { value: "application", label: "Application" },
+  { value: "library", label: "Library" },
+  { value: "algorithm", label: "Algorithm" },
+  { value: "certificate", label: "Certificate" },
+  { value: "protocol", label: "Protocol" },
+  { value: "configuration", label: "Configuration" },
+];
+
+const SEVERITY_OPTIONS = [
+  { value: "", label: "All severities" },
+  { value: "critical", label: "Critical" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+];
 
 export function AssetExplorer() {
   const [search, setSearch] = useState("");
@@ -45,45 +69,53 @@ export function AssetExplorer() {
               placeholder="Search asset, algorithm, evidence, or location"
             />
           </label>
-          <select
-            value={assetType}
-            onChange={(event) => {
-              setAssetType(event.target.value);
-              setPage(1);
-            }}
-            className="field"
-          >
-            <option value="">All asset types</option>
-            <option value="application">Application</option>
-            <option value="library">Library</option>
-            <option value="algorithm">Algorithm</option>
-            <option value="certificate">Certificate</option>
-            <option value="protocol">Protocol</option>
-            <option value="configuration">Configuration</option>
-          </select>
-          <select
-            value={severity}
-            onChange={(event) => {
-              setSeverity(event.target.value);
-              setPage(1);
-            }}
-            className="field"
-          >
-            <option value="">All severities</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+          <DropdownMenu>
+            <DropdownMenuFieldTrigger>
+              {ASSET_TYPE_OPTIONS.find((o) => o.value === assetType)?.label ?? "All asset types"}
+            </DropdownMenuFieldTrigger>
+            <DropdownMenuContent>
+              {ASSET_TYPE_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  selected={option.value === assetType}
+                  onSelect={() => {
+                    setAssetType(option.value);
+                    setPage(1);
+                  }}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuFieldTrigger>
+              {SEVERITY_OPTIONS.find((o) => o.value === severity)?.label ?? "All severities"}
+            </DropdownMenuFieldTrigger>
+            <DropdownMenuContent>
+              {SEVERITY_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  selected={option.value === severity}
+                  onSelect={() => {
+                    setSeverity(option.value);
+                    setPage(1);
+                  }}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </Card>
 
       {loading ? (
-        <LoadingState label="Loading asset inventory" />
+        <PageSkeleton rows={6} />
       ) : error ? (
         <ErrorState message={apiErrorMessage(error)} />
       ) : data ? (
-        <Card className="overflow-hidden">
+        <Card className="card-hover overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] text-left">
               <thead className="border-b border-zinc-200 bg-zinc-50 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500">
@@ -101,7 +133,7 @@ export function AssetExplorer() {
                   <tr
                     key={asset.id}
                     onClick={() => setSelected(asset)}
-                    className="cursor-pointer text-sm transition hover:bg-zinc-50/80"
+                    className="interactive cursor-pointer text-sm hover:bg-zinc-50/80"
                   >
                     <td className="px-5 py-4">
                       <p className="font-semibold text-zinc-950">{asset.name}</p>

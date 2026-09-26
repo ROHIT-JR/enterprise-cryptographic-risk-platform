@@ -3,36 +3,44 @@ import {
   Activity,
   Atom,
   Boxes,
+  CalendarDays,
   ChevronRight,
   CircleDotDashed,
   FileDown,
   FileText,
+  Gauge,
   ScanLine,
   ShieldAlert,
 } from "lucide-react";
 import {
-  Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip,
+  ResponsiveContainer, Tooltip,
   XAxis, YAxis, Bar, BarChart, CartesianGrid,
 } from "recharts";
 import { Link } from "react-router-dom";
 import { apiErrorMessage, dashboardApi } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
+import { hasPermission } from "../auth/permissions";
 import { ReportGenerator } from "../components/ReportGenerator";
-import { Card, EmptyState, ErrorState, LoadingState, PageHeader, StatusBadge } from "../components/ui";
+import { Card, EmptyState, ErrorState, LoadingState, PageHeader, RadialGauge, StatusBadge } from "../components/ui";
+import { NumberTicker } from "../components/NumberTicker";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuFieldTrigger, DropdownMenuItem } from "../components/DropdownMenu";
 import { useAsync } from "../hooks/useAsync";
 import { formatNumber, relativeTime } from "../utils/format";
 
+const PERIOD_OPTIONS = ["This Month", "Last 7 Days", "Last 30 Days", "This Quarter"];
+
 const riskColors: Record<string, string> = {
-  critical: "#dc2626",
-  high:     "#ea580c",
-  medium:   "#d97706",
-  low:      "#059669",
+  critical: "var(--risk-critical)",
+  high:     "var(--risk-high)",
+  medium:   "var(--risk-medium)",
+  low:      "var(--risk-low)",
 };
 
 const TOOLTIP_STYLE = {
-  background: "#18181b",
-  border: "1px solid #27272a",
-  borderRadius: 4,
-  color: "#fafafa",
+  background: "var(--bg-card)",
+  border: "1px solid var(--border)",
+  borderRadius: 8,
+  color: "var(--text-primary)",
   fontSize: 11,
   fontFamily: "monospace",
 };
@@ -67,10 +75,14 @@ function QuickActionButton({
 }
 
 export function Dashboard() {
+  const { user } = useAuth();
+  const canRunScans = user != null && hasPermission(user.role, "run_scans");
+  const canExport = user != null && hasPermission(user.role, "export_findings");
   const { data, error, loading, reload } = useAsync(dashboardApi.get, []);
   // State hooks stay above the loading/error early returns below (Rules of Hooks).
   const [reportOpen, setReportOpen] = useState(false);
   const [reportKey, setReportKey] = useState("executive-summary");
+  const [period, setPeriod] = useState(PERIOD_OPTIONS[0]);
   const openReports = (key: string) => {
     setReportKey(key);
     setReportOpen(true);
@@ -123,48 +135,90 @@ export function Dashboard() {
         sub: "Critical findings / total inventory",
       };
 
+  const criticalRatioPercent = data.metrics.total_assets > 0
+    ? Math.round((data.metrics.critical_assets / data.metrics.total_assets) * 100)
+    : 0;
+  const quantumOrRatioPercent = hasQuantumExposure ? (data.metrics.quantum_exposure_percent ?? 0) : criticalRatioPercent;
+
   const metrics = [
-    { label: "Total Assets Discovered", value: formatNumber(data.metrics.total_assets),   icon: Boxes,       sub: `${data.metrics.projects_scanned} projects normalized` },
-    { label: "Critical Findings",       value: formatNumber(data.metrics.critical_assets), icon: ShieldAlert, sub: "Immediate migration pressure", alert: true },
-    { label: quantumMetric.label,       value: quantumMetric.value,                       icon: Atom,        sub: quantumMetric.sub },
-    { label: "Overall Risk Score",       value: computedRiskScore.value,                   icon: Activity,    sub: computedRiskScore.sub },
+    { label: "Total Assets Discovered", value: formatNumber(data.metrics.total_assets),   numeric: data.metrics.total_assets,   icon: Boxes,       sub: `${data.metrics.projects_scanned} projects normalized`, barPercent: undefined },
+    { label: "Critical Findings",       value: formatNumber(data.metrics.critical_assets), numeric: data.metrics.critical_assets, icon: ShieldAlert, sub: "Immediate migration pressure", alert: true, barPercent: criticalRatioPercent },
+    { label: quantumMetric.label,       value: quantumMetric.value,                       numeric: undefined,                    icon: Atom,        sub: quantumMetric.sub, barPercent: quantumOrRatioPercent },
+    { label: "Overall Risk Score",       value: computedRiskScore.value,                   numeric: undefined,                    icon: Activity,    sub: computedRiskScore.sub, barPercent: computedRiskScore.value },
   ];
 
   const riskTotal = data.risk_distribution.reduce((sum, item) => sum + item.value, 0);
+  const riskColorFor = (name: string) => riskColors[name] ?? "var(--text-muted)";
 
   return (
-    <div className="space-y-5">
+    <div className="page-enter space-y-8">
       <PageHeader
         eyebrow="Posture Intelligence"
         title="Cryptographic Risk Overview"
         description="Real-time telemetry of discovered cryptographic dependencies, quantum exposure horizons, and migration pressure across enterprise estates."
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className="btn-secondary" onClick={() => openReports("executive-summary")}>
-              <FileText className="h-3.5 w-3.5" /> Generate Report
-            </button>
-            <Link to="/upload" className="btn-primary">
-              <ScanLine className="h-3.5 w-3.5" /> Start New Discovery Scan
-            </Link>
+            <span
+              className="hidden items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider md:inline-flex"
+              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+            >
+              FY 2025-26
+            </span>
+            <DropdownMenu>
+              <DropdownMenuFieldTrigger className="w-36">
+                <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" />{period}</span>
+              </DropdownMenuFieldTrigger>
+              <DropdownMenuContent>
+                {PERIOD_OPTIONS.map((option) => (
+                  <DropdownMenuItem key={option} selected={option === period} onSelect={() => setPeriod(option)}>
+                    {option}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {canExport && (
+              <button type="button" className="btn-secondary" onClick={() => openReports("executive-summary")}>
+                <FileText className="h-3.5 w-3.5" /> Generate Report
+              </button>
+            )}
+            {canRunScans && (
+              <Link to="/upload" className="btn-primary">
+                <ScanLine className="h-3.5 w-3.5" /> Start New Discovery Scan
+              </Link>
+            )}
           </div>
         }
       />
 
       {/* Hero stats */}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(({ label, value, icon: Icon, sub, alert }) => (
+      <section className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map(({ label, value, numeric, icon: Icon, sub, alert, barPercent }) => (
           <Card key={label} className="p-4">
             <div className="flex items-start justify-between">
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{label}</p>
-                <p className={`tabular-nums font-mono mt-1 text-2xl font-bold tracking-tight ${alert ? "text-red-600" : "text-zinc-950"}`}>
-                  {value}
+                <p
+                  className="tabular-nums font-mono mt-1 text-2xl font-bold tracking-tight"
+                  style={{ color: alert ? "var(--risk-critical)" : "var(--text-primary)" }}
+                >
+                  {numeric !== undefined ? <NumberTicker end={numeric} duration={1.1} /> : value}
                 </p>
               </div>
               <div className="flex h-7 w-7 items-center justify-center rounded border border-zinc-200 bg-zinc-50 text-zinc-700">
                 <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
               </div>
             </div>
+            {barPercent !== undefined && (
+              <div className="mt-3 h-1 w-full rounded-full" style={{ background: "var(--bg-hover)" }}>
+                <div
+                  className="h-1 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, barPercent))}%`,
+                    background: alert ? "var(--risk-critical)" : "var(--accent)",
+                  }}
+                />
+              </div>
+            )}
             <p className="mt-3 font-mono text-[10px] text-zinc-500 border-t border-zinc-100 pt-2">{sub}</p>
           </Card>
         ))}
@@ -176,9 +230,13 @@ export function Dashboard() {
           Executive Workflows
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
-          <QuickActionButton to="/upload"       icon={ScanLine}        label="Scan Target Repository"   description="Ingest source code, container or live TLS endpoint" />
+          {canRunScans && (
+            <QuickActionButton to="/upload" icon={ScanLine} label="Scan Target Repository" description="Ingest source code, container or live TLS endpoint" />
+          )}
           <QuickActionButton to="/blast-radius" icon={CircleDotDashed} label="Blast Radius Simulation" description="Simulate systemic compromise propagation on topology" />
-          <QuickActionButton icon={FileDown}    label="Export CBOM Inventory"   description="CycloneDX 1.6 CBOM as JSON and PDF" onClick={() => openReports("cbom")} />
+          {canExport && (
+            <QuickActionButton icon={FileDown} label="Export CBOM Inventory" description="CycloneDX 1.6 CBOM as JSON and PDF" onClick={() => openReports("cbom")} />
+          )}
         </div>
       </section>
 
@@ -190,19 +248,25 @@ export function Dashboard() {
             <p className="text-[11px] text-zinc-500">Normalized six-factor risk scoring profile</p>
           </div>
           {riskTotal ? (
-            <div className="relative mt-3 h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={data.risk_distribution} dataKey="value" nameKey="name" innerRadius={65} outerRadius={92} paddingAngle={2} stroke="#ffffff" strokeWidth={1}>
-                    {data.risk_distribution.map((item) => <Cell key={item.name} fill={riskColors[item.name] ?? "#71717a"} />)}
-                  </Pie>
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                  <Legend iconType="circle" formatter={(value) => <span className="capitalize font-mono text-zinc-600 text-[10px]">{value}</span>} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="pointer-events-none absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 text-center">
-                <p className="tabular-nums font-mono text-2xl font-bold text-zinc-950">{riskTotal}</p>
-                <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-400">Total Scored</p>
+            <div className="mt-4 flex flex-col items-center gap-4">
+              <RadialGauge
+                segments={data.risk_distribution.map((item) => ({ label: item.name, value: item.value, color: riskColorFor(item.name) }))}
+                centerValue={riskTotal}
+                centerLabel="Total Scored"
+                icon={<Gauge className="h-3.5 w-3.5" strokeWidth={1.75} />}
+              />
+              <div className="w-full space-y-1.5">
+                {data.risk_distribution.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: riskColorFor(item.name) }} />
+                      <span className="capitalize" style={{ color: "var(--text-secondary)" }}>{item.name}</span>
+                    </span>
+                    <span className="tabular-nums font-mono font-semibold" style={{ color: "var(--text-primary)" }}>
+                      {item.value} <span className="font-normal" style={{ color: "var(--text-muted)" }}>({riskTotal ? Math.round((item.value / riskTotal) * 100) : 0}%)</span>
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           ) : <EmptyState title="No scored assets" body="Run a scan to populate the risk model." />}
@@ -217,11 +281,11 @@ export function Dashboard() {
             <div className="mt-4 h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.algorithm_distribution} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
-                  <CartesianGrid vertical={false} stroke="#f4f4f5" />
-                  <XAxis dataKey="name" tick={{ fill: "#71717a", fontSize: 10, fontFamily: "monospace" }} axisLine={{ stroke: "#e4e4e7" }} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fill: "#71717a", fontSize: 10, fontFamily: "monospace" }} axisLine={{ stroke: "#e4e4e7" }} tickLine={false} />
-                  <Tooltip cursor={{ fill: "#f4f4f5" }} contentStyle={TOOLTIP_STYLE} />
-                  <Bar dataKey="value" name="Assets" fill="#4f46e5" radius={[2, 2, 0, 0]} maxBarSize={36} />
+                  <CartesianGrid vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="name" tick={{ fill: "var(--text-muted)", fontSize: 10, fontFamily: "monospace" }} axisLine={{ stroke: "var(--border)" }} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fill: "var(--text-muted)", fontSize: 10, fontFamily: "monospace" }} axisLine={{ stroke: "var(--border)" }} tickLine={false} />
+                  <Tooltip cursor={{ fill: "var(--bg-hover)" }} contentStyle={TOOLTIP_STYLE} />
+                  <Bar dataKey="value" name="Assets" fill="var(--accent)" radius={[2, 2, 0, 0]} maxBarSize={36} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -236,14 +300,20 @@ export function Dashboard() {
             <p className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-950">Recent Discovery Pipelines</p>
             <p className="text-[11px] text-zinc-500">Continuous cryptographic ingestion log</p>
           </div>
-          <Link to="/upload" className="font-mono text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-            Pipeline Console →
-          </Link>
+          {canRunScans && (
+            <Link to="/upload" className="font-mono text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+              Pipeline Console →
+            </Link>
+          )}
         </div>
         {data.recent_scans.length ? (
           <div className="divide-y divide-zinc-100">
-            {data.recent_scans.slice(0, 5).map((scan) => (
-              <div key={scan.id} className="grid gap-2 px-4 py-2.5 text-xs transition hover:bg-zinc-50 md:grid-cols-[1fr_160px_110px_110px] md:items-center">
+            {data.recent_scans.slice(0, 5).map((scan, index) => (
+              <div
+                key={scan.id}
+                className="interactive grid gap-2 px-4 py-2.5 text-xs hover:bg-[var(--bg-hover)] md:grid-cols-[1fr_160px_110px_110px] md:items-center"
+                style={{ background: index % 2 === 1 ? "var(--bg-hover)" : "transparent" }}
+              >
                 <div className="min-w-0">
                   <p className="truncate font-mono font-semibold text-zinc-900">{scan.target}</p>
                   <p className="font-mono text-[10px] uppercase text-zinc-400">{scan.source_type} scan</p>

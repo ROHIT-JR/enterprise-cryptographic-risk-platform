@@ -50,6 +50,8 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("ECDAT_NEO4J_PASSWORD", "NEO4J_PASSWORD"),
     )
     seed_demo: bool = False
+    admin_username: str | None = None
+    admin_password: str | None = None
     secret_key: str = "development-only-not-used-for-authentication"
     jwt_issuer: str = "ecdat-x"
     jwt_audience: str = "ecdat-x-api"
