@@ -115,6 +115,8 @@ application variables below are `ECDAT_`-prefixed; where a plain alias also work
 | `ECDAT_NEO4J_USER`, `NEO4J_USERNAME`, `NEO4J_USER` | `neo4j` | Neo4j user. |
 | `ECDAT_NEO4J_PASSWORD`, `NEO4J_PASSWORD` | set in `.env` | Neo4j password. |
 | `ECDAT_SEED_DEMO` | `False` | Load the SecureBank demo organization on startup (once). |
+| `ECDAT_ADMIN_USERNAME` | empty | Username of the predefined platform administrator, bootstrapped on startup. Unset disables platform-admin bootstrap. |
+| `ECDAT_ADMIN_PASSWORD` | set in `.env` | Password of the predefined platform administrator, bootstrapped on startup. |
 | `ECDAT_SECRET_KEY` | set in `.env` | Signs JWTs. Must be a random value of 32+ characters in production. |
 | `ECDAT_JWT_ISSUER` | `ecdat-x` | `iss` claim of issued tokens. |
 | `ECDAT_JWT_AUDIENCE` | `ecdat-x-api` | `aud` claim of issued tokens. |

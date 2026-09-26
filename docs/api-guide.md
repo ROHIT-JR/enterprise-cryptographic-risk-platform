@@ -235,6 +235,8 @@ Run it as a shared service: organizations and users, the audit trail, executive 
 | `GET /api/v1/audit-logs` | Return the organization's audit trail, newest first. | `auditor` and above |
 | `GET /api/v1/compliance/nqm` | India NQM phase alignment, computed from this organization's live inventory. | `viewer` and above |
 | `GET /api/v1/enterprise/overview` | Return organization-wide totals for the administrator dashboard. | Any signed-in user |
+| `GET /api/v1/organizations` | List every organization on the platform, alphabetically. | Any signed-in user |
+| `POST /api/v1/organizations` | Create a new organization. | Any signed-in user |
 | `GET /api/v1/organizations/current` | Return the caller's organization, including its industry and settings. | Any signed-in user |
 | `PUT /api/v1/organizations/current` | Update the caller's organization. | `administrator` |
 | `GET /api/v1/reports/{report_type}` | Export a report. | `auditor` and above |

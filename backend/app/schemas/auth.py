@@ -116,6 +116,7 @@ class TokenResponse(BaseModel):
                         "role": "security_analyst",
                         "organization_id": "7c2d9a54-3b1e-4f60-8a37-5e9d1c0b4a22",
                         "is_active": True,
+                        "is_platform_admin": False,
                         "created_at": "2026-09-01T09:30:00Z",
                     },
                 }

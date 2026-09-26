@@ -367,6 +367,8 @@ SETTING_DOCS = {
     "neo4j_user": "Neo4j user.",
     "neo4j_password": "Neo4j password.",
     "seed_demo": "Load the SecureBank demo organization on startup (once).",
+    "admin_username": "Username of the predefined platform administrator, bootstrapped on startup. Unset disables platform-admin bootstrap.",
+    "admin_password": "Password of the predefined platform administrator, bootstrapped on startup.",
     "secret_key": "Signs JWTs. Must be a random value of 32+ characters in production.",
     "jwt_issuer": "`iss` claim of issued tokens.",
     "jwt_audience": "`aud` claim of issued tokens.",
@@ -376,7 +378,7 @@ SETTING_DOCS = {
     "demo_password": "Password given to the seeded demo users.",
     "log_level": "Python logging level.",
 }
-SECRET_SETTINGS = {"secret_key", "demo_password", "neo4j_password"}
+SECRET_SETTINGS = {"secret_key", "demo_password", "neo4j_password", "admin_password"}
 
 
 def render_settings() -> str:

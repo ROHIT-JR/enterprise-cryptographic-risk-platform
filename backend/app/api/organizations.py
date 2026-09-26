@@ -36,6 +36,7 @@ def list_organizations(
     _: User = Depends(require_platform_admin),
     db: Session = Depends(get_db),
 ) -> list[Organization]:
+    """List every organization on the platform, alphabetically. Platform admins only."""
     return list(db.scalars(select(Organization).order_by(Organization.name)))
 
 
@@ -45,6 +46,7 @@ def create_organization(
     admin: User = Depends(require_platform_admin),
     db: Session = Depends(get_db),
 ) -> Organization:
+    """Create a new organization. Platform admins only; the org name must be unique."""
     duplicate = db.scalar(
         select(Organization).where(func.lower(Organization.name) == payload.name.lower())
     )

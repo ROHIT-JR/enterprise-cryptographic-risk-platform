@@ -3,6 +3,7 @@ import hashlib
 import re
 
 import pytest
+from ecdat_x_demo_seed import seed_securebank_demo
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -26,7 +27,6 @@ from backend.app.schemas.mosca import MoscaSimulateRequest
 from backend.app.schemas.project import ProjectCreate
 from backend.app.schemas.scan import DockerScanRequest, ScanResponse, TLSScanRequest
 from backend.app.security import RateLimitMiddleware
-from backend.app.seed import seed_securebank_demo
 from lifecycle_engine import LifecycleState
 
 HTTP_METHODS = {"get", "post", "put", "delete", "patch"}
