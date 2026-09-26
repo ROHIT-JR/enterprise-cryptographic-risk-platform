@@ -1,3 +1,4 @@
+from ecdat_x_demo_seed import seed_securebank_demo
 from sqlalchemy import select
 
 from backend.app.api.intelligence import get_blast_radius, get_hndl_analysis, get_intelligence_risk
@@ -5,7 +6,6 @@ from backend.app.api.migration import get_recommendations, get_roadmap
 from backend.app.database import SessionLocal
 from backend.app.main import app
 from backend.app.models import Asset, BusinessContext, MigrationPlan, RiskAnalysis
-from backend.app.seed import seed_securebank_demo
 
 
 def test_phase2_api_contracts_are_exposed():

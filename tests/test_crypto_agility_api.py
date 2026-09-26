@@ -1,10 +1,10 @@
 import pytest
+from ecdat_x_demo_seed import seed_securebank_demo
 from sqlalchemy import select
 
 from backend.app.api.intelligence import get_crypto_agility_score
 from backend.app.database import SessionLocal
 from backend.app.models import Organization, User
-from backend.app.seed import seed_securebank_demo
 
 
 @pytest.fixture()

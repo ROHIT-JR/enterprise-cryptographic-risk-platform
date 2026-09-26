@@ -1,6 +1,7 @@
 import contextlib
 
 import pytest
+from ecdat_x_demo_seed import seed_securebank_demo
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -9,7 +10,6 @@ from backend.app.api.assets import LifecycleTransitionBody, get_lifecycle, trans
 from backend.app.database import SessionLocal
 from backend.app.models.asset import Asset
 from backend.app.models.identity import User
-from backend.app.seed import seed_securebank_demo
 
 
 @pytest.fixture

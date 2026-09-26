@@ -1,3 +1,4 @@
+from ecdat_x_demo_seed import seed_securebank_demo
 from fastapi import Response
 
 from backend.app.api import health as health_api
@@ -5,7 +6,6 @@ from backend.app.api.dashboard import dashboard
 from backend.app.api.health import connection_health, live
 from backend.app.database import SessionLocal
 from backend.app.main import app
-from backend.app.seed import seed_securebank_demo
 
 
 def test_health_and_seeded_dashboard_contract():
