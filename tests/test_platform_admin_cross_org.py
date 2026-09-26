@@ -11,7 +11,7 @@ from backend.app.database import SessionLocal
 from backend.app.models import Organization, User
 from backend.app.schemas.auth import OrganizationCreate, RegisterRequest, UserCreate
 
-PASSWORD = "Correct-Horse-Battery-2026"  # gitleaks:allow — test fixture, not a real credential
+PASSWORD = "Correct-Horse-Battery-2026"
 
 
 def _register(db, organization: str, username: str) -> User:

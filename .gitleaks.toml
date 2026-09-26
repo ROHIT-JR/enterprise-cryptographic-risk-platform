@@ -9,3 +9,12 @@ paths = [
   '''\.env\.example$''',
   '''\.env\.production\.example$''',
 ]
+
+[[allowlists]]
+description = "Shared test-only password fixture used across the auth test suite"
+regexes = [
+  '''Correct-Horse-Battery-2026''',
+]
+paths = [
+  '''^tests/.*\.py$''',
+]
