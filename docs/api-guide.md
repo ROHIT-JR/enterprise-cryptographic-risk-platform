@@ -196,6 +196,7 @@ Find cryptography and inventory it: start repository, container and TLS scans, f
 | `GET /api/v1/scans` | List this organization's scans, newest first, optionally filtered by project. | `viewer` and above |
 | `POST /api/v1/scans/docker` | Start a discovery scan of a container image. | `security_analyst` and above |
 | `POST /api/v1/scans/repository` | Upload a ZIP archive of a repository and start a discovery scan. | `security_analyst` and above |
+| `POST /api/v1/scans/repository-url` | Fetch a public GitHub repository by URL and start a discovery scan. | `security_analyst` and above |
 | `POST /api/v1/scans/tls` | Start a discovery scan of a TLS endpoint. | `security_analyst` and above |
 | `GET /api/v1/scans/{scan_id}` | Return one scan with its status, progress and summary. | `viewer` and above |
 | `GET /api/v1/scans/{scan_id}/cbom` | Return the cryptographic bill of materials produced by a completed scan. | `viewer` and above |

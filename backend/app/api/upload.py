@@ -137,6 +137,14 @@ async def scan_repository_url(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> Scan:
+    """Fetch a public GitHub repository by URL and start a discovery scan.
+
+    Downloads the repository's zip archive from `codeload.github.com` (the same source
+    `git clone` and GitHub's own "Download ZIP" button use) and runs it through the same
+    scan pipeline as an uploaded archive. Only `github.com` URLs are accepted; returns `202`
+    with a queued scan — follow `GET /scans/{scan_id}/stream` or poll `GET /scans/{scan_id}`
+    for progress, same as the upload endpoint.
+    """
     try:
         owner, repo = parse_github_repo_url(payload.url)
     except InvalidRepositoryUrlError as exc:
