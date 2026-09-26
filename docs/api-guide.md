@@ -196,6 +196,7 @@ Find cryptography and inventory it: start repository, container and TLS scans, f
 | `GET /api/v1/scans` | List this organization's scans, newest first, optionally filtered by project. | `viewer` and above |
 | `POST /api/v1/scans/docker` | Start a discovery scan of a container image. | `security_analyst` and above |
 | `POST /api/v1/scans/repository` | Upload a ZIP archive of a repository and start a discovery scan. | `security_analyst` and above |
+| `POST /api/v1/scans/repository-url` | Fetch a public GitHub repository by URL and start a discovery scan. | `security_analyst` and above |
 | `POST /api/v1/scans/tls` | Start a discovery scan of a TLS endpoint. | `security_analyst` and above |
 | `GET /api/v1/scans/{scan_id}` | Return one scan with its status, progress and summary. | `viewer` and above |
 | `GET /api/v1/scans/{scan_id}/cbom` | Return the cryptographic bill of materials produced by a completed scan. | `viewer` and above |
@@ -239,6 +240,7 @@ Run it as a shared service: organizations and users, the audit trail, executive 
 | `POST /api/v1/organizations` | Create a new organization. | Any signed-in user |
 | `GET /api/v1/organizations/current` | Return the caller's organization, including its industry and settings. | Any signed-in user |
 | `PUT /api/v1/organizations/current` | Update the caller's organization. | `administrator` |
+| `DELETE /api/v1/organizations/{organization_id}` | Permanently delete an organization and everything in it. | Any signed-in user |
 | `GET /api/v1/reports/{report_type}` | Export a report. | `auditor` and above |
 | `GET /api/v1/users` | List the users in the caller's organization. | `administrator` |
 | `POST /api/v1/users` | Add a user to the caller's organization with one of the four roles. | `administrator` |
