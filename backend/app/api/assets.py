@@ -4,10 +4,11 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from backend.app.api.serializers import serialize_asset
-from backend.app.auth.dependencies import get_current_user
+from backend.app.auth.dependencies import get_current_user, resolve_org_id
 from backend.app.database import get_db
 from backend.app.models import Asset, RiskFinding, User
 from backend.app.schemas.asset import AssetPage, AssetResponse
+from backend.app.services.audit_service import record_audit
 
 router = APIRouter(prefix="/assets", tags=["assets"])
 
@@ -20,12 +21,23 @@ def list_assets(
     search: str | None = Query(default=None, max_length=160),
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
+    organization_id: str | None = Query(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> AssetPage:
     filters = []
     if isinstance(user, User):
-        filters.append(Asset.organization_id == user.organization_id)
+        target_org_id = resolve_org_id(user, organization_id)
+        if target_org_id != user.organization_id:
+            record_audit(
+                db,
+                action="assets.viewed_cross_org",
+                organization_id=target_org_id,
+                user=user,
+                metadata={"viewed_by_platform_admin": user.id},
+            )
+            db.commit()
+        filters.append(Asset.organization_id == target_org_id)
     if project_id:
         filters.append(Asset.project_id == project_id)
     if asset_type:

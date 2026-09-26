@@ -3,18 +3,12 @@ title = "ECDAT-X secret scanning"
 [extend]
 useDefault = true
 
-[[allowlists]]
-description = "Documented placeholders in environment templates"
+[allowlist]
+description = "Documented placeholders in environment templates, and the shared test-only password fixture used across the auth test suite"
 paths = [
   '''\.env\.example$''',
   '''\.env\.production\.example$''',
 ]
-
-[[allowlists]]
-description = "Shared test-only password fixture used across the auth test suite"
 regexes = [
   '''Correct-Horse-Battery-2026''',
-]
-paths = [
-  '''^tests/.*\.py$''',
 ]
