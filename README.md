@@ -11,6 +11,8 @@
 
 Find every cryptographic algorithm in an enterprise's codebase, containers, and TLS endpoints — then know exactly which ones a quantum computer breaks, which systems that takes down with them, and what order to migrate them in.
 
+**🔗 Live demo: [ecdat-x.pages.dev](https://ecdat-x.pages.dev)** — access is free. Email **ecdatxadmin01@gmail.com** to have an organization and user account created for you.
+
 - 🔍 **Discover** — scan repositories, Docker images, and live TLS endpoints for RSA, ECC, AES, hashing, and 15+ cryptographic libraries, with file/line evidence for every finding
 - ⚛️ **Quantify quantum risk** — a six-factor explainable score (quantum vulnerability, harvest-now-decrypt-later exposure, blast radius, business criticality, migration complexity, evidence confidence) and the Mosca inequality (X + Y > Z) answering "do we need to start migrating *now*?"
 - 🗺️ **Plan the migration** — TOPSIS-ranked ML-KEM/ML-DSA recommendations and a dependency-aware, wave-sequenced roadmap that migrates trust anchors before the applications that depend on them
