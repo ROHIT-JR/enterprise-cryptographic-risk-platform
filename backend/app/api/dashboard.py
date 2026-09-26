@@ -1,22 +1,34 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session
 
-from backend.app.auth.dependencies import get_current_user
+from backend.app.auth.dependencies import get_current_user, resolve_org_id
 from backend.app.database import get_db
 from backend.app.models import Asset, RiskFinding, Scan, User
 from backend.app.schemas.common import DistributionItem
 from backend.app.schemas.dashboard import DashboardMetrics, DashboardResponse
+from backend.app.services.audit_service import record_audit
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
 @router.get("", response_model=DashboardResponse)
 def dashboard(
-    db: Session = Depends(get_db), user: User = Depends(get_current_user)
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+    organization_id: str | None = Query(default=None),
 ) -> DashboardResponse:
     crypto_types = ("algorithm", "library", "certificate", "protocol", "configuration")
-    organization_id = user.organization_id if isinstance(user, User) else None
+    organization_id = resolve_org_id(user, organization_id) if isinstance(user, User) else None
+    if isinstance(user, User) and organization_id != user.organization_id:
+        record_audit(
+            db,
+            action="dashboard.viewed_cross_org",
+            organization_id=organization_id,
+            user=user,
+            metadata={"viewed_by_platform_admin": user.id},
+        )
+        db.commit()
     asset_org = [Asset.organization_id == organization_id] if organization_id else []
     risk_org = [RiskFinding.organization_id == organization_id] if organization_id else []
     scan_org = [Scan.organization_id == organization_id] if organization_id else []

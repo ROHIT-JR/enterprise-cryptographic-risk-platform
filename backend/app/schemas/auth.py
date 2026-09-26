@@ -29,6 +29,11 @@ class UserCreate(BaseModel):
     email: str = Field(min_length=5, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
     password: str = Field(min_length=12, max_length=256)
     role: Role
+    # Only honored when the caller is the platform admin (see
+    # backend.app.auth.dependencies.resolve_org_id) — ignored for every
+    # ordinary org administrator, who can only ever create users in their
+    # own organization regardless of what they send here.
+    organization_id: str | None = None
 
 
 class UserResponse(BaseModel):
@@ -62,6 +67,16 @@ class OrganizationResponse(BaseModel):
 
 
 class OrganizationUpdate(BaseModel):
+    name: str = Field(min_length=2, max_length=160)
+    industry: str | None = Field(default=None, max_length=120)
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        return " ".join(value.split())
+
+
+class OrganizationCreate(BaseModel):
     name: str = Field(min_length=2, max_length=160)
     industry: str | None = Field(default=None, max_length=120)
 

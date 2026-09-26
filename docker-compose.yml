@@ -56,6 +56,8 @@ services:
       ECDAT_CORS_ORIGINS: ${ECDAT_CORS_ORIGINS:-http://localhost:5173}
       ECDAT_TLS_ALLOW_PRIVATE_TARGETS: ${ECDAT_TLS_ALLOW_PRIVATE_TARGETS:-false}
       ECDAT_SEED_DEMO: ${ECDAT_SEED_DEMO:-true}
+      ECDAT_ADMIN_USERNAME: ${ECDAT_ADMIN_USERNAME:-}
+      ECDAT_ADMIN_PASSWORD: ${ECDAT_ADMIN_PASSWORD:-}
       ECDAT_SCAN_STORAGE_PATH: /app/scan-data
     volumes:
       - ./backend:/app/backend
