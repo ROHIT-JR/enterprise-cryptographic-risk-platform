@@ -36,6 +36,12 @@ def bootstrap_platform_admin(db: Session, username: str, password: str) -> None:
         )
     )
     if existing:
+        # Self-heal accounts bootstrapped before is_platform_admin existed —
+        # never touches username/email/password, only this one flag.
+        if not existing.is_platform_admin:
+            existing.is_platform_admin = True
+            db.commit()
+            logger.info("platform_admin_flag_backfilled username=%s", username)
         return
 
     admin = User(
@@ -44,6 +50,7 @@ def bootstrap_platform_admin(db: Session, username: str, password: str) -> None:
         email=f"{username}@platform.local",
         password_hash=hash_password(password),
         role=Role.ADMINISTRATOR.value,
+        is_platform_admin=True,
     )
     db.add(admin)
     db.commit()

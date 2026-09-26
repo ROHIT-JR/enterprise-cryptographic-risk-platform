@@ -317,6 +317,7 @@ export interface AuthUser {
   role: UserRole;
   organization_id: string;
   is_active: boolean;
+  is_platform_admin: boolean;
   created_at: string;
 }
 
