@@ -2,12 +2,12 @@ import json
 import re
 
 import pytest
+from ecdat_x_demo_seed import seed_securebank_demo
 from sqlalchemy import select
 
 from backend.app.api.reports import export_report
 from backend.app.database import SessionLocal
 from backend.app.models import Organization, User
-from backend.app.seed import seed_securebank_demo
 from backend.app.services.report_service import ReportService, severity_band
 
 

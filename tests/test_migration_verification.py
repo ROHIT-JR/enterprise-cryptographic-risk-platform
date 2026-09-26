@@ -2,6 +2,7 @@ import copy
 import secrets
 
 import pytest
+from ecdat_x_demo_seed import seed_securebank_demo
 from fastapi.testclient import TestClient
 
 from backend.app.auth.service import AuthenticationService
@@ -9,7 +10,6 @@ from backend.app.config import get_settings
 from backend.app.database import SessionLocal
 from backend.app.main import app
 from backend.app.schemas.auth import LoginRequest, RegisterRequest
-from backend.app.seed import seed_securebank_demo
 from benchmarks import pqc_benchmarks
 from migration_engine.verification import (
     CHECK_IDS,

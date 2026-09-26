@@ -68,7 +68,6 @@ services:
       - ./lifecycle_engine:/app/lifecycle_engine
       - ./benchmarks:/app/benchmarks
       - ./config:/app/config
-      - ./sample_data:/app/sample_data:ro
       - scan_data:/app/scan-data
       - /var/run/docker.sock:/var/run/docker.sock
     group_add:
