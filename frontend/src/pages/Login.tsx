@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Fingerprint, LockKeyhole, Radar, ShieldCheck, Sparkles } from "lucide-react";
 import { apiErrorMessage } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -151,13 +151,6 @@ export function Login() {
             <span>Enterprise Scrypt Hash</span>
             <span>Zero-Trust RBAC</span>
           </div>
-
-          <p className="mt-4 text-center text-xs" style={{ color: "var(--text-muted)" }}>
-            New organization?{" "}
-            <Link to="/register" className="font-semibold" style={{ color: "var(--accent)" }}>
-              Create one
-            </Link>
-          </p>
         </div>
       </div>
     </main>

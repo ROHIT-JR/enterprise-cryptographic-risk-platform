@@ -26,3 +26,7 @@ services:
         sync: false
       - key: ECDAT_CORS_ORIGINS
         sync: false
+      - key: ECDAT_ADMIN_USERNAME
+        sync: false
+      - key: ECDAT_ADMIN_PASSWORD
+        sync: false

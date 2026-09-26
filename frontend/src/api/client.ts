@@ -174,13 +174,6 @@ export const complianceApi = {
 export const authApi = {
   login: async (organization: string, username: string, password: string) =>
     (await api.post<TokenResponse>("/auth/login", { organization, username, password })).data,
-  register: async (payload: {
-    organization_name: string;
-    industry?: string;
-    username: string;
-    email: string;
-    password: string;
-  }) => (await api.post<TokenResponse>("/auth/register", payload)).data,
   me: async () => (await api.get<AuthUser>("/auth/me")).data,
   refresh: async (refreshToken: string) =>
     (await api.post<TokenResponse>("/auth/refresh", { refresh_token: refreshToken })).data,

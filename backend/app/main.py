@@ -41,6 +41,11 @@ async def lifespan(_: FastAPI):
         with SessionLocal() as db:
             seed_securebank_demo(db)
             seed_india_payments_demo_org(db)
+    if settings.admin_username and settings.admin_password:
+        from backend.app.services.admin_bootstrap import bootstrap_platform_admin
+
+        with SessionLocal() as db:
+            bootstrap_platform_admin(db, settings.admin_username, settings.admin_password)
     yield
 
 
