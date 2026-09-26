@@ -1,6 +1,8 @@
 import { CheckCircle2, Circle, Download, Landmark, MapPin } from "lucide-react";
 import { useState } from "react";
 import { apiErrorMessage, complianceApi } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
+import { hasPermission } from "../auth/permissions";
 import { ReportGenerator } from "../components/ReportGenerator";
 import { Card, ErrorState, LoadingState, PageHeader } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
@@ -71,6 +73,8 @@ function PhaseCard({ phase, isCurrent }: { phase: NQMPhase; isCurrent: boolean }
 }
 
 export function ComplianceDashboard() {
+  const { user } = useAuth();
+  const canExport = user != null && hasPermission(user.role, "export_findings");
   const { data, error, loading, reload } = useAsync(complianceApi.nqm, []);
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -84,9 +88,11 @@ export function ComplianceDashboard() {
         title="NQM Compliance Dashboard"
         description="Phase-by-phase alignment with India's National Quantum Mission and the DST post-quantum migration roadmap."
         action={
-          <button type="button" className="btn-primary" onClick={() => setReportOpen(true)}>
-            <Download className="h-3.5 w-3.5" /> Export Compliance Report
-          </button>
+          canExport ? (
+            <button type="button" className="btn-primary" onClick={() => setReportOpen(true)}>
+              <Download className="h-3.5 w-3.5" /> Export Compliance Report
+            </button>
+          ) : undefined
         }
       />
 

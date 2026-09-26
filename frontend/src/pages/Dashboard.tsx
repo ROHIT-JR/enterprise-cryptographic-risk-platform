@@ -77,6 +77,7 @@ function QuickActionButton({
 export function Dashboard() {
   const { user } = useAuth();
   const canRunScans = user != null && hasPermission(user.role, "run_scans");
+  const canExport = user != null && hasPermission(user.role, "export_findings");
   const { data, error, loading, reload } = useAsync(dashboardApi.get, []);
   // State hooks stay above the loading/error early returns below (Rules of Hooks).
   const [reportOpen, setReportOpen] = useState(false);
@@ -175,9 +176,11 @@ export function Dashboard() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <button type="button" className="btn-secondary" onClick={() => openReports("executive-summary")}>
-              <FileText className="h-3.5 w-3.5" /> Generate Report
-            </button>
+            {canExport && (
+              <button type="button" className="btn-secondary" onClick={() => openReports("executive-summary")}>
+                <FileText className="h-3.5 w-3.5" /> Generate Report
+              </button>
+            )}
             {canRunScans && (
               <Link to="/upload" className="btn-primary">
                 <ScanLine className="h-3.5 w-3.5" /> Start New Discovery Scan
@@ -231,7 +234,9 @@ export function Dashboard() {
             <QuickActionButton to="/upload" icon={ScanLine} label="Scan Target Repository" description="Ingest source code, container or live TLS endpoint" />
           )}
           <QuickActionButton to="/blast-radius" icon={CircleDotDashed} label="Blast Radius Simulation" description="Simulate systemic compromise propagation on topology" />
-          <QuickActionButton icon={FileDown}    label="Export CBOM Inventory"   description="CycloneDX 1.6 CBOM as JSON and PDF" onClick={() => openReports("cbom")} />
+          {canExport && (
+            <QuickActionButton icon={FileDown} label="Export CBOM Inventory" description="CycloneDX 1.6 CBOM as JSON and PDF" onClick={() => openReports("cbom")} />
+          )}
         </div>
       </section>
 
@@ -295,9 +300,11 @@ export function Dashboard() {
             <p className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-950">Recent Discovery Pipelines</p>
             <p className="text-[11px] text-zinc-500">Continuous cryptographic ingestion log</p>
           </div>
-          <Link to="/upload" className="font-mono text-xs font-semibold text-indigo-600 hover:text-indigo-800">
-            Pipeline Console →
-          </Link>
+          {canRunScans && (
+            <Link to="/upload" className="font-mono text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+              Pipeline Console →
+            </Link>
+          )}
         </div>
         {data.recent_scans.length ? (
           <div className="divide-y divide-zinc-100">
