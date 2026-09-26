@@ -32,11 +32,16 @@ def upgrade() -> None:
         op.add_column('migration_plan', sa.Column('optimizer_version', sa.String(length=32), nullable=True))
     if "constraints" not in existing_columns:
         op.add_column('migration_plan', sa.Column('constraints', sa.JSON(), nullable=True))
-    op.alter_column('migration_plan', 'wave', existing_type=sa.Integer(), nullable=True)
+    # batch_alter_table: SQLite has no ALTER COLUMN — changing `nullable` has to go through
+    # Alembic's recreate-the-table batch mode there. It is a plain, no-recreation ALTER COLUMN
+    # on backends that support it directly, such as Postgres.
+    with op.batch_alter_table("migration_plan") as batch_op:
+        batch_op.alter_column('wave', existing_type=sa.Integer(), nullable=True)
 
     # Backfill constraints as empty lists
     op.execute("UPDATE migration_plan SET constraints = '[]' WHERE constraints IS NULL")
-    op.alter_column('migration_plan', 'constraints', nullable=False)
+    with op.batch_alter_table("migration_plan") as batch_op:
+        batch_op.alter_column('constraints', nullable=False)
     # ### end Alembic commands ###
 
 

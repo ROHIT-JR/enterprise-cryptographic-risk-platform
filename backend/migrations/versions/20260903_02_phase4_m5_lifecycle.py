@@ -41,9 +41,13 @@ def upgrade() -> None:
     op.execute("UPDATE assets SET governance_status = 'ACTIVE' WHERE governance_status IS NULL")
     op.execute("UPDATE assets SET lifecycle_updated_at = CURRENT_TIMESTAMP WHERE lifecycle_updated_at IS NULL")
 
-    op.alter_column('assets', 'lifecycle_state', nullable=False)
-    op.alter_column('assets', 'governance_status', nullable=False)
-    op.alter_column('assets', 'lifecycle_updated_at', nullable=False)
+    # batch_alter_table: SQLite has no ALTER COLUMN — changing `nullable` has to go through
+    # Alembic's recreate-the-table batch mode there. It is a plain, no-recreation ALTER COLUMN
+    # on backends that support it directly, such as Postgres.
+    with op.batch_alter_table("assets") as batch_op:
+        batch_op.alter_column('lifecycle_state', nullable=False)
+        batch_op.alter_column('governance_status', nullable=False)
+        batch_op.alter_column('lifecycle_updated_at', nullable=False)
 
     if op.f('ix_assets_lifecycle_state') not in asset_indexes:
         op.create_index(op.f('ix_assets_lifecycle_state'), 'assets', ['lifecycle_state'], unique=False)
