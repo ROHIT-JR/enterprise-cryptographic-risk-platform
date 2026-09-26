@@ -5,7 +5,7 @@ description = "Enterprise Cryptographic Discovery, Analysis & Transformation Pla
 requires-python = ">=3.11"
 
 dependencies = [
-    "networkx==3.4.2",
+    "networkx==3.7",
     "numpy==2.2.3",
     "scipy==1.18.1",
 ]
