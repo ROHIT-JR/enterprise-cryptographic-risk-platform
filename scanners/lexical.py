@@ -39,9 +39,11 @@ from __future__ import annotations
 
 import re
 
-_PY_IMPORT_AS = re.compile(r"^\s*import\s+([\w.]+)\s+as\s+(\w+)\s*(?:#.*)?$")
-_PY_FROM_IMPORT_AS = re.compile(r"^\s*from\s+[\w.]+\s+import\s+(\w+)\s+as\s+(\w+)\b")
-_JS_IMPORT_AS = re.compile(r"import\s*\{[^}]*?\b([\w$]+)\s+as\s+([\w$]+)[^}]*?\}\s*from")
+_PY_IMPORT_LINE = re.compile(r"^\s*import\s+(.+)$")
+_PY_FROM_IMPORT_LINE = re.compile(r"^\s*from\s+[\w.]+\s+import\s+(.+)$")
+_PY_AS_ALIAS = re.compile(r"^\s*([\w.]+)\s+as\s+(\w+)\s*$")
+_JS_IMPORT_BLOCK = re.compile(r"import\s*\{([^}]*)\}\s*from")
+_JS_AS_ALIAS = re.compile(r"\b([\w$]+)\s+as\s+([\w$]+)")
 _JS_REQUIRE_PROP_ALIAS = re.compile(
     r"(?:const|let|var)\s+([\w$]+)\s*=\s*require\(\s*['\"][^'\"]+['\"]\s*\)\.(\w+)"
 )
@@ -52,25 +54,37 @@ def find_import_aliases(lines: list[str], language: str) -> dict[str, str]:
 
     Returns {alias_identifier: canonical_identifier}. Only Python and
     JavaScript/TypeScript forms are recognised; every other language returns an
-    empty map, so this is a strict no-op for them rather than a guess.
+    empty map, so this is a strict no-op for them rather than a guess. A single
+    import statement can alias more than one name (``import os, sys as s`` /
+    ``from Crypto.Cipher import AES as A, DES as D`` / ``import { a as x, b as y }
+    from '...'``) — every comma-separated item is checked, not just the first.
     """
     aliases: dict[str, str] = {}
     if language == "python":
-        for line in lines:
-            match = _PY_IMPORT_AS.match(line)
+        for raw in lines:
+            line = raw.split("#", 1)[0]  # a trailing comment isn't part of the import list
+            match = _PY_FROM_IMPORT_LINE.match(line)
             if match:
-                module, alias = match.groups()
-                aliases[alias] = module.rsplit(".", 1)[-1]
+                for item in match.group(1).split(","):
+                    alias_match = _PY_AS_ALIAS.match(item)
+                    if alias_match:
+                        name, alias = alias_match.groups()
+                        aliases[alias] = name.rsplit(".", 1)[-1]
                 continue
-            match = _PY_FROM_IMPORT_AS.match(line)
+            match = _PY_IMPORT_LINE.match(line)
             if match:
-                name, alias = match.groups()
-                aliases[alias] = name
+                for item in match.group(1).split(","):
+                    alias_match = _PY_AS_ALIAS.match(item)
+                    if alias_match:
+                        module, alias = alias_match.groups()
+                        aliases[alias] = module.rsplit(".", 1)[-1]
     elif language in ("javascript", "typescript"):
         for line in lines:
-            for match in _JS_IMPORT_AS.finditer(line):
-                name, alias = match.groups()
-                aliases[alias] = name
+            block = _JS_IMPORT_BLOCK.search(line)
+            if block:
+                for match in _JS_AS_ALIAS.finditer(block.group(1)):
+                    name, alias = match.groups()
+                    aliases[alias] = name
             match = _JS_REQUIRE_PROP_ALIAS.search(line)
             if match:
                 alias, name = match.groups()
@@ -104,6 +118,21 @@ _CLOSERS = ")]"
 StringState = tuple[str, bool] | None  # (quote_char, is_triple_or_template) or None
 
 
+def _is_escaped(line: str, i: int) -> bool:
+    """True if line[i] is escaped by an odd-length run of backslashes immediately
+    before it. A single preceding ``\\`` escapes it, but ``\\\\`` is an escaped
+    backslash followed by an *unescaped* line[i] (e.g. the closing quote of the
+    Windows-path string ``"C:\\\\"``) — counting the whole run, not just the one
+    character before it, is what tells the two cases apart.
+    """
+    count = 0
+    j = i - 1
+    while j >= 0 and line[j] == "\\":
+        count += 1
+        j -= 1
+    return count % 2 == 1
+
+
 def _line_bracket_delta(
     line: str, string_state: StringState, track_braces: bool
 ) -> tuple[int, StringState]:
@@ -119,11 +148,11 @@ def _line_bracket_delta(
         ch = line[i]
         if string_state is not None:
             quote, triple = string_state
-            if triple and line[i : i + 3] == quote * 3:
+            if triple and line[i : i + 3] == quote * 3 and not _is_escaped(line, i):
                 i += 3
                 string_state = None
                 continue
-            if not triple and ch == quote and line[i - 1 : i] != "\\":
+            if not triple and ch == quote and not _is_escaped(line, i):
                 i += 1
                 string_state = None
                 continue

@@ -88,6 +88,29 @@ def test_python_trailing_backslash_continuation_forms_one_chunk():
     assert logical_chunks(lines, "python") == [(0, 1)]
 
 
+def test_a_string_ending_in_an_escaped_backslash_closes_correctly():
+    # Regression: `"C:\\"` (a Windows path — value `C:\`) ends in an *escaped
+    # backslash* immediately followed by the real closing quote. A naive
+    # one-character lookbehind sees that backslash and wrongly concludes the quote
+    # itself is escaped, leaving the string "open" for the rest of the file and
+    # merging every later statement into one chunk — silently collapsing distinct
+    # findings on different lines into a single reported match.
+    lines = [
+        r'path = "C:\\"',
+        "cipher1 = AES.new(key1, AES.MODE_GCM)",
+        "cipher2 = AES.new(key2, AES.MODE_GCM)",
+    ]
+    chunks = logical_chunks(lines, "python")
+    assert chunks == [(0, 0), (1, 1), (2, 2)]
+
+
+def test_a_string_ending_in_an_escaped_quote_still_extends_the_chunk():
+    # The other half of the same fix: `"say \"hi"` has a *single* backslash before
+    # the quote, which genuinely does escape it — the string must stay open.
+    lines = [r'label = "say \"hi" + (', "    1", ")"]
+    assert logical_chunks(lines, "python") == [(0, 2)]
+
+
 # --- find_import_aliases / resolve_aliases: the documented gap ("import hashlib -----
 # --- as h; h.md5(...) won't match") --------------------------------------------------
 def test_python_import_as_alias_is_found_and_resolved():
